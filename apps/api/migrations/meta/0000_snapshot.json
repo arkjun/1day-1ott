@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "cc49e8f2-88d4-45b9-9b93-b10d6d86d299",
+  "id": "ac491d6e-67cd-4157-a081-6c0064c85222",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account": {
@@ -234,9 +234,9 @@
           "notNull": true,
           "autoincrement": false
         },
-        "rating": {
-          "name": "rating",
-          "type": "real",
+        "reaction": {
+          "name": "reaction",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

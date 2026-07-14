@@ -1,6 +1,7 @@
-import { contentTypes, type ContentType, type EntryInput, type SearchResult } from "@1ott/shared";
+import { contentTypes, type ContentType, type EntryInput, type Reaction, type SearchResult } from "@1ott/shared";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
+import { REACTION_META, REACTION_ORDER } from "../lib/reactions";
 
 const TYPE_LABEL: Record<ContentType, string> = {
   movie: "영화",
@@ -16,7 +17,45 @@ function todayStr(): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-const RATINGS = ["", "5", "4.5", "4", "3.5", "3", "2.5", "2", "1.5", "1", "0.5"];
+/** 넷플릭스식 반응 선택기(토글). */
+export function ReactionPicker({
+  value,
+  onChange,
+}: {
+  value: Reaction | null;
+  onChange: (r: Reaction | null) => void;
+}) {
+  return (
+    <div style={{ display: "flex", gap: 6 }}>
+      {REACTION_ORDER.map((r) => {
+        const on = value === r;
+        return (
+          <button
+            key={r}
+            type="button"
+            onClick={() => onChange(on ? null : r)}
+            title={REACTION_META[r].label}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "7px 11px",
+              borderRadius: 999,
+              border: on ? "1px solid var(--accent)" : "1px solid var(--border)",
+              background: on ? "var(--accent-weak)" : "var(--surface-2)",
+              color: "inherit",
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            <span>{REACTION_META[r].emoji}</span>
+            <span>{REACTION_META[r].label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export function RecordModal({
   onClose,
@@ -32,7 +71,7 @@ export function RecordModal({
   const [ytUrl, setYtUrl] = useState("");
   const [tmdbOff, setTmdbOff] = useState(false);
   const [watchedOn, setWatchedOn] = useState(todayStr());
-  const [rating, setRating] = useState("");
+  const [reaction, setReaction] = useState<Reaction | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -88,7 +127,7 @@ export function RecordModal({
         ytId: picked.ytId,
         posterUrl: picked.posterUrl,
         watchedOn,
-        rating: rating ? Number(rating) : undefined,
+        reaction: reaction ?? undefined,
         note: note.trim() || undefined,
       };
     } else if (q.trim()) {
@@ -96,7 +135,7 @@ export function RecordModal({
         type: type === "youtube" ? "youtube" : type,
         title: q.trim(),
         watchedOn,
-        rating: rating ? Number(rating) : undefined,
+        reaction: reaction ?? undefined,
         note: note.trim() || undefined,
       };
     }
@@ -214,8 +253,8 @@ export function RecordModal({
         )}
 
         {/* 메타 */}
-        <div style={{ ...S.row, marginTop: 12 }}>
-          <label style={S.field}>
+        <div style={{ marginTop: 12 }}>
+          <label style={{ ...S.field, maxWidth: 180 }}>
             <span style={S.muted}>날짜</span>
             <input
               type="date"
@@ -224,20 +263,10 @@ export function RecordModal({
               onChange={(e) => setWatchedOn(e.target.value)}
             />
           </label>
-          <label style={S.field}>
-            <span style={S.muted}>별점</span>
-            <select
-              style={S.input}
-              value={rating}
-              onChange={(e) => setRating(e.target.value)}
-            >
-              {RATINGS.map((v) => (
-                <option key={v} value={v}>
-                  {v ? `★ ${v}` : "—"}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div style={{ marginTop: 10 }}>
+            <div style={{ ...S.muted, marginBottom: 6 }}>어땠어요?</div>
+            <ReactionPicker value={reaction} onChange={setReaction} />
+          </div>
         </div>
         <input
           style={{ ...S.input, marginTop: 8 }}

@@ -1,4 +1,4 @@
-import { entryInputSchema, countToLevel } from "@1ott/shared";
+import { entryInputSchema, countToLevel, reactionSchema } from "@1ott/shared";
 import type { HeatmapCell } from "@1ott/shared";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
@@ -9,7 +9,7 @@ import type { Env } from "../env";
 
 const entryPatchSchema = z.object({
   watchedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  rating: z.number().min(0).max(5).nullable().optional(),
+  reaction: reactionSchema.nullable().optional(),
   note: z.string().max(1000).nullable().optional(),
   platform: z.string().max(60).nullable().optional(),
 });
@@ -70,7 +70,7 @@ entriesRoute.post("/entries", async (c) => {
     userId,
     contentId,
     watchedOn: input.watchedOn,
-    rating: input.rating ?? null,
+    reaction: input.reaction ?? null,
     note: input.note ?? null,
     platform: input.platform ?? null,
   });
@@ -132,7 +132,7 @@ entriesRoute.get("/entries", async (c) => {
     .select({
       id: entries.id,
       watchedOn: entries.watchedOn,
-      rating: entries.rating,
+      reaction: entries.reaction,
       note: entries.note,
       platform: entries.platform,
       type: content.type,

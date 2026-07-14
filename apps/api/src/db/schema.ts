@@ -2,7 +2,6 @@ import { sql } from "drizzle-orm";
 import {
   index,
   integer,
-  real,
   sqliteTable,
   text,
   uniqueIndex,
@@ -109,7 +108,7 @@ export const entries = sqliteTable(
       .notNull()
       .references(() => content.id, { onDelete: "restrict" }),
     watchedOn: text("watched_on").notNull(), // 'YYYY-MM-DD'
-    rating: real("rating"),
+    reaction: text("reaction"), // 'down' | 'up' | 'love' (넷플릭스식 따봉)
     note: text("note"),
     platform: text("platform"),
     createdAt: integer("created_at", { mode: "timestamp" })

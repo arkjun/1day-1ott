@@ -5,6 +5,11 @@ export const contentTypes = ["movie", "tv", "anime", "youtube", "other"] as cons
 export const contentTypeSchema = z.enum(contentTypes);
 export type ContentType = (typeof contentTypes)[number];
 
+/** 넷플릭스식 반응. love=매우 좋아요(따봉2), up=좋아요, down=싫어요. */
+export const reactions = ["down", "up", "love"] as const;
+export const reactionSchema = z.enum(reactions);
+export type Reaction = (typeof reactions)[number];
+
 /**
  * 기록 생성 입력. 웹앱과 (미래의) 북마클릿/확장이 공유하는 단일 계약.
  * - tmdbId / ytId 없이 title만으로도 생성 가능(자유입력 폴백).
@@ -19,7 +24,7 @@ export const entryInputSchema = z.object({
   watchedOn: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "watchedOn must be YYYY-MM-DD"),
-  rating: z.number().min(0).max(5).optional(),
+  reaction: reactionSchema.optional(),
   note: z.string().max(1000).optional(),
   platform: z.string().max(60).optional(),
 });

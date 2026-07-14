@@ -33,7 +33,7 @@ CREATE TABLE `entries` (
 	`user_id` text NOT NULL,
 	`content_id` text NOT NULL,
 	`watched_on` text NOT NULL,
-	`rating` real,
+	`reaction` text,
 	`note` text,
 	`platform` text,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,

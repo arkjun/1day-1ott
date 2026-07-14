@@ -1,11 +1,12 @@
-import type { HeatmapCell } from "@1ott/shared";
+import type { HeatmapCell, Reaction } from "@1ott/shared";
 import { useEffect, useMemo, useState } from "react";
 import ActivityCalendar from "react-activity-calendar";
 import { PublicProfile } from "./components/PublicProfile";
-import { RecordModal } from "./components/RecordModal";
+import { RecordModal, ReactionPicker } from "./components/RecordModal";
 import { api, type EntryRow } from "./lib/api";
 import { signIn, signOut, signUp, useSession } from "./lib/authClient";
 import { GREEN, buildYear, currentStreak, isoDaysAgo } from "./lib/heatmap";
+import { REACTION_META } from "./lib/reactions";
 import { useTheme } from "./lib/theme";
 
 const TYPE_META: Record<string, { label: string; bar: string }> = {
@@ -35,14 +36,12 @@ function Stat({ k, v, unit, accent }: { k: string; v: number; unit: string; acce
   );
 }
 
-const EDIT_RATINGS = ["", "5", "4.5", "4", "3.5", "3", "2.5", "2", "1.5", "1", "0.5"];
-
-/** 최근 기록 한 줄: 인라인 수정(별점/감상/날짜) + 2단계 삭제. */
+/** 최근 기록 한 줄: 인라인 수정(반응/감상/날짜) + 2단계 삭제. */
 function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: () => void }) {
   const [editing, setEditing] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [watchedOn, setWatchedOn] = useState(entry.watchedOn);
-  const [rating, setRating] = useState(entry.rating != null ? String(entry.rating) : "");
+  const [reaction, setReaction] = useState<Reaction | null>(entry.reaction);
   const [note, setNote] = useState(entry.note ?? "");
   const [busy, setBusy] = useState(false);
 
@@ -51,7 +50,7 @@ function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: () => vo
     try {
       await api.updateEntry(entry.id, {
         watchedOn,
-        rating: rating ? Number(rating) : null,
+        reaction: reaction ?? null,
         note: note.trim() || null,
       });
       setEditing(false);
@@ -77,31 +76,21 @@ function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: () => vo
         <div style={{ fontWeight: 600, marginBottom: 8 }}>
           {entry.type} · {entry.title}
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <input
             type="date"
             style={{ ...st.input, width: 150 }}
             value={watchedOn}
             onChange={(e) => setWatchedOn(e.target.value)}
           />
-          <select
-            style={{ ...st.input, width: 96 }}
-            value={rating}
-            onChange={(e) => setRating(e.target.value)}
-          >
-            {EDIT_RATINGS.map((v) => (
-              <option key={v} value={v}>
-                {v ? `★ ${v}` : "—"}
-              </option>
-            ))}
-          </select>
-          <input
-            style={{ ...st.input, flex: 1, minWidth: 140 }}
-            placeholder="한 줄 감상"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
+          <ReactionPicker value={reaction} onChange={setReaction} />
         </div>
+        <input
+          style={{ ...st.input, width: "100%", marginTop: 8 }}
+          placeholder="한 줄 감상"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <button style={st.primary} disabled={busy} onClick={save}>
             저장
@@ -118,7 +107,7 @@ function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: () => vo
     <div style={st.entryRow}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <b>{entry.watchedOn}</b> · {entry.type} · {entry.title}
-        {entry.rating != null ? ` · ★${entry.rating}` : ""}
+        {entry.reaction ? ` · ${REACTION_META[entry.reaction].emoji}` : ""}
         {entry.note ? <span style={st.muted}> · {entry.note}</span> : null}
       </div>
       <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>

@@ -1,4 +1,4 @@
-import type { ContentType, EntryInput, HeatmapCell, SearchResult } from "@1ott/shared";
+import type { ContentType, EntryInput, HeatmapCell, Reaction, SearchResult } from "@1ott/shared";
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -13,7 +13,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 export interface EntryRow {
   id: string;
   watchedOn: string;
-  rating: number | null;
+  reaction: Reaction | null;
   note: string | null;
   platform: string | null;
   type: string;
@@ -30,7 +30,7 @@ export const api = {
   listEntries: () => req<{ entries: EntryRow[] }>("/api/entries"),
   updateEntry: (
     id: string,
-    patch: { watchedOn?: string; rating?: number | null; note?: string | null; platform?: string | null },
+    patch: { watchedOn?: string; reaction?: Reaction | null; note?: string | null; platform?: string | null },
   ) =>
     req<{ ok: boolean }>(`/api/entries/${id}`, {
       method: "PATCH",
