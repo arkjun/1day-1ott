@@ -8,7 +8,7 @@
     "dev:web": "pnpm --filter @1ott/web dev",
     "db:generate": "pnpm --filter @1ott/api db:generate",
     "db:migrate:local": "pnpm --filter @1ott/api db:migrate:local",
-    "deploy": "pnpm --filter @1ott/web build && pnpm --filter @1ott/api deploy",
+    "deploy": "pnpm --filter @1ott/web build && pnpm --filter @1ott/api run deploy",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
   },
