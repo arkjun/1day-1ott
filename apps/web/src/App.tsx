@@ -1,6 +1,7 @@
 import type { HeatmapCell, Reaction } from "@1ott/shared";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ActivityCalendar from "react-activity-calendar";
+import { CalendarView } from "./components/CalendarView";
 import { PublicProfile } from "./components/PublicProfile";
 import { RecordModal, ReactionPicker } from "./components/RecordModal";
 import { api, type EntryRow } from "./lib/api";
@@ -8,15 +9,7 @@ import { signIn, signOut, signUp, useSession } from "./lib/authClient";
 import { GREEN, buildYear, currentStreak, isoDaysAgo } from "./lib/heatmap";
 import { REACTION_META } from "./lib/reactions";
 import { useTheme } from "./lib/theme";
-
-const TYPE_META: Record<string, { label: string; bar: string }> = {
-  movie: { label: "영화", bar: "linear-gradient(90deg,#ff5a36,#ff8a5c)" },
-  tv: { label: "드라마", bar: "linear-gradient(90deg,#2f7bff,#5aa0ff)" },
-  variety: { label: "예능", bar: "linear-gradient(90deg,#f5a623,#ffc45c)" },
-  youtube: { label: "유튜브", bar: "linear-gradient(90deg,#ff3d3d,#ff7a7a)" },
-  anime: { label: "애니", bar: "linear-gradient(90deg,#37b25c,#63d987)" },
-  other: { label: "직접입력", bar: "linear-gradient(90deg,#8a94a3,#b3bcc9)" },
-};
+import { TYPE_META } from "./lib/typeMeta";
 
 interface SessionUser {
   id: string;
@@ -138,6 +131,7 @@ function Dashboard({ user }: { user: SessionUser }) {
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [cells, setCells] = useState<HeatmapCell[]>([]);
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"home" | "calendar">("home");
   const { resolved: scheme, toggle } = useTheme();
 
   async function refresh() {
@@ -151,6 +145,11 @@ function Dashboard({ user }: { user: SessionUser }) {
 
   const year = useMemo(() => buildYear(cells), [cells]);
   const streak = useMemo(() => currentStreak(cells), [cells]);
+  // 잔디 진입 시 오늘(오른쪽 끝)이 보이도록. 왼쪽으로 밀면 과거.
+  // 콜백 ref: 마운트될 때마다 끝으로. 이후 수동 스크롤은 건드리지 않음.
+  const heatmapRef = useCallback((el: HTMLDivElement | null) => {
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, []);
   const thisMonth = useMemo(() => {
     const pre = isoDaysAgo(0).slice(0, 7);
     return entries.filter((e) => e.watchedOn.startsWith(pre)).length;
@@ -170,7 +169,7 @@ function Dashboard({ user }: { user: SessionUser }) {
   const posters = entries.filter((e) => e.posterUrl).slice(0, 12);
 
   return (
-    <div style={st.wrap}>
+    <div style={{ ...st.wrap, maxWidth: view === "calendar" ? 1080 : 780 }}>
       <div style={st.top}>
         <b style={{ fontSize: 18, letterSpacing: "-0.02em" }}>🌱 1일 1OTT</b>
         <div style={{ display: "flex", gap: 8 }}>
@@ -186,6 +185,22 @@ function Dashboard({ user }: { user: SessionUser }) {
         </div>
       </div>
 
+      <div style={st.viewTabs}>
+        {(["home", "calendar"] as const).map((v) => (
+          <button
+            key={v}
+            style={{ ...st.viewTab, ...(view === v ? st.viewTabActive : {}) }}
+            onClick={() => setView(v)}
+          >
+            {v === "home" ? "홈" : "달력"}
+          </button>
+        ))}
+      </div>
+
+      {view === "calendar" ? (
+        <CalendarView entries={entries} onShowAll={() => setView("home")} />
+      ) : (
+        <>
       <div style={st.stats}>
         <Stat k="🔥 현재 연속" v={streak} unit="일" accent />
         <Stat k="이번 달" v={thisMonth} unit="편" />
@@ -199,7 +214,7 @@ function Dashboard({ user }: { user: SessionUser }) {
           <b>잔디</b>
           <span style={st.muted}>하루 1칸 · 색이 진할수록 그날 많이 봄</span>
         </div>
-        <div style={{ overflowX: "auto" }}>
+        <div ref={heatmapRef} style={{ overflowX: "auto" }}>
           <ActivityCalendar
             data={year}
             colorScheme={scheme}
@@ -268,6 +283,8 @@ function Dashboard({ user }: { user: SessionUser }) {
           )}
         </div>
       </div>
+        </>
+      )}
 
       {open && <RecordModal onClose={() => setOpen(false)} onSaved={refresh} />}
     </div>
@@ -409,6 +426,9 @@ export function App() {
 const st: Record<string, React.CSSProperties> = {
   wrap: { maxWidth: 780, margin: "0 auto", padding: "28px 20px 60px" },
   top: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
+  viewTabs: { display: "inline-flex", gap: 4, padding: 4, marginBottom: 16, borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-2)" },
+  viewTab: { border: 0, borderRadius: 9, padding: "7px 18px", background: "transparent", color: "var(--muted)", fontWeight: 700, fontSize: 14 },
+  viewTabActive: { background: "var(--surface)", color: "inherit", boxShadow: "var(--shadow)" },
   stats: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 16 },
   tile: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "14px 16px", boxShadow: "var(--shadow)" },
   tileK: { fontSize: 12, color: "var(--muted)" },
