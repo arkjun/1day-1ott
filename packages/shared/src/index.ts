@@ -1,0 +1,41 @@
+import { z } from "zod";
+
+/** 콘텐츠 유형. TMDB(movie/tv/anime) · YouTube · 기타 자유입력. */
+export const contentTypes = ["movie", "tv", "anime", "youtube", "other"] as const;
+export const contentTypeSchema = z.enum(contentTypes);
+export type ContentType = (typeof contentTypes)[number];
+
+/**
+ * 기록 생성 입력. 웹앱과 (미래의) 북마클릿/확장이 공유하는 단일 계약.
+ * - tmdbId / ytId 없이 title만으로도 생성 가능(자유입력 폴백).
+ * - watchedOn 은 클라이언트 로컬 날짜 'YYYY-MM-DD'.
+ */
+export const entryInputSchema = z.object({
+  type: contentTypeSchema,
+  title: z.string().min(1).max(300),
+  tmdbId: z.number().int().positive().optional(),
+  ytId: z.string().min(1).max(64).optional(),
+  posterUrl: z.string().url().max(1000).optional(),
+  watchedOn: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "watchedOn must be YYYY-MM-DD"),
+  rating: z.number().min(0).max(5).optional(),
+  note: z.string().max(1000).optional(),
+  platform: z.string().max(60).optional(),
+});
+export type EntryInput = z.infer<typeof entryInputSchema>;
+
+/** 잔디 한 칸: 날짜 + 그날 소비량. level 은 색 농도 버킷(0~4). */
+export interface HeatmapCell {
+  date: string; // YYYY-MM-DD
+  count: number;
+  level: 0 | 1 | 2 | 3 | 4;
+}
+
+export function countToLevel(count: number): HeatmapCell["level"] {
+  if (count <= 0) return 0;
+  if (count === 1) return 1;
+  if (count === 2) return 2;
+  if (count === 3) return 3;
+  return 4;
+}

@@ -1,0 +1,19 @@
+{
+  "name": "1day-1ott",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev:api": "pnpm --filter @1ott/api dev",
+    "dev:web": "pnpm --filter @1ott/web dev",
+    "db:generate": "pnpm --filter @1ott/api db:generate",
+    "db:migrate:local": "pnpm --filter @1ott/api db:migrate:local",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "workerd", "sharp"]
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+*.local
+.DS_Store
+# drizzle generated migrations are committed; local d1 state is not
+apps/api/.wrangler/

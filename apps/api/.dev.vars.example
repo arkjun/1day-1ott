@@ -1,0 +1,7 @@
+# 복사해서 .dev.vars 로 쓰기. .dev.vars 는 커밋 금지(.gitignore).
+BETTER_AUTH_SECRET=generate-a-long-random-string
+BETTER_AUTH_URL=http://localhost:8787
+WEB_ORIGIN=http://localhost:5173
+# GitHub 소셜을 켤 때만:
+# GITHUB_CLIENT_ID=
+# GITHUB_CLIENT_SECRET=
