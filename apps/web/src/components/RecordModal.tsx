@@ -290,7 +290,7 @@ const S: Record<string, React.CSSProperties> = {
     cursor: "pointer",
     fontSize: 13,
   },
-  tabOn: { background: "#ff5a36", color: "#fff", borderColor: "#ff5a36" },
+  tabOn: { background: "#ff5a36", color: "#fff", border: "1px solid #ff5a36" },
   row: { display: "flex", gap: 8 },
   field: { flex: 1, display: "grid", gap: 4, fontSize: 12 },
   input: {

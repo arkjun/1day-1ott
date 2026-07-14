@@ -6,3 +6,4 @@ dist/
 .DS_Store
 # drizzle generated migrations are committed; local d1 state is not
 apps/api/.wrangler/
+.gstack/
