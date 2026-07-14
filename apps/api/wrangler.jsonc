@@ -1,17 +1,28 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "1ott-api",
+  "name": "1day-1ott",
   "main": "src/index.ts",
   "compatibility_date": "2024-12-30",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  // 웹 빌드 결과물을 같은 Worker 에서 서빙 (same-origin → CORS/쿠키 문제 없음).
+  // /api/*, /health 만 Worker 가 먼저 받고, 나머지는 정적 자산 + SPA 폴백.
+  "assets": {
+    "directory": "../web/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/health"]
+  },
+  // 프로덕션 공개 값. 시크릿(BETTER_AUTH_SECRET, TMDB_API_TOKEN)은 `wrangler secret put` 으로.
+  "vars": {
+    "BETTER_AUTH_URL": "https://1day-1ott.juntai81.workers.dev",
+    "WEB_ORIGIN": "https://1day-1ott.juntai81.workers.dev"
+  },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "1ott-db",
-      // 로컬(miniflare)은 이 id를 무시함. 원격은 `wrangler d1 create 1ott-db`
-      // 실행 후 출력된 database_id 로 교체.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // 로컬(miniflare)은 이 id를 무시함.
+      "database_id": "06a84b42-939e-4a0b-81b4-14a70f3a0d1c",
       "migrations_dir": "migrations"
     }
   ]

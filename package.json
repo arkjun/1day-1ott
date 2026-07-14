@@ -8,12 +8,13 @@
     "dev:web": "pnpm --filter @1ott/web dev",
     "db:generate": "pnpm --filter @1ott/api db:generate",
     "db:migrate:local": "pnpm --filter @1ott/api db:migrate:local",
+    "deploy": "pnpm --filter @1ott/web build && pnpm --filter @1ott/api deploy",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
     "typescript": "^5.7.3"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "workerd", "sharp"]
+    "onlyBuiltDependencies": ["esbuild", "workerd"]
   }
 }
