@@ -5,3 +5,5 @@ WEB_ORIGIN=http://localhost:5173
 # GitHub 소셜을 켤 때만:
 # GITHUB_CLIENT_ID=
 # GITHUB_CLIENT_SECRET=
+# TMDB v4 read access token (themoviedb.org → Settings → API). 없으면 /api/search 503.
+# TMDB_API_TOKEN=

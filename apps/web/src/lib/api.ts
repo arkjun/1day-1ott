@@ -1,4 +1,4 @@
-import type { EntryInput, HeatmapCell } from "@1ott/shared";
+import type { ContentType, EntryInput, HeatmapCell, SearchResult } from "@1ott/shared";
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -29,4 +29,10 @@ export const api = {
     }),
   listEntries: () => req<{ entries: EntryRow[] }>("/api/entries"),
   heatmap: () => req<{ cells: HeatmapCell[] }>("/api/heatmap"),
+  search: (q: string, type: ContentType) =>
+    req<{ results: SearchResult[] }>(
+      `/api/search?q=${encodeURIComponent(q)}&type=${type}`,
+    ),
+  yt: (url: string) =>
+    req<{ result: SearchResult }>(`/api/yt?url=${encodeURIComponent(url)}`),
 };

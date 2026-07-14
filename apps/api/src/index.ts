@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { createAuth } from "./auth";
 import type { Env } from "./env";
 import { entriesRoute } from "./routes/entries";
+import { searchRoute } from "./routes/search";
 
 type Vars = { userId: string };
 
@@ -38,5 +39,6 @@ app.use("/api/*", async (c, next) => {
 });
 
 app.route("/api", entriesRoute);
+app.route("/api", searchRoute);
 
 export default app;

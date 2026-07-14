@@ -32,6 +32,17 @@ export interface HeatmapCell {
   level: 0 | 1 | 2 | 3 | 4;
 }
 
+/** 자동완성 검색 결과(TMDB / YouTube oEmbed 공통 형태). */
+export interface SearchResult {
+  type: ContentType;
+  title: string;
+  tmdbId?: number;
+  ytId?: string;
+  posterUrl?: string;
+  year?: string;
+  subtitle?: string;
+}
+
 export function countToLevel(count: number): HeatmapCell["level"] {
   if (count <= 0) return 0;
   if (count === 1) return 1;

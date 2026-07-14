@@ -1,43 +1,68 @@
-import { contentTypes, type ContentType } from "@1ott/shared";
-import { useEffect, useState } from "react";
+import type { HeatmapCell } from "@1ott/shared";
+import { useEffect, useMemo, useState } from "react";
+import ActivityCalendar from "react-activity-calendar";
+import { RecordModal } from "./components/RecordModal";
 import { api, type EntryRow } from "./lib/api";
 import { signIn, signOut, signUp, useSession } from "./lib/authClient";
 
-const LEVEL_COLORS = ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"];
+const GREEN = {
+  light: ["#e9ecf1", "#b9e6c4", "#74d089", "#37b25c", "#157f3b"],
+  dark: ["#1b212b", "#0e4429", "#14683a", "#26a148", "#3fd35b"],
+};
 
-function today(): string {
+function isoDaysAgo(n: number): string {
   const d = new Date();
-  const p = (n: number) => String(n).padStart(2, "0");
+  d.setDate(d.getDate() - n);
+  const p = (x: number) => String(x).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-function Heatmap({ cells }: { cells: { date: string; level: number }[] }) {
-  const map = new Map(cells.map((c) => [c.date, c.level]));
+/** /api/heatmap 셀을 지난 365일 전체로 패딩(빈 날 level0). */
+function buildYear(cells: HeatmapCell[]) {
+  const byDate = new Map(cells.map((c) => [c.date, c]));
+  const out: { date: string; count: number; level: number }[] = [];
+  for (let i = 364; i >= 0; i--) {
+    const date = isoDaysAgo(i);
+    const hit = byDate.get(date);
+    out.push({ date, count: hit?.count ?? 0, level: hit?.level ?? 0 });
+  }
+  return out;
+}
+
+/** 오늘(또는 어제)부터 뒤로 연속 기록 일수. */
+function currentStreak(cells: HeatmapCell[]): number {
+  const has = new Set(cells.filter((c) => c.count > 0).map((c) => c.date));
+  let streak = 0;
+  // 오늘 기록이 없으면 어제부터 카운트(오늘은 아직 안 봤을 수 있음).
+  let start = has.has(isoDaysAgo(0)) ? 0 : 1;
+  for (let i = start; i < 400; i++) {
+    if (has.has(isoDaysAgo(i))) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function Stat({ k, v, unit, accent }: { k: string; v: number; unit: string; accent?: boolean }) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 3, maxWidth: 400 }}>
-      {[...map.entries()].map(([date, level]) => (
-        <div
-          key={date}
-          title={date}
-          style={{
-            width: 14,
-            height: 14,
-            borderRadius: 3,
-            background: LEVEL_COLORS[level] ?? LEVEL_COLORS[0],
-          }}
-        />
-      ))}
-      {cells.length === 0 && <span style={{ color: "#888" }}>아직 기록 없음</span>}
+    <div style={{ ...st.tile }}>
+      <div style={st.tileK}>{k}</div>
+      <div style={{ ...st.tileV, color: accent ? "#ff5a36" : "inherit" }}>
+        {v}
+        <small style={st.tileU}>{unit}</small>
+      </div>
     </div>
   );
 }
 
 function Dashboard() {
   const [entries, setEntries] = useState<EntryRow[]>([]);
-  const [cells, setCells] = useState<{ date: string; level: number }[]>([]);
-  const [title, setTitle] = useState("");
-  const [type, setType] = useState<ContentType>("movie");
-  const [busy, setBusy] = useState(false);
+  const [cells, setCells] = useState<HeatmapCell[]>([]);
+  const [open, setOpen] = useState(false);
+  const scheme =
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
 
   async function refresh() {
     const [e, h] = await Promise.all([api.listEntries(), api.heatmap()]);
@@ -48,57 +73,81 @@ function Dashboard() {
     refresh().catch(console.error);
   }, []);
 
-  async function add(ev: React.FormEvent) {
-    ev.preventDefault();
-    if (!title.trim()) return;
-    setBusy(true);
-    try {
-      await api.createEntry({ type, title: title.trim(), watchedOn: today() });
-      setTitle("");
-      await refresh();
-    } finally {
-      setBusy(false);
-    }
-  }
+  const year = useMemo(() => buildYear(cells), [cells]);
+  const streak = useMemo(() => currentStreak(cells), [cells]);
+  const thisMonth = useMemo(() => {
+    const pre = isoDaysAgo(0).slice(0, 7);
+    return entries.filter((e) => e.watchedOn.startsWith(pre)).length;
+  }, [entries]);
+  const posters = entries.filter((e) => e.posterUrl).slice(0, 12);
 
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto", padding: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <h1>1일 1OTT</h1>
-        <button onClick={() => signOut()}>로그아웃</button>
+    <div style={st.wrap}>
+      <div style={st.top}>
+        <b style={{ fontSize: 18, letterSpacing: "-0.02em" }}>🌱 1일 1OTT</b>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button style={st.primary} onClick={() => setOpen(true)}>
+            + 기록
+          </button>
+          <button style={st.ghost} onClick={() => signOut()}>
+            로그아웃
+          </button>
+        </div>
       </div>
 
-      <h3>잔디</h3>
-      <Heatmap cells={cells} />
+      <div style={st.stats}>
+        <Stat k="🔥 현재 연속" v={streak} unit="일" accent />
+        <Stat k="이번 달" v={thisMonth} unit="편" />
+        <Stat k="총 기록" v={entries.length} unit="편" />
+      </div>
 
-      <h3 style={{ marginTop: 24 }}>오늘 기록</h3>
-      <form onSubmit={add} style={{ display: "flex", gap: 8 }}>
-        <select value={type} onChange={(e) => setType(e.target.value as ContentType)}>
-          {contentTypes.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
+      <div style={st.card}>
+        <div style={st.cardHead}>
+          <b>잔디</b>
+          <span style={st.muted}>하루 1칸 · 색이 진할수록 그날 많이 봄</span>
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <ActivityCalendar
+            data={year}
+            colorScheme={scheme}
+            theme={GREEN}
+            blockSize={12}
+            blockMargin={3}
+            labels={{ totalCount: "{{count}}편 기록" }}
+          />
+        </div>
+      </div>
+
+      {posters.length > 0 && (
+        <div style={st.card}>
+          <div style={st.cardHead}>
+            <b>포스터</b>
+            <span style={st.muted}>최근 기록</span>
+          </div>
+          <div style={st.posterGrid}>
+            {posters.map((e) => (
+              <img key={e.id} src={e.posterUrl!} alt={e.title} title={e.title} style={st.poster} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={st.card}>
+        <div style={st.cardHead}>
+          <b>최근 기록</b>
+        </div>
+        <ul style={{ margin: 0, paddingLeft: 18 }}>
+          {entries.slice(0, 20).map((e) => (
+            <li key={e.id} style={{ marginBottom: 4 }}>
+              <b>{e.watchedOn}</b> · {e.type} · {e.title}
+              {e.rating != null ? ` · ★${e.rating}` : ""}
+            </li>
           ))}
-        </select>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="제목"
-          style={{ flex: 1 }}
-        />
-        <button disabled={busy} type="submit">
-          추가
-        </button>
-      </form>
+          {entries.length === 0 && <li style={st.muted}>아직 기록이 없어요. “+ 기록”을 눌러보세요.</li>}
+        </ul>
+      </div>
 
-      <h3 style={{ marginTop: 24 }}>최근 기록</h3>
-      <ul>
-        {entries.map((e) => (
-          <li key={e.id}>
-            <b>{e.watchedOn}</b> · {e.type} · {e.title}
-          </li>
-        ))}
-      </ul>
+      {open && <RecordModal onClose={() => setOpen(false)} onSaved={refresh} />}
     </div>
   );
 }
@@ -122,30 +171,25 @@ function Auth() {
 
   return (
     <div style={{ maxWidth: 360, margin: "80px auto", padding: 24 }}>
-      <h1>1일 1OTT</h1>
+      <h1>🌱 1일 1OTT</h1>
       <form onSubmit={submit} style={{ display: "grid", gap: 8 }}>
         {mode === "up" && (
-          <input placeholder="이름" value={name} onChange={(e) => setName(e.target.value)} />
+          <input style={st.input} placeholder="이름" value={name} onChange={(e) => setName(e.target.value)} />
         )}
+        <input style={st.input} placeholder="이메일" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input
-          placeholder="이메일"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
+          style={st.input}
           placeholder="비밀번호(8자+)"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button type="submit">{mode === "up" ? "가입" : "로그인"}</button>
+        <button style={st.primary} type="submit">
+          {mode === "up" ? "가입" : "로그인"}
+        </button>
       </form>
       {err && <p style={{ color: "crimson" }}>{err}</p>}
-      <button
-        style={{ marginTop: 12 }}
-        onClick={() => setMode((m) => (m === "in" ? "up" : "in"))}
-      >
+      <button style={{ ...st.ghost, marginTop: 12 }} onClick={() => setMode((m) => (m === "in" ? "up" : "in"))}>
         {mode === "in" ? "계정 만들기" : "로그인으로"}
       </button>
     </div>
@@ -157,3 +201,29 @@ export function App() {
   if (isPending) return <p style={{ padding: 24 }}>로딩…</p>;
   return session?.user ? <Dashboard /> : <Auth />;
 }
+
+const st: Record<string, React.CSSProperties> = {
+  wrap: { maxWidth: 780, margin: "0 auto", padding: "28px 20px 60px" },
+  top: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
+  stats: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 16 },
+  tile: { border: "1px solid #8883", borderRadius: 14, padding: "14px 16px" },
+  tileK: { fontSize: 12, color: "#8890a0" },
+  tileV: { marginTop: 6, fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" },
+  tileU: { fontSize: 13, fontWeight: 600, color: "#8890a0", marginLeft: 3 },
+  card: { border: "1px solid #8883", borderRadius: 14, padding: 18, marginBottom: 16 },
+  cardHead: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 },
+  muted: { color: "#8890a0", fontSize: 12 },
+  posterGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(78px,1fr))", gap: 10 },
+  poster: { width: "100%", aspectRatio: "2 / 3", objectFit: "cover", borderRadius: 8 },
+  primary: {
+    border: 0,
+    borderRadius: 10,
+    padding: "9px 16px",
+    background: "linear-gradient(135deg,#ff5a36,#d63a17)",
+    color: "#fff",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  ghost: { border: "1px solid #8884", borderRadius: 10, padding: "9px 14px", background: "none", color: "inherit", cursor: "pointer" },
+  input: { padding: "10px 12px", borderRadius: 10, border: "1px solid #8884", background: "transparent", color: "inherit", fontSize: 14 },
+};
