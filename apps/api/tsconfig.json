@@ -2,8 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "types": ["@cloudflare/workers-types"],
+    "types": ["@cloudflare/workers-types/2023-07-01", "@cloudflare/vitest-pool-workers/types"],
     "jsx": "react-jsx"
   },
-  "include": ["src", "drizzle.config.ts"]
+  "include": ["src", "test", "drizzle.config.ts"]
 }

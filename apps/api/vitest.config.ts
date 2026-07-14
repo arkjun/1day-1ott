@@ -1,0 +1,35 @@
+import {
+  cloudflareTest,
+  readD1Migrations,
+} from "@cloudflare/vitest-pool-workers";
+import path from "node:path";
+import { defineConfig } from "vitest/config";
+
+export default defineConfig(async () => {
+  const migrations = await readD1Migrations(
+    path.join(import.meta.dirname, "migrations"),
+  );
+
+  return {
+    plugins: [
+      // wrangler.jsonc 를 그대로 쓰지 않는 이유: assets(웹 dist 필요)와
+      // 프로덕션 vars 를 피하고 테스트 전용 바인딩만 주입하기 위해.
+      cloudflareTest({
+        miniflare: {
+          compatibilityDate: "2024-12-30",
+          compatibilityFlags: ["nodejs_compat"],
+          d1Databases: ["DB"],
+          bindings: {
+            TEST_MIGRATIONS: migrations,
+            BETTER_AUTH_SECRET: "test-only-secret-not-used-in-prod",
+            BETTER_AUTH_URL: "http://localhost",
+            WEB_ORIGIN: "http://localhost",
+          },
+        },
+      }),
+    ],
+    test: {
+      setupFiles: ["./test/apply-migrations.ts"],
+    },
+  };
+});
