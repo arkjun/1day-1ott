@@ -146,9 +146,14 @@ function Dashboard({ user }: { user: SessionUser }) {
   const year = useMemo(() => buildYear(cells), [cells]);
   const streak = useMemo(() => currentStreak(cells), [cells]);
   // 잔디 진입 시 오늘(오른쪽 끝)이 보이도록. 왼쪽으로 밀면 과거.
-  // 콜백 ref: 마운트될 때마다 끝으로. 이후 수동 스크롤은 건드리지 않음.
+  // react-activity-calendar 는 자체 내부 스크롤 컨테이너를 렌더하므로,
+  // 바깥 div 가 아니라 그 컨테이너를 끝으로 보낸다. 콜백 ref 라 재마운트마다 실행.
   const heatmapRef = useCallback((el: HTMLDivElement | null) => {
-    if (el) el.scrollLeft = el.scrollWidth;
+    if (!el) return;
+    const sc = el.querySelector<HTMLElement>(
+      ".react-activity-calendar__scroll-container",
+    );
+    if (sc) sc.scrollLeft = sc.scrollWidth;
   }, []);
   const thisMonth = useMemo(() => {
     const pre = isoDaysAgo(0).slice(0, 7);
