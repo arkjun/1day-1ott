@@ -35,6 +35,115 @@ function Stat({ k, v, unit, accent }: { k: string; v: number; unit: string; acce
   );
 }
 
+const EDIT_RATINGS = ["", "5", "4.5", "4", "3.5", "3", "2.5", "2", "1.5", "1", "0.5"];
+
+/** 최근 기록 한 줄: 인라인 수정(별점/감상/날짜) + 2단계 삭제. */
+function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [watchedOn, setWatchedOn] = useState(entry.watchedOn);
+  const [rating, setRating] = useState(entry.rating != null ? String(entry.rating) : "");
+  const [note, setNote] = useState(entry.note ?? "");
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    try {
+      await api.updateEntry(entry.id, {
+        watchedOn,
+        rating: rating ? Number(rating) : null,
+        note: note.trim() || null,
+      });
+      setEditing(false);
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function del() {
+    setBusy(true);
+    try {
+      await api.deleteEntry(entry.id);
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <div style={st.entryEdit}>
+        <div style={{ fontWeight: 600, marginBottom: 8 }}>
+          {entry.type} · {entry.title}
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <input
+            type="date"
+            style={{ ...st.input, width: 150 }}
+            value={watchedOn}
+            onChange={(e) => setWatchedOn(e.target.value)}
+          />
+          <select
+            style={{ ...st.input, width: 96 }}
+            value={rating}
+            onChange={(e) => setRating(e.target.value)}
+          >
+            {EDIT_RATINGS.map((v) => (
+              <option key={v} value={v}>
+                {v ? `★ ${v}` : "—"}
+              </option>
+            ))}
+          </select>
+          <input
+            style={{ ...st.input, flex: 1, minWidth: 140 }}
+            placeholder="한 줄 감상"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <button style={st.primary} disabled={busy} onClick={save}>
+            저장
+          </button>
+          <button style={st.ghost} onClick={() => setEditing(false)}>
+            취소
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={st.entryRow}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <b>{entry.watchedOn}</b> · {entry.type} · {entry.title}
+        {entry.rating != null ? ` · ★${entry.rating}` : ""}
+        {entry.note ? <span style={st.muted}> · {entry.note}</span> : null}
+      </div>
+      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+        <button style={st.smallBtn} onClick={() => setEditing(true)}>
+          수정
+        </button>
+        {confirmDel ? (
+          <>
+            <button style={{ ...st.smallBtn, color: "crimson" }} disabled={busy} onClick={del}>
+              정말?
+            </button>
+            <button style={st.smallBtn} onClick={() => setConfirmDel(false)}>
+              취소
+            </button>
+          </>
+        ) : (
+          <button style={st.smallBtn} onClick={() => setConfirmDel(true)}>
+            삭제
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Dashboard({ user }: { user: SessionUser }) {
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [cells, setCells] = useState<HeatmapCell[]>([]);
@@ -160,15 +269,14 @@ function Dashboard({ user }: { user: SessionUser }) {
         <div style={st.cardHead}>
           <b>최근 기록</b>
         </div>
-        <ul style={{ margin: 0, paddingLeft: 18 }}>
+        <div>
           {entries.slice(0, 20).map((e) => (
-            <li key={e.id} style={{ marginBottom: 4 }}>
-              <b>{e.watchedOn}</b> · {e.type} · {e.title}
-              {e.rating != null ? ` · ★${e.rating}` : ""}
-            </li>
+            <RecentItem key={e.id} entry={e} onChanged={refresh} />
           ))}
-          {entries.length === 0 && <li style={st.muted}>아직 기록이 없어요. “+ 기록”을 눌러보세요.</li>}
-        </ul>
+          {entries.length === 0 && (
+            <div style={st.muted}>아직 기록이 없어요. “+ 기록”을 눌러보세요.</div>
+          )}
+        </div>
       </div>
 
       {open && <RecordModal onClose={() => setOpen(false)} onSaved={refresh} />}
@@ -332,6 +440,9 @@ const st: Record<string, React.CSSProperties> = {
   },
   ghost: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 14px", background: "var(--surface)", color: "inherit" },
   iconBtn: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px", background: "var(--surface)", lineHeight: 1 },
+  entryRow: { display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid var(--border)", fontSize: 14 },
+  entryEdit: { padding: "12px", margin: "6px 0", border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface-2)" },
+  smallBtn: { border: "1px solid var(--border)", borderRadius: 8, padding: "4px 10px", background: "var(--surface)", color: "var(--muted)", fontSize: 12 },
   bdRow: { display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 5 },
   bdTrack: { height: 8, borderRadius: 999, background: "var(--surface-2)", overflow: "hidden" },
   bdFill: { height: "100%", borderRadius: 999 },

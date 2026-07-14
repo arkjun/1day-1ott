@@ -28,6 +28,16 @@ export const api = {
       body: JSON.stringify(input),
     }),
   listEntries: () => req<{ entries: EntryRow[] }>("/api/entries"),
+  updateEntry: (
+    id: string,
+    patch: { watchedOn?: string; rating?: number | null; note?: string | null; platform?: string | null },
+  ) =>
+    req<{ ok: boolean }>(`/api/entries/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+  deleteEntry: (id: string) =>
+    req<{ ok: boolean }>(`/api/entries/${id}`, { method: "DELETE" }),
   heatmap: () => req<{ cells: HeatmapCell[] }>("/api/heatmap"),
   search: (q: string, type: ContentType) =>
     req<{ results: SearchResult[] }>(
