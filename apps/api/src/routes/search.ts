@@ -16,6 +16,29 @@ interface TmdbItem {
   release_date?: string; // movie
   first_air_date?: string; // tv
   media_type?: string;
+  genre_ids?: number[];
+}
+
+// TMDB TV 장르 id
+const GENRE_ANIMATION = 16;
+const GENRE_REALITY = 10764;
+const GENRE_TALK = 10767;
+
+/**
+ * search/tv 는 장르 구분 없이 모든 TV 프로그램을 반환하므로 genre_ids 로 거른다.
+ * anime 은 Animation 포함식(확실한 것만), tv 는 예능·토크·애니 제외식
+ * (포함식은 장르 태그가 부실한 드라마를 놓칠 수 있음).
+ */
+export function matchesTypeGenre(
+  genreIds: number[] | undefined,
+  type: ContentType,
+): boolean {
+  if (type === "anime") return genreIds?.includes(GENRE_ANIMATION) ?? false;
+  if (type === "tv") {
+    const excluded = [GENRE_ANIMATION, GENRE_REALITY, GENRE_TALK];
+    return !(genreIds ?? []).some((g) => excluded.includes(g));
+  }
+  return true;
 }
 
 function mapTmdb(item: TmdbItem, fallbackType: ContentType): SearchResult | null {
@@ -60,6 +83,8 @@ searchRoute.get("/search", async (c) => {
 
   const data = (await res.json()) as { results?: TmdbItem[] };
   const results = (data.results ?? [])
+    // slice 전에 걸러야 필터된 항목이 8칸을 잡아먹지 않는다.
+    .filter((it) => matchesTypeGenre(it.genre_ids, type))
     .slice(0, 8)
     .map((it) => mapTmdb(it, type))
     .filter((r): r is SearchResult => r !== null);
