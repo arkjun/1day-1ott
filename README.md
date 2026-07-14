@@ -3,7 +3,6 @@
 하루 한 번 이상 소비한 콘텐츠를 기록해 잔디 그래프로 보여주는 웹 서비스.
 
 - 스택: React(Vite) + Hono 모노레포 / Cloudflare Workers·Pages / D1 + Drizzle / Better Auth
-- 설계 문서: `~/.gstack/projects/1day-1ott/2026-07-13-design-1day-1ott.md`
 
 ## 구조
 
