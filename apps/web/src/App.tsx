@@ -10,6 +10,14 @@ const GREEN = {
   dark: ["#1b212b", "#0e4429", "#14683a", "#26a148", "#3fd35b"],
 };
 
+const TYPE_META: Record<string, { label: string; bar: string }> = {
+  movie: { label: "영화", bar: "linear-gradient(90deg,#ff5a36,#ff8a5c)" },
+  tv: { label: "드라마", bar: "linear-gradient(90deg,#2f7bff,#5aa0ff)" },
+  youtube: { label: "유튜브", bar: "linear-gradient(90deg,#ff3d3d,#ff7a7a)" },
+  anime: { label: "애니", bar: "linear-gradient(90deg,#37b25c,#63d987)" },
+  other: { label: "직접입력", bar: "linear-gradient(90deg,#8a94a3,#b3bcc9)" },
+};
+
 function isoDaysAgo(n: number): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
@@ -79,6 +87,18 @@ function Dashboard() {
     const pre = isoDaysAgo(0).slice(0, 7);
     return entries.filter((e) => e.watchedOn.startsWith(pre)).length;
   }, [entries]);
+  const breakdown = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const e of entries) counts.set(e.type, (counts.get(e.type) ?? 0) + 1);
+    const total = entries.length || 1;
+    return [...counts.entries()]
+      .map(([type, count]) => ({
+        type,
+        count,
+        pct: Math.round((count / total) * 100),
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [entries]);
   const posters = entries.filter((e) => e.posterUrl).slice(0, 12);
 
   return (
@@ -127,6 +147,36 @@ function Dashboard() {
           <div style={st.posterGrid}>
             {posters.map((e) => (
               <img key={e.id} src={e.posterUrl!} alt={e.title} title={e.title} style={st.poster} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {breakdown.length > 0 && (
+        <div style={st.card}>
+          <div style={st.cardHead}>
+            <b>유형별</b>
+            <span style={st.muted}>총 {entries.length}편</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {breakdown.map((b) => (
+              <div key={b.type}>
+                <div style={st.bdRow}>
+                  <span>{TYPE_META[b.type]?.label ?? b.type}</span>
+                  <span style={st.muted}>
+                    {b.count}편 · {b.pct}%
+                  </span>
+                </div>
+                <div style={st.bdTrack}>
+                  <div
+                    style={{
+                      ...st.bdFill,
+                      width: `${b.pct}%`,
+                      background: TYPE_META[b.type]?.bar ?? "#8a94a3",
+                    }}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -225,5 +275,8 @@ const st: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
   ghost: { border: "1px solid #8884", borderRadius: 10, padding: "9px 14px", background: "none", color: "inherit", cursor: "pointer" },
+  bdRow: { display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 5 },
+  bdTrack: { height: 8, borderRadius: 999, background: "#8882", overflow: "hidden" },
+  bdFill: { height: "100%", borderRadius: 999 },
   input: { padding: "10px 12px", borderRadius: 10, border: "1px solid #8884", background: "transparent", color: "inherit", fontSize: 14 },
 };
