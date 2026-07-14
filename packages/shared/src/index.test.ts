@@ -37,6 +37,10 @@ describe("entryInputSchema", () => {
     expect(entryInputSchema.safeParse({ ...minimal, type: "book" }).success).toBe(false);
   });
 
+  it("예능(variety) 유형 허용", () => {
+    expect(entryInputSchema.safeParse({ ...minimal, type: "variety" }).success).toBe(true);
+  });
+
   it("reaction은 down/up/love만 허용", () => {
     expect(entryInputSchema.safeParse({ ...minimal, reaction: "love" }).success).toBe(true);
     expect(entryInputSchema.safeParse({ ...minimal, reaction: "meh" }).success).toBe(false);

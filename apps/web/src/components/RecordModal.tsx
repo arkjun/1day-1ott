@@ -6,6 +6,7 @@ import { REACTION_META, REACTION_ORDER } from "../lib/reactions";
 const TYPE_LABEL: Record<ContentType, string> = {
   movie: "영화",
   tv: "드라마",
+  variety: "예능",
   anime: "애니",
   youtube: "유튜브",
   other: "직접입력",
@@ -76,7 +77,8 @@ export function RecordModal({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const searchable = type === "movie" || type === "tv" || type === "anime";
+  const searchable =
+    type === "movie" || type === "tv" || type === "variety" || type === "anime";
 
   // 디바운스 TMDB 검색
   useEffect(() => {

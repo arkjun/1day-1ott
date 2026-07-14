@@ -26,7 +26,7 @@ const GENRE_TALK = 10767;
 
 /**
  * search/tv 는 장르 구분 없이 모든 TV 프로그램을 반환하므로 genre_ids 로 거른다.
- * anime 은 Animation 포함식(확실한 것만), tv 는 예능·토크·애니 제외식
+ * anime(16)·variety(10764/10767)는 포함식(확실한 것만), tv 는 예능·토크·애니 제외식
  * (포함식은 장르 태그가 부실한 드라마를 놓칠 수 있음).
  */
 export function matchesTypeGenre(
@@ -34,6 +34,9 @@ export function matchesTypeGenre(
   type: ContentType,
 ): boolean {
   if (type === "anime") return genreIds?.includes(GENRE_ANIMATION) ?? false;
+  if (type === "variety") {
+    return (genreIds ?? []).some((g) => g === GENRE_REALITY || g === GENRE_TALK);
+  }
   if (type === "tv") {
     const excluded = [GENRE_ANIMATION, GENRE_REALITY, GENRE_TALK];
     return !(genreIds ?? []).some((g) => excluded.includes(g));
@@ -41,13 +44,14 @@ export function matchesTypeGenre(
   return true;
 }
 
-function mapTmdb(item: TmdbItem, fallbackType: ContentType): SearchResult | null {
+export function mapTmdb(item: TmdbItem, fallbackType: ContentType): SearchResult | null {
   const title = item.title ?? item.name;
   if (!title) return null;
   const date = item.release_date ?? item.first_air_date ?? "";
+  // anime/variety 는 tv 검색 결과라도 탭 의도를 유지한다.
   const type: ContentType =
-    fallbackType === "anime"
-      ? "anime"
+    fallbackType === "anime" || fallbackType === "variety"
+      ? fallbackType
       : item.media_type === "tv" || item.name
         ? "tv"
         : "movie";

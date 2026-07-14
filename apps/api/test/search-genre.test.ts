@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchesTypeGenre } from "../src/routes/search";
+import { mapTmdb, matchesTypeGenre } from "../src/routes/search";
 
 /**
  * TMDB search/tv 는 장르 구분 없이 모든 TV 프로그램을 반환하므로
@@ -32,5 +32,26 @@ describe("matchesTypeGenre", () => {
   it("movie: 항상 통과 (애니 영화 포함)", () => {
     expect(matchesTypeGenre([16], "movie")).toBe(true);
     expect(matchesTypeGenre(undefined, "movie")).toBe(true);
+  });
+
+  it("variety: 예능(10764)/토크(10767) 포함식", () => {
+    expect(matchesTypeGenre([10764], "variety")).toBe(true);
+    expect(matchesTypeGenre([10767, 35], "variety")).toBe(true);
+    expect(matchesTypeGenre([18], "variety")).toBe(false);
+    expect(matchesTypeGenre([], "variety")).toBe(false);
+    expect(matchesTypeGenre(undefined, "variety")).toBe(false);
+  });
+});
+
+describe("mapTmdb", () => {
+  const item = { id: 1, name: "놀면 뭐하니?", first_air_date: "2019-07-27" };
+
+  it("variety 탭 검색 결과는 type=variety 로 매핑 (tv 로 저장되면 안 됨)", () => {
+    expect(mapTmdb(item, "variety")?.type).toBe("variety");
+  });
+
+  it("tv/anime 매핑은 기존대로", () => {
+    expect(mapTmdb(item, "tv")?.type).toBe("tv");
+    expect(mapTmdb(item, "anime")?.type).toBe("anime");
   });
 });

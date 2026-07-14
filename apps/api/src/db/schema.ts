@@ -80,7 +80,7 @@ export const content = sqliteTable(
   "content",
   {
     id: text("id").primaryKey(),
-    type: text("type").notNull(), // movie|tv|anime|youtube|other
+    type: text("type").notNull(), // movie|tv|variety|anime|youtube|other
     tmdbId: integer("tmdb_id"),
     ytId: text("yt_id"),
     title: text("title").notNull(),

@@ -12,6 +12,7 @@ import { useTheme } from "./lib/theme";
 const TYPE_META: Record<string, { label: string; bar: string }> = {
   movie: { label: "영화", bar: "linear-gradient(90deg,#ff5a36,#ff8a5c)" },
   tv: { label: "드라마", bar: "linear-gradient(90deg,#2f7bff,#5aa0ff)" },
+  variety: { label: "예능", bar: "linear-gradient(90deg,#f5a623,#ffc45c)" },
   youtube: { label: "유튜브", bar: "linear-gradient(90deg,#ff3d3d,#ff7a7a)" },
   anime: { label: "애니", bar: "linear-gradient(90deg,#37b25c,#63d987)" },
   other: { label: "직접입력", bar: "linear-gradient(90deg,#8a94a3,#b3bcc9)" },
