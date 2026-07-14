@@ -35,4 +35,13 @@ export const api = {
     ),
   yt: (url: string) =>
     req<{ result: SearchResult }>(`/api/yt?url=${encodeURIComponent(url)}`),
+  updateMe: (patch: { username?: string; isPublic?: boolean }) =>
+    req<{ ok: boolean }>("/api/me", {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+  publicProfile: (username: string) =>
+    req<import("@1ott/shared").PublicProfile>(
+      `/api/u/${encodeURIComponent(username)}`,
+    ),
 };

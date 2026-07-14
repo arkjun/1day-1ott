@@ -1,14 +1,11 @@
 import type { HeatmapCell } from "@1ott/shared";
 import { useEffect, useMemo, useState } from "react";
 import ActivityCalendar from "react-activity-calendar";
+import { PublicProfile } from "./components/PublicProfile";
 import { RecordModal } from "./components/RecordModal";
 import { api, type EntryRow } from "./lib/api";
 import { signIn, signOut, signUp, useSession } from "./lib/authClient";
-
-const GREEN = {
-  light: ["#e9ecf1", "#b9e6c4", "#74d089", "#37b25c", "#157f3b"],
-  dark: ["#1b212b", "#0e4429", "#14683a", "#26a148", "#3fd35b"],
-};
+import { GREEN, buildYear, currentStreak, isoDaysAgo, prefersDark } from "./lib/heatmap";
 
 const TYPE_META: Record<string, { label: string; bar: string }> = {
   movie: { label: "영화", bar: "linear-gradient(90deg,#ff5a36,#ff8a5c)" },
@@ -18,36 +15,11 @@ const TYPE_META: Record<string, { label: string; bar: string }> = {
   other: { label: "직접입력", bar: "linear-gradient(90deg,#8a94a3,#b3bcc9)" },
 };
 
-function isoDaysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  const p = (x: number) => String(x).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-/** /api/heatmap 셀을 지난 365일 전체로 패딩(빈 날 level0). */
-function buildYear(cells: HeatmapCell[]) {
-  const byDate = new Map(cells.map((c) => [c.date, c]));
-  const out: { date: string; count: number; level: number }[] = [];
-  for (let i = 364; i >= 0; i--) {
-    const date = isoDaysAgo(i);
-    const hit = byDate.get(date);
-    out.push({ date, count: hit?.count ?? 0, level: hit?.level ?? 0 });
-  }
-  return out;
-}
-
-/** 오늘(또는 어제)부터 뒤로 연속 기록 일수. */
-function currentStreak(cells: HeatmapCell[]): number {
-  const has = new Set(cells.filter((c) => c.count > 0).map((c) => c.date));
-  let streak = 0;
-  // 오늘 기록이 없으면 어제부터 카운트(오늘은 아직 안 봤을 수 있음).
-  let start = has.has(isoDaysAgo(0)) ? 0 : 1;
-  for (let i = start; i < 400; i++) {
-    if (has.has(isoDaysAgo(i))) streak++;
-    else break;
-  }
-  return streak;
+interface SessionUser {
+  id: string;
+  name: string;
+  username?: string | null;
+  isPublic?: boolean | null;
 }
 
 function Stat({ k, v, unit, accent }: { k: string; v: number; unit: string; accent?: boolean }) {
@@ -62,15 +34,11 @@ function Stat({ k, v, unit, accent }: { k: string; v: number; unit: string; acce
   );
 }
 
-function Dashboard() {
+function Dashboard({ user }: { user: SessionUser }) {
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [cells, setCells] = useState<HeatmapCell[]>([]);
   const [open, setOpen] = useState(false);
-  const scheme =
-    typeof window !== "undefined" &&
-    window.matchMedia?.("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
+  const scheme = prefersDark();
 
   async function refresh() {
     const [e, h] = await Promise.all([api.listEntries(), api.heatmap()]);
@@ -120,6 +88,8 @@ function Dashboard() {
         <Stat k="이번 달" v={thisMonth} unit="편" />
         <Stat k="총 기록" v={entries.length} unit="편" />
       </div>
+
+      <ShareSettings user={user} />
 
       <div style={st.card}>
         <div style={st.cardHead}>
@@ -246,10 +216,92 @@ function Auth() {
   );
 }
 
-export function App() {
+/** 공개 프로필 설정 + 공유. username/공개여부를 PATCH /api/me 로 저장. */
+function ShareSettings({ user }: { user: SessionUser }) {
+  const [username, setUsername] = useState(user.username ?? "");
+  const [isPublic, setIsPublic] = useState(!!user.isPublic);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const profileUrl =
+    user.username ? `${window.location.origin}/u/${user.username}` : null;
+
+  async function save() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      await api.updateMe({ username: username || undefined, isPublic });
+      setMsg("저장됨 — 새로고침 중…");
+      setTimeout(() => window.location.reload(), 600);
+    } catch {
+      setMsg("실패: username 중복이거나 형식(소문자/숫자/_ 3~20자) 오류");
+      setBusy(false);
+    }
+  }
+
+  async function copy() {
+    if (!profileUrl) return;
+    await navigator.clipboard.writeText(profileUrl);
+    setMsg("링크 복사됨!");
+    setTimeout(() => setMsg(null), 1500);
+  }
+
+  return (
+    <div style={st.card}>
+      <div style={st.cardHead}>
+        <b>공개 프로필</b>
+        {user.isPublic && user.username && (
+          <span style={st.muted}>/u/{user.username} 공개 중</span>
+        )}
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={st.muted}>@</span>
+        <input
+          style={{ ...st.input, width: 160 }}
+          placeholder="username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value.toLowerCase())}
+        />
+        <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 14 }}>
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
+          />
+          공개
+        </label>
+        <button style={st.ghost} disabled={busy} onClick={save}>
+          저장
+        </button>
+        {profileUrl && (
+          <>
+            <button style={st.ghost} onClick={copy}>
+              링크 복사
+            </button>
+            <a style={{ ...st.ghost, textDecoration: "none" }} href={profileUrl} target="_blank" rel="noreferrer">
+              프로필 열기 ↗
+            </a>
+          </>
+        )}
+      </div>
+      {msg && <div style={{ ...st.muted, marginTop: 8 }}>{msg}</div>}
+    </div>
+  );
+}
+
+function AuthedApp() {
   const { data: session, isPending } = useSession();
   if (isPending) return <p style={{ padding: 24 }}>로딩…</p>;
-  return session?.user ? <Dashboard /> : <Auth />;
+  return session?.user ? <Dashboard user={session.user as SessionUser} /> : <Auth />;
+}
+
+export function App() {
+  const path = window.location.pathname;
+  if (path.startsWith("/u/")) {
+    const username = decodeURIComponent(path.slice(3).split("/")[0] ?? "");
+    if (username) return <PublicProfile username={username} />;
+  }
+  return <AuthedApp />;
 }
 
 const st: Record<string, React.CSSProperties> = {

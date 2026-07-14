@@ -3,6 +3,8 @@ import { cors } from "hono/cors";
 import { createAuth } from "./auth";
 import type { Env } from "./env";
 import { entriesRoute } from "./routes/entries";
+import { meRoute } from "./routes/me";
+import { publicRoute } from "./routes/public";
 import { searchRoute } from "./routes/search";
 
 type Vars = { userId: string };
@@ -27,10 +29,14 @@ app.on(["GET", "POST"], "/api/auth/*", (c) => {
   return auth.handler(c.req.raw);
 });
 
-// 인증 게이트: /api/entries, /api/heatmap 등 도메인 라우트.
+// 공개 라우트(무인증): 공개 프로필 + 잔디 SVG. 인증 게이트보다 먼저.
+app.route("/api", publicRoute);
+
+// 인증 게이트: /api/entries, /api/heatmap, /api/me 등 도메인 라우트.
 app.use("/api/*", async (c, next) => {
-  // auth 경로는 위에서 이미 처리됨.
+  // auth·public 경로는 인증 불필요.
   if (c.req.path.startsWith("/api/auth/")) return next();
+  if (c.req.path.startsWith("/api/u/")) return next();
   const auth = createAuth(c.env);
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!session?.user) return c.json({ error: "unauthorized" }, 401);
@@ -40,5 +46,6 @@ app.use("/api/*", async (c, next) => {
 
 app.route("/api", entriesRoute);
 app.route("/api", searchRoute);
+app.route("/api", meRoute);
 
 export default app;

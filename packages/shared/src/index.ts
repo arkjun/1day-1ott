@@ -43,6 +43,15 @@ export interface SearchResult {
   subtitle?: string;
 }
 
+/** 공개 프로필 응답. */
+export interface PublicProfile {
+  username: string;
+  name: string;
+  total: number;
+  cells: HeatmapCell[];
+  posters: { id: string; title: string; posterUrl: string | null }[];
+}
+
 export function countToLevel(count: number): HeatmapCell["level"] {
   if (count <= 0) return 0;
   if (count === 1) return 1;
