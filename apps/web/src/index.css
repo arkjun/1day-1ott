@@ -1,0 +1,103 @@
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #f3f4f7;
+  --text: #161a22;
+  --muted: #626b7b;
+  --faint: #8b94a3;
+  --border: #e6e9ef;
+  --accent: #ff5a36;
+  --accent-ink: #d63a17;
+  --accent-weak: rgba(255, 90, 54, 0.12);
+  --shadow: 0 1px 2px rgba(20, 26, 38, 0.04), 0 8px 24px rgba(20, 26, 38, 0.06);
+  --radius: 14px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c0e12;
+    --surface: #151922;
+    --surface-2: #1b202b;
+    --text: #e8ebf1;
+    --muted: #98a1b2;
+    --faint: #6b7484;
+    --border: #232a36;
+    --accent: #ff6a49;
+    --accent-ink: #ff8367;
+    --accent-weak: rgba(255, 106, 73, 0.16);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="light"] {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #f3f4f7;
+  --text: #161a22;
+  --muted: #626b7b;
+  --faint: #8b94a3;
+  --border: #e6e9ef;
+  --accent: #ff5a36;
+  --accent-ink: #d63a17;
+  --accent-weak: rgba(255, 90, 54, 0.12);
+  --shadow: 0 1px 2px rgba(20, 26, 38, 0.04), 0 8px 24px rgba(20, 26, 38, 0.06);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0c0e12;
+  --surface: #151922;
+  --surface-2: #1b202b;
+  --text: #e8ebf1;
+  --muted: #98a1b2;
+  --faint: #6b7484;
+  --border: #232a36;
+  --accent: #ff6a49;
+  --accent-ink: #ff8367;
+  --accent-weak: rgba(255, 106, 73, 0.16);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Pretendard", "Apple SD Gothic Neo", -apple-system, "Segoe UI",
+    "Helvetica Neue", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+input,
+select,
+button {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: var(--accent-ink);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

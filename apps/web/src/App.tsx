@@ -5,7 +5,8 @@ import { PublicProfile } from "./components/PublicProfile";
 import { RecordModal } from "./components/RecordModal";
 import { api, type EntryRow } from "./lib/api";
 import { signIn, signOut, signUp, useSession } from "./lib/authClient";
-import { GREEN, buildYear, currentStreak, isoDaysAgo, prefersDark } from "./lib/heatmap";
+import { GREEN, buildYear, currentStreak, isoDaysAgo } from "./lib/heatmap";
+import { useTheme } from "./lib/theme";
 
 const TYPE_META: Record<string, { label: string; bar: string }> = {
   movie: { label: "영화", bar: "linear-gradient(90deg,#ff5a36,#ff8a5c)" },
@@ -38,7 +39,7 @@ function Dashboard({ user }: { user: SessionUser }) {
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [cells, setCells] = useState<HeatmapCell[]>([]);
   const [open, setOpen] = useState(false);
-  const scheme = prefersDark();
+  const { resolved: scheme, toggle } = useTheme();
 
   async function refresh() {
     const [e, h] = await Promise.all([api.listEntries(), api.heatmap()]);
@@ -74,6 +75,9 @@ function Dashboard({ user }: { user: SessionUser }) {
       <div style={st.top}>
         <b style={{ fontSize: 18, letterSpacing: "-0.02em" }}>🌱 1일 1OTT</b>
         <div style={{ display: "flex", gap: 8 }}>
+          <button style={st.iconBtn} onClick={toggle} aria-label="테마 전환" title="테마 전환">
+            {scheme === "dark" ? "☀️" : "🌙"}
+          </button>
           <button style={st.primary} onClick={() => setOpen(true)}>
             + 기록
           </button>
@@ -308,27 +312,28 @@ const st: Record<string, React.CSSProperties> = {
   wrap: { maxWidth: 780, margin: "0 auto", padding: "28px 20px 60px" },
   top: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   stats: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 16 },
-  tile: { border: "1px solid #8883", borderRadius: 14, padding: "14px 16px" },
-  tileK: { fontSize: 12, color: "#8890a0" },
+  tile: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "14px 16px", boxShadow: "var(--shadow)" },
+  tileK: { fontSize: 12, color: "var(--muted)" },
   tileV: { marginTop: 6, fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" },
-  tileU: { fontSize: 13, fontWeight: 600, color: "#8890a0", marginLeft: 3 },
-  card: { border: "1px solid #8883", borderRadius: 14, padding: 18, marginBottom: 16 },
+  tileU: { fontSize: 13, fontWeight: 600, color: "var(--muted)", marginLeft: 3 },
+  card: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 18, marginBottom: 16, boxShadow: "var(--shadow)" },
   cardHead: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 },
-  muted: { color: "#8890a0", fontSize: 12 },
+  muted: { color: "var(--muted)", fontSize: 12 },
   posterGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(78px,1fr))", gap: 10 },
-  poster: { width: "100%", aspectRatio: "2 / 3", objectFit: "cover", borderRadius: 8 },
+  poster: { width: "100%", aspectRatio: "2 / 3", objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" },
   primary: {
     border: 0,
     borderRadius: 10,
     padding: "9px 16px",
-    background: "linear-gradient(135deg,#ff5a36,#d63a17)",
+    background: "linear-gradient(135deg,var(--accent),var(--accent-ink))",
     color: "#fff",
     fontWeight: 700,
-    cursor: "pointer",
+    boxShadow: "0 4px 14px var(--accent-weak)",
   },
-  ghost: { border: "1px solid #8884", borderRadius: 10, padding: "9px 14px", background: "none", color: "inherit", cursor: "pointer" },
+  ghost: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 14px", background: "var(--surface)", color: "inherit" },
+  iconBtn: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px", background: "var(--surface)", lineHeight: 1 },
   bdRow: { display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 5 },
-  bdTrack: { height: 8, borderRadius: 999, background: "#8882", overflow: "hidden" },
+  bdTrack: { height: 8, borderRadius: 999, background: "var(--surface-2)", overflow: "hidden" },
   bdFill: { height: "100%", borderRadius: 999 },
-  input: { padding: "10px 12px", borderRadius: 10, border: "1px solid #8884", background: "transparent", color: "inherit", fontSize: 14 },
+  input: { padding: "10px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface-2)", color: "inherit", fontSize: 14 },
 };

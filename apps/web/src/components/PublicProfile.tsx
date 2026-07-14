@@ -2,7 +2,8 @@ import type { PublicProfile as Profile } from "@1ott/shared";
 import { useEffect, useState } from "react";
 import ActivityCalendar from "react-activity-calendar";
 import { api } from "../lib/api";
-import { GREEN, buildYear, currentStreak, isoDaysAgo, prefersDark } from "../lib/heatmap";
+import { GREEN, buildYear, currentStreak, isoDaysAgo } from "../lib/heatmap";
+import { useTheme } from "../lib/theme";
 
 /** SVG 잔디를 클라이언트 canvas 로 PNG 변환 후 다운로드(폰트/서버 렌더 불필요). */
 async function downloadPng(username: string) {
@@ -38,6 +39,7 @@ export function PublicProfile({ username }: { username: string }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [state, setState] = useState<"loading" | "ok" | "notfound">("loading");
   const [copied, setCopied] = useState(false);
+  const { resolved: scheme, toggle } = useTheme();
 
   useEffect(() => {
     api
@@ -54,8 +56,8 @@ export function PublicProfile({ username }: { username: string }) {
     return (
       <div style={{ maxWidth: 480, margin: "80px auto", padding: 24, textAlign: "center" }}>
         <h2>프로필을 찾을 수 없어요</h2>
-        <p style={{ color: "#8890a0" }}>비공개거나 없는 사용자입니다.</p>
-        <a href="/" style={{ color: "#ff5a36" }}>홈으로</a>
+        <p style={{ color: "var(--muted)" }}>비공개거나 없는 사용자입니다.</p>
+        <a href="/">홈으로</a>
       </div>
     );
 
@@ -80,6 +82,9 @@ export function PublicProfile({ username }: { username: string }) {
           <h1 style={{ margin: "2px 0 0" }}>@{profile.username}</h1>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
+          <button style={st.iconBtn} onClick={toggle} aria-label="테마 전환" title="테마 전환">
+            {scheme === "dark" ? "☀️" : "🌙"}
+          </button>
           <button style={st.ghost} onClick={copyLink}>
             {copied ? "복사됨!" : "링크 복사"}
           </button>
@@ -103,7 +108,7 @@ export function PublicProfile({ username }: { username: string }) {
         <div style={{ overflowX: "auto" }}>
           <ActivityCalendar
             data={year}
-            colorScheme={prefersDark()}
+            colorScheme={scheme}
             theme={GREEN}
             blockSize={12}
             blockMargin={3}
@@ -146,15 +151,16 @@ const st: Record<string, React.CSSProperties> = {
   wrap: { maxWidth: 780, margin: "0 auto", padding: "28px 20px 60px" },
   top: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
   stats: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 16 },
-  tile: { border: "1px solid #8883", borderRadius: 14, padding: "14px 16px" },
-  tileK: { fontSize: 12, color: "#8890a0" },
+  tile: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "14px 16px", boxShadow: "var(--shadow)" },
+  tileK: { fontSize: 12, color: "var(--muted)" },
   tileV: { marginTop: 6, fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" },
-  tileU: { fontSize: 13, fontWeight: 600, color: "#8890a0", marginLeft: 3 },
-  card: { border: "1px solid #8883", borderRadius: 14, padding: 18, marginBottom: 16 },
+  tileU: { fontSize: 13, fontWeight: 600, color: "var(--muted)", marginLeft: 3 },
+  card: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 18, marginBottom: 16, boxShadow: "var(--shadow)" },
   cardHead: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 },
-  muted: { color: "#8890a0", fontSize: 12 },
+  muted: { color: "var(--muted)", fontSize: 12 },
   posterGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(78px,1fr))", gap: 10 },
-  poster: { width: "100%", aspectRatio: "2 / 3", objectFit: "cover", borderRadius: 8 },
-  primary: { border: 0, borderRadius: 10, padding: "9px 16px", background: "linear-gradient(135deg,#ff5a36,#d63a17)", color: "#fff", fontWeight: 700, cursor: "pointer" },
-  ghost: { border: "1px solid #8884", borderRadius: 10, padding: "9px 14px", background: "none", color: "inherit", cursor: "pointer" },
+  poster: { width: "100%", aspectRatio: "2 / 3", objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" },
+  primary: { border: 0, borderRadius: 10, padding: "9px 16px", background: "linear-gradient(135deg,var(--accent),var(--accent-ink))", color: "#fff", fontWeight: 700, boxShadow: "0 4px 14px var(--accent-weak)" },
+  ghost: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 14px", background: "var(--surface)", color: "inherit" },
+  iconBtn: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px", background: "var(--surface)", lineHeight: 1 },
 };
