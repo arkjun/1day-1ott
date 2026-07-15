@@ -1,16 +1,8 @@
 import { contentTypes, type ContentType, type EntryInput, type Reaction, type SearchResult } from "@1ott/shared";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { REACTION_META, REACTION_ORDER } from "../lib/reactions";
-
-const TYPE_LABEL: Record<ContentType, string> = {
-  movie: "영화",
-  tv: "드라마",
-  variety: "예능",
-  anime: "애니",
-  youtube: "유튜브",
-  other: "직접입력",
-};
 
 function todayStr(): string {
   const d = new Date();
@@ -26,6 +18,7 @@ export function ReactionPicker({
   value: Reaction | null;
   onChange: (r: Reaction | null) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", gap: 6 }}>
       {REACTION_ORDER.map((r) => {
@@ -35,7 +28,7 @@ export function ReactionPicker({
             key={r}
             type="button"
             onClick={() => onChange(on ? null : r)}
-            title={REACTION_META[r].label}
+            title={t(`reaction.${r}`)}
             style={{
               display: "flex",
               alignItems: "center",
@@ -50,7 +43,7 @@ export function ReactionPicker({
             }}
           >
             <span>{REACTION_META[r].emoji}</span>
-            <span>{REACTION_META[r].label}</span>
+            <span>{t(`reaction.${r}`)}</span>
           </button>
         );
       })}
@@ -65,6 +58,7 @@ export function RecordModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation();
   const [type, setType] = useState<ContentType>("movie");
   const [q, setQ] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -114,7 +108,7 @@ export function RecordModal({
       const r = await api.yt(ytUrl.trim());
       setPicked(r.result);
     } catch {
-      setErr("유튜브 URL을 인식하지 못했습니다.");
+      setErr(t("modal.ytError"));
     }
   }
 
@@ -142,7 +136,7 @@ export function RecordModal({
       };
     }
     if (!input) {
-      setErr("제목을 선택하거나 입력하세요.");
+      setErr(t("modal.needTitle"));
       return;
     }
     setBusy(true);
@@ -151,7 +145,7 @@ export function RecordModal({
       onSaved();
       onClose();
     } catch {
-      setErr("저장 실패");
+      setErr(t("modal.saveFailed"));
     } finally {
       setBusy(false);
     }
@@ -161,24 +155,24 @@ export function RecordModal({
     <div style={S.backdrop} onClick={onClose}>
       <div style={S.modal} onClick={(e) => e.stopPropagation()}>
         <div style={S.head}>
-          <b>오늘 뭐 봤어요?</b>
-          <button style={S.x} onClick={onClose} aria-label="닫기">
+          <b>{t("modal.title")}</b>
+          <button style={S.x} onClick={onClose} aria-label={t("common.close")}>
             ✕
           </button>
         </div>
 
         {/* 유형 탭 */}
         <div style={S.tabs}>
-          {contentTypes.map((t) => (
+          {contentTypes.map((ct) => (
             <button
-              key={t}
+              key={ct}
               onClick={() => {
-                setType(t);
+                setType(ct);
                 reset();
               }}
-              style={{ ...S.tab, ...(type === t ? S.tabOn : {}) }}
+              style={{ ...S.tab, ...(type === ct ? S.tabOn : {}) }}
             >
-              {TYPE_LABEL[t]}
+              {t(`type.${ct}`)}
             </button>
           ))}
         </div>
@@ -192,26 +186,26 @@ export function RecordModal({
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700 }}>{picked.title}</div>
               <div style={S.muted}>
-                {TYPE_LABEL[picked.type]}
+                {t(`type.${picked.type}`)}
                 {picked.year ? ` · ${picked.year}` : ""}
                 {picked.subtitle ? ` · ${picked.subtitle}` : ""}
               </div>
             </div>
             <button style={S.link} onClick={reset}>
-              변경
+              {t("common.change")}
             </button>
           </div>
         ) : type === "youtube" ? (
           <div style={S.row}>
             <input
               style={S.input}
-              placeholder="YouTube URL 붙여넣기"
+              placeholder={t("modal.ytPlaceholder")}
               value={ytUrl}
               onChange={(e) => setYtUrl(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && lookupYt()}
             />
             <button style={S.btn} onClick={lookupYt}>
-              가져오기
+              {t("action.fetch")}
             </button>
           </div>
         ) : (
@@ -219,16 +213,14 @@ export function RecordModal({
             <input
               style={S.input}
               placeholder={
-                searchable ? "제목 검색 (TMDB)" : "제목 직접 입력"
+                searchable ? t("modal.searchPlaceholder") : t("modal.manualPlaceholder")
               }
               value={q}
               onChange={(e) => setQ(e.target.value)}
               autoFocus
             />
             {searchable && tmdbOff && (
-              <div style={S.hint}>
-                TMDB 토큰 미설정 — 지금은 직접 입력으로 저장됩니다.
-              </div>
+              <div style={S.hint}>{t("modal.tmdbOff")}</div>
             )}
             {results.length > 0 && (
               <div style={S.dropdown}>
@@ -257,7 +249,7 @@ export function RecordModal({
         {/* 메타 */}
         <div style={{ marginTop: 12 }}>
           <label style={{ ...S.field, maxWidth: 180 }}>
-            <span style={S.muted}>날짜</span>
+            <span style={S.muted}>{t("modal.date")}</span>
             <input
               type="date"
               style={S.input}
@@ -266,13 +258,13 @@ export function RecordModal({
             />
           </label>
           <div style={{ marginTop: 10 }}>
-            <div style={{ ...S.muted, marginBottom: 6 }}>어땠어요?</div>
+            <div style={{ ...S.muted, marginBottom: 6 }}>{t("modal.reactionPrompt")}</div>
             <ReactionPicker value={reaction} onChange={setReaction} />
           </div>
         </div>
         <input
           style={{ ...S.input, marginTop: 8 }}
-          placeholder="한 줄 감상 (선택)"
+          placeholder={t("note.placeholderOptional")}
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
@@ -284,7 +276,7 @@ export function RecordModal({
           disabled={busy}
           onClick={save}
         >
-          기록하기
+          {t("action.submitRecord")}
         </button>
       </div>
     </div>

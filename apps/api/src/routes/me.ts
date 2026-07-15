@@ -13,6 +13,7 @@ const patchSchema = z.object({
     .regex(/^[a-z0-9_]{3,20}$/, "소문자/숫자/_ 3~20자")
     .optional(),
   isPublic: z.boolean().optional(),
+  lang: z.enum(["ko", "en", "ja"]).optional(),
 });
 
 /** 프로필 설정: username(공개용, 유일) + 공개 여부. */
@@ -27,6 +28,7 @@ meRoute.patch("/me", async (c) => {
   const patch: Record<string, unknown> = { updatedAt: new Date() };
   if (parsed.data.username !== undefined) patch.username = parsed.data.username;
   if (parsed.data.isPublic !== undefined) patch.isPublic = parsed.data.isPublic;
+  if (parsed.data.lang !== undefined) patch.lang = parsed.data.lang;
 
   try {
     await db.update(schema.user).set(patch).where(eq(schema.user.id, userId));

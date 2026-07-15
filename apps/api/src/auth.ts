@@ -24,6 +24,7 @@ export function createAuth(env: Env) {
       additionalFields: {
         username: { type: "string", required: false, input: true },
         isPublic: { type: "boolean", required: false, input: false },
+        lang: { type: "string", required: false, input: true },
       },
     },
     // GitHub 소셜은 키가 있을 때만 활성화(M0에선 보통 undefined).

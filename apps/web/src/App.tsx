@@ -1,9 +1,12 @@
 import type { HeatmapCell, Reaction } from "@1ott/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ActivityCalendar from "react-activity-calendar";
+import { useTranslation } from "react-i18next";
 import { CalendarView } from "./components/CalendarView";
 import { PublicProfile } from "./components/PublicProfile";
 import { RecordModal, ReactionPicker } from "./components/RecordModal";
+import { activityLabels } from "./i18n/format";
+import { LanguageSelect } from "./components/LanguageSelect";
 import { api, type EntryRow } from "./lib/api";
 import { signIn, signOut, signUp, useSession } from "./lib/authClient";
 import { GREEN, buildYear, currentStreak, isoDaysAgo } from "./lib/heatmap";
@@ -16,6 +19,7 @@ interface SessionUser {
   name: string;
   username?: string | null;
   isPublic?: boolean | null;
+  lang?: string | null;
 }
 
 function Stat({ k, v, unit, accent }: { k: string; v: number; unit: string; accent?: boolean }) {
@@ -32,6 +36,7 @@ function Stat({ k, v, unit, accent }: { k: string; v: number; unit: string; acce
 
 /** 최근 기록 한 줄: 인라인 수정(반응/감상/날짜) + 2단계 삭제. */
 function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: () => void }) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [watchedOn, setWatchedOn] = useState(entry.watchedOn);
@@ -68,7 +73,7 @@ function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: () => vo
     return (
       <div style={st.entryEdit}>
         <div style={{ fontWeight: 600, marginBottom: 8 }}>
-          {entry.type} · {entry.title}
+          {t(`type.${entry.type}`)} · {entry.title}
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <input
@@ -81,16 +86,16 @@ function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: () => vo
         </div>
         <input
           style={{ ...st.input, width: "100%", marginTop: 8 }}
-          placeholder="한 줄 감상"
+          placeholder={t("note.placeholder")}
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <button style={st.primary} disabled={busy} onClick={save}>
-            저장
+            {t("common.save")}
           </button>
           <button style={st.ghost} onClick={() => setEditing(false)}>
-            취소
+            {t("common.cancel")}
           </button>
         </div>
       </div>
@@ -100,26 +105,26 @@ function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: () => vo
   return (
     <div style={st.entryRow}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <b>{entry.watchedOn}</b> · {entry.type} · {entry.title}
+        <b>{entry.watchedOn}</b> · {t(`type.${entry.type}`)} · {entry.title}
         {entry.reaction ? ` · ${REACTION_META[entry.reaction].emoji}` : ""}
         {entry.note ? <span style={st.muted}> · {entry.note}</span> : null}
       </div>
       <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
         <button style={st.smallBtn} onClick={() => setEditing(true)}>
-          수정
+          {t("common.edit")}
         </button>
         {confirmDel ? (
           <>
             <button style={{ ...st.smallBtn, color: "crimson" }} disabled={busy} onClick={del}>
-              정말?
+              {t("common.confirmDelete")}
             </button>
             <button style={st.smallBtn} onClick={() => setConfirmDel(false)}>
-              취소
+              {t("common.cancel")}
             </button>
           </>
         ) : (
           <button style={st.smallBtn} onClick={() => setConfirmDel(true)}>
-            삭제
+            {t("common.del")}
           </button>
         )}
       </div>
@@ -128,6 +133,7 @@ function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: () => vo
 }
 
 function Dashboard({ user }: { user: SessionUser }) {
+  const { t, i18n } = useTranslation();
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [cells, setCells] = useState<HeatmapCell[]>([]);
   const [open, setOpen] = useState(false);
@@ -178,14 +184,15 @@ function Dashboard({ user }: { user: SessionUser }) {
       <div style={st.top}>
         <b style={{ fontSize: 18, letterSpacing: "-0.02em" }}>🌱 1일 1OTT</b>
         <div style={{ display: "flex", gap: 8 }}>
-          <button style={st.iconBtn} onClick={toggle} aria-label="테마 전환" title="테마 전환">
+          <LanguageSelect user={user} />
+          <button style={st.iconBtn} onClick={toggle} aria-label={t("action.toggleTheme")} title={t("action.toggleTheme")}>
             {scheme === "dark" ? "☀️" : "🌙"}
           </button>
           <button style={st.primary} onClick={() => setOpen(true)}>
-            + 기록
+            {t("action.addRecord")}
           </button>
           <button style={st.ghost} onClick={() => signOut()}>
-            로그아웃
+            {t("action.logout")}
           </button>
         </div>
       </div>
@@ -197,7 +204,7 @@ function Dashboard({ user }: { user: SessionUser }) {
             style={{ ...st.viewTab, ...(view === v ? st.viewTabActive : {}) }}
             onClick={() => setView(v)}
           >
-            {v === "home" ? "홈" : "달력"}
+            {v === "home" ? t("nav.home") : t("nav.calendar")}
           </button>
         ))}
       </div>
@@ -207,17 +214,17 @@ function Dashboard({ user }: { user: SessionUser }) {
       ) : (
         <>
       <div style={st.stats}>
-        <Stat k="🔥 현재 연속" v={streak} unit="일" accent />
-        <Stat k="이번 달" v={thisMonth} unit="편" />
-        <Stat k="총 기록" v={entries.length} unit="편" />
+        <Stat k={t("stat.streak")} v={streak} unit={t("unit.day", { count: streak })} accent />
+        <Stat k={t("stat.thisMonth")} v={thisMonth} unit={t("unit.entry", { count: thisMonth })} />
+        <Stat k={t("stat.total")} v={entries.length} unit={t("unit.entry", { count: entries.length })} />
       </div>
 
       <ShareSettings user={user} />
 
       <div style={st.card}>
         <div style={st.cardHead}>
-          <b>잔디</b>
-          <span style={st.muted}>하루 1칸 · 색이 진할수록 그날 많이 봄</span>
+          <b>{t("heatmap.title")}</b>
+          <span style={st.muted}>{t("heatmap.hint")}</span>
         </div>
         <div ref={heatmapRef} style={{ overflowX: "auto" }}>
           <ActivityCalendar
@@ -226,7 +233,7 @@ function Dashboard({ user }: { user: SessionUser }) {
             theme={GREEN}
             blockSize={12}
             blockMargin={3}
-            labels={{ totalCount: "{{count}}편 기록" }}
+            labels={activityLabels(i18n.language)}
           />
         </div>
       </div>
@@ -234,8 +241,8 @@ function Dashboard({ user }: { user: SessionUser }) {
       {posters.length > 0 && (
         <div style={st.card}>
           <div style={st.cardHead}>
-            <b>포스터</b>
-            <span style={st.muted}>최근 기록</span>
+            <b>{t("posters.title")}</b>
+            <span style={st.muted}>{t("posters.recent")}</span>
           </div>
           <div style={st.posterGrid}>
             {posters.map((e) => (
@@ -248,16 +255,16 @@ function Dashboard({ user }: { user: SessionUser }) {
       {breakdown.length > 0 && (
         <div style={st.card}>
           <div style={st.cardHead}>
-            <b>유형별</b>
-            <span style={st.muted}>총 {entries.length}편</span>
+            <b>{t("byType.title")}</b>
+            <span style={st.muted}>{t("byType.total", { count: entries.length })}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {breakdown.map((b) => (
               <div key={b.type}>
                 <div style={st.bdRow}>
-                  <span>{TYPE_META[b.type]?.label ?? b.type}</span>
+                  <span>{t(`type.${b.type}`)}</span>
                   <span style={st.muted}>
-                    {b.count}편 · {b.pct}%
+                    {t("count.entry", { count: b.count })} · {b.pct}%
                   </span>
                 </div>
                 <div style={st.bdTrack}>
@@ -277,15 +284,13 @@ function Dashboard({ user }: { user: SessionUser }) {
 
       <div style={st.card}>
         <div style={st.cardHead}>
-          <b>최근 기록</b>
+          <b>{t("recent.title")}</b>
         </div>
         <div>
           {entries.slice(0, 20).map((e) => (
             <RecentItem key={e.id} entry={e} onChanged={refresh} />
           ))}
-          {entries.length === 0 && (
-            <div style={st.muted}>아직 기록이 없어요. “+ 기록”을 눌러보세요.</div>
-          )}
+          {entries.length === 0 && <div style={st.muted}>{t("recent.empty")}</div>}
         </div>
       </div>
         </>
@@ -297,6 +302,7 @@ function Dashboard({ user }: { user: SessionUser }) {
 }
 
 function Auth() {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -310,31 +316,34 @@ function Auth() {
       mode === "up"
         ? await signUp.email({ email, password, name: name || email })
         : await signIn.email({ email, password });
-    if (res.error) setErr(res.error.message ?? "실패");
+    if (res.error) setErr(res.error.message ?? t("auth.failed"));
   }
 
   return (
     <div style={{ maxWidth: 360, margin: "80px auto", padding: 24 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+        <LanguageSelect />
+      </div>
       <h1>🌱 1일 1OTT</h1>
       <form onSubmit={submit} style={{ display: "grid", gap: 8 }}>
         {mode === "up" && (
-          <input style={st.input} placeholder="이름" value={name} onChange={(e) => setName(e.target.value)} />
+          <input style={st.input} placeholder={t("auth.name")} value={name} onChange={(e) => setName(e.target.value)} />
         )}
-        <input style={st.input} placeholder="이메일" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input style={st.input} placeholder={t("auth.email")} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input
           style={st.input}
-          placeholder="비밀번호(8자+)"
+          placeholder={t("auth.password")}
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
         <button style={st.primary} type="submit">
-          {mode === "up" ? "가입" : "로그인"}
+          {mode === "up" ? t("auth.signup") : t("auth.signin")}
         </button>
       </form>
       {err && <p style={{ color: "crimson" }}>{err}</p>}
       <button style={{ ...st.ghost, marginTop: 12 }} onClick={() => setMode((m) => (m === "in" ? "up" : "in"))}>
-        {mode === "in" ? "계정 만들기" : "로그인으로"}
+        {mode === "in" ? t("auth.toSignup") : t("auth.toSignin")}
       </button>
     </div>
   );
@@ -342,6 +351,7 @@ function Auth() {
 
 /** 공개 프로필 설정 + 공유. username/공개여부를 PATCH /api/me 로 저장. */
 function ShareSettings({ user }: { user: SessionUser }) {
+  const { t } = useTranslation();
   const [username, setUsername] = useState(user.username ?? "");
   const [isPublic, setIsPublic] = useState(!!user.isPublic);
   const [busy, setBusy] = useState(false);
@@ -355,10 +365,10 @@ function ShareSettings({ user }: { user: SessionUser }) {
     setMsg(null);
     try {
       await api.updateMe({ username: username || undefined, isPublic });
-      setMsg("저장됨 — 새로고침 중…");
+      setMsg(t("share.saved"));
       setTimeout(() => window.location.reload(), 600);
     } catch {
-      setMsg("실패: username 중복이거나 형식(소문자/숫자/_ 3~20자) 오류");
+      setMsg(t("share.error"));
       setBusy(false);
     }
   }
@@ -366,23 +376,23 @@ function ShareSettings({ user }: { user: SessionUser }) {
   async function copy() {
     if (!profileUrl) return;
     await navigator.clipboard.writeText(profileUrl);
-    setMsg("링크 복사됨!");
+    setMsg(t("share.linkCopied"));
     setTimeout(() => setMsg(null), 1500);
   }
 
   return (
     <div style={st.card}>
       <div style={st.cardHead}>
-        <b>공개 프로필</b>
+        <b>{t("share.title")}</b>
         {user.isPublic && user.username && (
-          <span style={st.muted}>/u/{user.username} 공개 중</span>
+          <span style={st.muted}>{t("share.publicNote", { username: user.username })}</span>
         )}
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <span style={st.muted}>@</span>
         <input
           style={{ ...st.input, width: 160 }}
-          placeholder="username"
+          placeholder={t("share.usernamePlaceholder")}
           value={username}
           onChange={(e) => setUsername(e.target.value.toLowerCase())}
         />
@@ -392,18 +402,18 @@ function ShareSettings({ user }: { user: SessionUser }) {
             checked={isPublic}
             onChange={(e) => setIsPublic(e.target.checked)}
           />
-          공개
+          {t("share.public")}
         </label>
         <button style={st.ghost} disabled={busy} onClick={save}>
-          저장
+          {t("common.save")}
         </button>
         {profileUrl && (
           <>
             <button style={st.ghost} onClick={copy}>
-              링크 복사
+              {t("share.copyLink")}
             </button>
             <a style={{ ...st.ghost, textDecoration: "none" }} href={profileUrl} target="_blank" rel="noreferrer">
-              프로필 열기 ↗
+              {t("share.openProfile")}
             </a>
           </>
         )}
@@ -414,8 +424,9 @@ function ShareSettings({ user }: { user: SessionUser }) {
 }
 
 function AuthedApp() {
+  const { t } = useTranslation();
   const { data: session, isPending } = useSession();
-  if (isPending) return <p style={{ padding: 24 }}>로딩…</p>;
+  if (isPending) return <p style={{ padding: 24 }}>{t("common.loading")}</p>;
   return session?.user ? <Dashboard user={session.user as SessionUser} /> : <Auth />;
 }
 

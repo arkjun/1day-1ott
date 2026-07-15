@@ -1,7 +1,10 @@
 import type { PublicProfile as Profile } from "@1ott/shared";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import ActivityCalendar from "react-activity-calendar";
 import { api } from "../lib/api";
+import { activityLabels } from "../i18n/format";
+import { LanguageSelect } from "./LanguageSelect";
 import { GREEN, buildYear, currentStreak, isoDaysAgo } from "../lib/heatmap";
 import { useTheme } from "../lib/theme";
 
@@ -36,6 +39,7 @@ async function downloadPng(username: string) {
 }
 
 export function PublicProfile({ username }: { username: string }) {
+  const { t, i18n } = useTranslation();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [state, setState] = useState<"loading" | "ok" | "notfound">("loading");
   const [copied, setCopied] = useState(false);
@@ -51,13 +55,13 @@ export function PublicProfile({ username }: { username: string }) {
       .catch(() => setState("notfound"));
   }, [username]);
 
-  if (state === "loading") return <p style={{ padding: 24 }}>로딩…</p>;
+  if (state === "loading") return <p style={{ padding: 24 }}>{t("common.loading")}</p>;
   if (state === "notfound" || !profile)
     return (
       <div style={{ maxWidth: 480, margin: "80px auto", padding: 24, textAlign: "center" }}>
-        <h2>프로필을 찾을 수 없어요</h2>
-        <p style={{ color: "var(--muted)" }}>비공개거나 없는 사용자입니다.</p>
-        <a href="/">홈으로</a>
+        <h2>{t("profile.notFoundTitle")}</h2>
+        <p style={{ color: "var(--muted)" }}>{t("profile.notFoundBody")}</p>
+        <a href="/">{t("profile.toHome")}</a>
       </div>
     );
 
@@ -82,28 +86,29 @@ export function PublicProfile({ username }: { username: string }) {
           <h1 style={{ margin: "2px 0 0" }}>@{profile.username}</h1>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button style={st.iconBtn} onClick={toggle} aria-label="테마 전환" title="테마 전환">
+          <LanguageSelect />
+          <button style={st.iconBtn} onClick={toggle} aria-label={t("action.toggleTheme")} title={t("action.toggleTheme")}>
             {scheme === "dark" ? "☀️" : "🌙"}
           </button>
           <button style={st.ghost} onClick={copyLink}>
-            {copied ? "복사됨!" : "링크 복사"}
+            {copied ? t("common.copied") : t("share.copyLink")}
           </button>
           <button style={st.primary} onClick={() => downloadPng(profile.username)}>
-            ⬇ 잔디 이미지
+            {t("profile.downloadImage")}
           </button>
         </div>
       </div>
 
       <div style={st.stats}>
-        <Stat k="🔥 현재 연속" v={streak} unit="일" accent />
-        <Stat k="이번 달" v={thisMonth} unit="편" />
-        <Stat k="총 기록" v={profile.total} unit="편" />
+        <Stat k={t("stat.streak")} v={streak} unit={t("unit.day", { count: streak })} accent />
+        <Stat k={t("stat.thisMonth")} v={thisMonth} unit={t("unit.entry", { count: thisMonth })} />
+        <Stat k={t("stat.total")} v={profile.total} unit={t("unit.entry", { count: profile.total })} />
       </div>
 
       <div style={st.card}>
         <div style={st.cardHead}>
-          <b>잔디</b>
-          <span style={st.muted}>하루 1칸 · 색이 진할수록 그날 많이 봄</span>
+          <b>{t("heatmap.title")}</b>
+          <span style={st.muted}>{t("heatmap.hint")}</span>
         </div>
         <div style={{ overflowX: "auto" }}>
           <ActivityCalendar
@@ -112,7 +117,7 @@ export function PublicProfile({ username }: { username: string }) {
             theme={GREEN}
             blockSize={12}
             blockMargin={3}
-            labels={{ totalCount: "{{count}}편 기록" }}
+            labels={activityLabels(i18n.language)}
           />
         </div>
       </div>
@@ -120,7 +125,7 @@ export function PublicProfile({ username }: { username: string }) {
       {profile.posters.length > 0 && (
         <div style={st.card}>
           <div style={st.cardHead}>
-            <b>포스터</b>
+            <b>{t("posters.title")}</b>
           </div>
           <div style={st.posterGrid}>
             {profile.posters

@@ -8,6 +8,13 @@
       "when": 1784011092514,
       "tag": "0000_rare_junta",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1784035445692,
+      "tag": "0001_freezing_firestar",
+      "breakpoints": true
     }
   ]
 }

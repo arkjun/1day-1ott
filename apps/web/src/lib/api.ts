@@ -45,7 +45,7 @@ export const api = {
     ),
   yt: (url: string) =>
     req<{ result: SearchResult }>(`/api/yt?url=${encodeURIComponent(url)}`),
-  updateMe: (patch: { username?: string; isPublic?: boolean }) =>
+  updateMe: (patch: { username?: string; isPublic?: boolean; lang?: string }) =>
     req<{ ok: boolean }>("/api/me", {
       method: "PATCH",
       body: JSON.stringify(patch),

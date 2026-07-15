@@ -23,6 +23,7 @@ export const user = sqliteTable("user", {
   image: text("image"),
   username: text("username").unique(),
   isPublic: integer("is_public", { mode: "boolean" }).notNull().default(false),
+  lang: text("lang"), // UI 언어(ko|en|ja). null 이면 클라이언트가 감지.
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });

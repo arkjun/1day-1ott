@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   buildYearSummary,
   listYears,
@@ -6,6 +7,7 @@ import {
   type MonthSummary,
   type YearSummary,
 } from "../lib/calendar";
+import { monthLabel, yearLabel } from "../i18n/format";
 import { TYPE_META } from "../lib/typeMeta";
 
 type ChartMode = "individual" | "byType";
@@ -14,6 +16,7 @@ type ChartMode = "individual" | "byType";
  * 월 셀: 2×2 포스터 콜라주 + 하단 라벨
  * ------------------------------------------------------------------ */
 function MonthCell({ m }: { m: MonthSummary }) {
+  const { i18n } = useTranslation();
   const empty = m.posters.length === 0;
   return (
     <div style={{ ...cs.cell, opacity: empty ? 0.55 : 1 }}>
@@ -25,7 +28,7 @@ function MonthCell({ m }: { m: MonthSummary }) {
         )}
       </div>
       <div style={cs.cellLabel}>
-        {m.month}월
+        {monthLabel(m.month, i18n.language)}
         {m.count > 0 && <span style={cs.cellCount}>{m.count}</span>}
       </div>
     </div>
@@ -36,6 +39,7 @@ function MonthCell({ m }: { m: MonthSummary }) {
  * 월별 막대그래프 (무의존 SVG). 개별=단색, 유형별=스택.
  * ------------------------------------------------------------------ */
 function MonthBarChart({ summary, mode }: { summary: YearSummary; mode: ChartMode }) {
+  const { t } = useTranslation();
   const W = 560;
   const H = 230;
   const M = { top: 22, right: 8, bottom: 36, left: 26 };
@@ -50,7 +54,7 @@ function MonthBarChart({ summary, mode }: { summary: YearSummary; mode: ChartMod
   const y = (v: number) => M.top + ih - (v / yMax) * ih;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }} role="img" aria-label="월별 일지 그래프">
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }} role="img" aria-label={t("calendar.graphAria")}>
       {ticks.map((t) => (
         <g key={t}>
           <line x1={M.left} x2={W - M.right} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeDasharray="3 4" strokeWidth={1} />
@@ -69,13 +73,13 @@ function MonthBarChart({ summary, mode }: { summary: YearSummary; mode: ChartMod
               (mode === "individual" ? (
                 <rect x={x} y={y(m.count)} width={barW} height={y(0) - y(m.count)} rx={3} fill="var(--accent)" />
               ) : (
-                summary.types.map((t) => {
-                  const c = m.typeCounts[t] ?? 0;
+                summary.types.map((ty) => {
+                  const c = m.typeCounts[ty] ?? 0;
                   if (c === 0) return null;
                   const y1 = y(acc + c);
                   const h = y(acc) - y1;
                   acc += c;
-                  return <rect key={t} x={x} y={y1} width={barW} height={h} fill={TYPE_META[t]?.color ?? "#8a94a3"} />;
+                  return <rect key={ty} x={x} y={y1} width={barW} height={h} fill={TYPE_META[ty]?.color ?? "#8a94a3"} />;
                 })
               ))}
             {m.count > 0 && (
@@ -110,6 +114,7 @@ export function CalendarView({
   entries: CalendarEntry[];
   onShowAll: () => void;
 }) {
+  const { t, i18n } = useTranslation();
   const years = useMemo(() => listYears(entries), [entries]);
   const [year, setYear] = useState(() => years[0] ?? new Date().getFullYear());
   const [mode, setMode] = useState<ChartMode>("individual");
@@ -124,17 +129,17 @@ export function CalendarView({
     <div style={cs.grid}>
       <div style={cs.card}>
         <div style={cs.yearNav}>
-          <button style={cs.navBtn} onClick={() => setYear((y) => y - 1)} aria-label="이전 해">
+          <button style={cs.navBtn} onClick={() => setYear((y) => y - 1)} aria-label={t("calendar.prevYear")}>
             ‹
           </button>
           <select style={cs.yearSelect} value={year} onChange={(e) => setYear(Number(e.target.value))}>
             {yearOptions.map((y) => (
               <option key={y} value={y}>
-                {y}년
+                {yearLabel(y, i18n.language)}
               </option>
             ))}
           </select>
-          <button style={cs.navBtn} onClick={() => setYear((y) => y + 1)} aria-label="다음 해">
+          <button style={cs.navBtn} onClick={() => setYear((y) => y + 1)} aria-label={t("calendar.nextYear")}>
             ›
           </button>
         </div>
@@ -148,19 +153,19 @@ export function CalendarView({
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={cs.card}>
           <div style={cs.cardHead}>
-            <b>{year}년 일지 그래프</b>
+            <b>{t("calendar.graphTitle", { year })}</b>
             <select style={cs.modeSelect} value={mode} onChange={(e) => setMode(e.target.value as ChartMode)}>
-              <option value="individual">개별</option>
-              <option value="byType">유형별</option>
+              <option value="individual">{t("calendar.modeIndividual")}</option>
+              <option value="byType">{t("calendar.modeByType")}</option>
             </select>
           </div>
           <MonthBarChart summary={summary} mode={mode} />
           {mode === "byType" && summary.types.length > 0 && (
             <div style={cs.legend}>
-              {summary.types.map((t) => (
-                <span key={t} style={cs.legendItem}>
-                  <span style={{ ...cs.legendDot, background: TYPE_META[t]?.color ?? "#8a94a3" }} />
-                  {TYPE_META[t]?.label ?? t}
+              {summary.types.map((ty) => (
+                <span key={ty} style={cs.legendItem}>
+                  <span style={{ ...cs.legendDot, background: TYPE_META[ty]?.color ?? "#8a94a3" }} />
+                  {t(`type.${ty}`)}
                 </span>
               ))}
             </div>
@@ -169,7 +174,7 @@ export function CalendarView({
 
         <div style={cs.card}>
           <div style={cs.cardHead}>
-            <b>{year}년 총 일지 개수</b>
+            <b>{t("calendar.totalTitle", { year })}</b>
           </div>
           <div style={cs.totalRow}>
             <div style={cs.bigTotal}>{summary.total}</div>
@@ -178,7 +183,7 @@ export function CalendarView({
                 <div key={hi} style={cs.monthTable}>
                   {half.map((m) => (
                     <div key={m.month} style={cs.monthTableRow}>
-                      <span>{m.month}월</span>
+                      <span>{monthLabel(m.month, i18n.language)}</span>
                       <span style={cs.monthTableCount}>{m.count}</span>
                     </div>
                   ))}
@@ -187,7 +192,7 @@ export function CalendarView({
             </div>
           </div>
           <button style={cs.showAll} onClick={onShowAll}>
-            모든 일지 보기
+            {t("calendar.showAll")}
           </button>
         </div>
       </div>
