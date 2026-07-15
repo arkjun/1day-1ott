@@ -66,4 +66,25 @@ describe("mapTmdb", () => {
     expect(mapTmdb(item, "tv")?.type).toBe("tv");
     expect(mapTmdb(item, "anime")?.type).toBe("anime");
   });
+
+  it("overview·rating·genreIds 를 통과시킨다", () => {
+    const rich = {
+      id: 2,
+      title: "인셉션",
+      release_date: "2010-07-16",
+      overview: "꿈 속의 꿈…",
+      vote_average: 8.4,
+      genre_ids: [28, 878, 12],
+    };
+    const r = mapTmdb(rich, "movie");
+    expect(r?.overview).toBe("꿈 속의 꿈…");
+    expect(r?.rating).toBe(8.4);
+    expect(r?.genreIds).toEqual([28, 878, 12]);
+  });
+
+  it("빈 값은 undefined 로 (평점 0·설명 없음)", () => {
+    const r = mapTmdb({ id: 3, title: "무명작", vote_average: 0 }, "movie");
+    expect(r?.overview).toBeUndefined();
+    expect(r?.rating).toBeUndefined();
+  });
 });

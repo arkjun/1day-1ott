@@ -23,6 +23,8 @@ interface TmdbItem {
   first_air_date?: string; // tv
   media_type?: string;
   genre_ids?: number[];
+  overview?: string;
+  vote_average?: number;
 }
 
 // TMDB TV 장르 id
@@ -67,6 +69,9 @@ export function mapTmdb(item: TmdbItem, fallbackType: ContentType): SearchResult
     tmdbId: item.id,
     posterUrl: item.poster_path ? `${TMDB_IMG}${item.poster_path}` : undefined,
     year: date ? date.slice(0, 4) : undefined,
+    overview: item.overview || undefined,
+    rating: item.vote_average || undefined, // 0(미평점)은 undefined
+    genreIds: item.genre_ids?.length ? item.genre_ids : undefined,
   };
 }
 

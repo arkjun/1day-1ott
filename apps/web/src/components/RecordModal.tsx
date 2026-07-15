@@ -10,6 +10,16 @@ function todayStr(): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+/** 장르 id → 로케일 이름(앞 3개). 매핑 없는 id는 버림. */
+function useGenreNames() {
+  const { t } = useTranslation();
+  return (ids?: number[]) =>
+    (ids ?? [])
+      .slice(0, 3)
+      .map((id) => t(`genre.${id}`, { defaultValue: "" }))
+      .filter(Boolean);
+}
+
 /** 넷플릭스식 반응 선택기(토글). */
 export function ReactionPicker({
   value,
@@ -59,6 +69,7 @@ export function RecordModal({
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
+  const genreNames = useGenreNames();
   const [type, setType] = useState<ContentType>("movie");
   const [q, setQ] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -188,8 +199,13 @@ export function RecordModal({
               <div style={S.muted}>
                 {t(`type.${picked.type}`)}
                 {picked.year ? ` · ${picked.year}` : ""}
+                {picked.rating ? ` · ★ ${picked.rating.toFixed(1)}` : ""}
                 {picked.subtitle ? ` · ${picked.subtitle}` : ""}
+                {genreNames(picked.genreIds).length
+                  ? ` · ${genreNames(picked.genreIds).join(", ")}`
+                  : ""}
               </div>
+              {picked.overview && <div style={S.clamp3}>{picked.overview}</div>}
             </div>
             <button style={S.link} onClick={reset}>
               {t("common.change")}
@@ -235,9 +251,17 @@ export function RecordModal({
                     ) : (
                       <div style={{ ...S.optPoster, background: "#3334" }} />
                     )}
-                    <span>
+                    <span style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600 }}>{r.title}</div>
-                      <div style={S.muted}>{r.year ?? ""}</div>
+                      <div style={S.muted}>
+                        {r.rating ? `★ ${r.rating.toFixed(1)}` : ""}
+                        {r.rating && r.year ? " · " : ""}
+                        {r.year ?? ""}
+                        {genreNames(r.genreIds).length
+                          ? ` · ${genreNames(r.genreIds).join(", ")}`
+                          : ""}
+                      </div>
+                      {r.overview && <div style={S.clamp2}>{r.overview}</div>}
                     </span>
                   </button>
                 ))}
@@ -361,6 +385,24 @@ const S: Record<string, React.CSSProperties> = {
   },
   posterSm: { width: 46, height: 69, borderRadius: 6, objectFit: "cover" },
   muted: { color: "var(--muted)", fontSize: 12 },
+  clamp2: {
+    color: "var(--muted)",
+    fontSize: 12,
+    marginTop: 3,
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+  },
+  clamp3: {
+    fontSize: 13,
+    marginTop: 6,
+    lineHeight: 1.45,
+    display: "-webkit-box",
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+  },
   link: { border: 0, background: "none", color: "var(--accent-ink)", cursor: "pointer" },
   btn: {
     border: "1px solid var(--border)",

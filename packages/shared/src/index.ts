@@ -46,6 +46,9 @@ export interface SearchResult {
   posterUrl?: string;
   year?: string;
   subtitle?: string;
+  overview?: string; // 간단 설명
+  rating?: number; // TMDB 평점(vote_average, 0~10)
+  genreIds?: number[]; // 장르 id. 이름은 클라 i18n에서 매핑
 }
 
 /** 공개 프로필 응답. */
