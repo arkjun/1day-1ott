@@ -145,6 +145,48 @@ describe("기록 생성 (POST /api/entries)", () => {
   });
 });
 
+describe("언어별 제목 (GET /api/entries?lang=)", () => {
+  it("저장 언어별로 제목을 캐시하고, 목록은 요청 언어 제목을 돌려준다", async () => {
+    const cookie = await signUp();
+    const tmdbId = 555777; // 다른 테스트와 겹치지 않는 전역 id
+    // 같은 작품(tmdbId)을 언어별로 저장 → content.meta.titles 에 언어별 캐시.
+    await createEntry(cookie, { tmdbId, title: "기생충" }); // POST 기본은 lang 없음 → content.title
+    await app.request(
+      `/api/entries?lang=ko`,
+      authed(cookie, {
+        method: "POST",
+        body: JSON.stringify({ type: "movie", title: "기생충", tmdbId, watchedOn: "2026-07-10" }),
+      }),
+      env,
+    );
+    await app.request(
+      `/api/entries?lang=en`,
+      authed(cookie, {
+        method: "POST",
+        body: JSON.stringify({ type: "movie", title: "Parasite", tmdbId, watchedOn: "2026-07-10" }),
+      }),
+      env,
+    );
+
+    const enRes = await app.request("/api/entries?lang=en", authed(cookie), env);
+    const en = (await enRes.json()) as { entries: { tmdbId?: number; title: string }[] };
+    expect(en.entries.every((e) => e.title === "Parasite")).toBe(true);
+
+    const koRes = await app.request("/api/entries?lang=ko", authed(cookie), env);
+    const ko = (await koRes.json()) as { entries: { title: string }[] };
+    expect(ko.entries.every((e) => e.title === "기생충")).toBe(true);
+  });
+
+  it("캐시에 없는 언어는 TMDB 토큰 없으면 원문으로 폴백(에러 없음)", async () => {
+    const cookie = await signUp();
+    await createEntry(cookie, { tmdbId: 555778, title: "듄" }); // lang 없이 저장
+    const jaRes = await app.request("/api/entries?lang=ja", authed(cookie), env);
+    expect(jaRes.status).toBe(200);
+    const ja = (await jaRes.json()) as { entries: { title: string }[] };
+    expect(ja.entries[0]?.title).toBe("듄");
+  });
+});
+
 describe("잔디 (GET /api/heatmap)", () => {
   it("날짜별 count 집계 + level 버킷", async () => {
     const cookie = await signUp();
@@ -311,6 +353,40 @@ describe("프로필/공개 (PATCH /api/me, GET /api/u/:username)", () => {
     expect(profile.cells).toEqual([{ date: "2026-07-10", count: 2, level: 2 }]);
     // 포스터 그리드에는 posterUrl 있는 콘텐츠만
     expect(profile.posters).toHaveLength(1);
+  });
+
+  it("공개 프로필 포스터 제목도 요청 언어를 따른다", async () => {
+    const cookie = await signUp();
+    const tmdbId = 555779;
+    const poster = "https://image.tmdb.org/t/p/w342/x.jpg";
+    // ko/en 제목을 각각 캐시(같은 tmdbId, 다른 lang).
+    await app.request(
+      `/api/entries?lang=ko`,
+      authed(cookie, {
+        method: "POST",
+        body: JSON.stringify({ type: "movie", title: "기생충", tmdbId, posterUrl: poster, watchedOn: "2026-07-10" }),
+      }),
+      env,
+    );
+    await app.request(
+      `/api/entries?lang=en`,
+      authed(cookie, {
+        method: "POST",
+        body: JSON.stringify({ type: "movie", title: "Parasite", tmdbId, posterUrl: poster, watchedOn: "2026-07-10" }),
+      }),
+      env,
+    );
+    await setProfile(cookie, { username: "poster_lang", isPublic: true });
+
+    const en = (await (await app.request("/api/u/poster_lang?lang=en", undefined, env)).json()) as {
+      posters: { title: string }[];
+    };
+    expect(en.posters.every((p) => p.title === "Parasite")).toBe(true);
+
+    const ko = (await (await app.request("/api/u/poster_lang?lang=ko", undefined, env)).json()) as {
+      posters: { title: string }[];
+    };
+    expect(ko.posters.every((p) => p.title === "기생충")).toBe(true);
   });
 
   it("공유 잔디 SVG: 공개면 image/svg+xml, 비공개면 404", async () => {

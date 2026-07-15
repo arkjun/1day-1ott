@@ -3,6 +3,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { createDb, schema } from "../db";
 import type { Env } from "../env";
+import { pickLang, resolveTitles } from "../lib/titles";
 
 export const publicRoute = new Hono<{ Bindings: Env }>();
 
@@ -47,11 +48,15 @@ publicRoute.get("/u/:username", async (c) => {
   }));
   const total = [...counts.values()].reduce((a, b) => a + b, 0);
 
-  const posters = await db
+  const posterRows = await db
     .select({
       id: schema.entries.id,
+      contentId: schema.content.id,
+      type: schema.content.type,
       title: schema.content.title,
       posterUrl: schema.content.posterUrl,
+      tmdbId: schema.content.tmdbId,
+      meta: schema.content.meta,
     })
     .from(schema.entries)
     .innerJoin(schema.content, eq(schema.entries.contentId, schema.content.id))
@@ -61,6 +66,13 @@ publicRoute.get("/u/:username", async (c) => {
     .orderBy(desc(schema.entries.watchedOn))
     .limit(12)
     .all();
+
+  const titleByContent = await resolveTitles(db, c.env, posterRows, pickLang(c.req.query("lang")));
+  const posters = posterRows.map((p) => ({
+    id: p.id,
+    title: titleByContent.get(p.contentId) ?? p.title,
+    posterUrl: p.posterUrl,
+  }));
 
   return c.json({ username: u.username, name: u.name, total, cells, posters });
 });

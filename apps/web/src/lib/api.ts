@@ -24,11 +24,12 @@ export interface EntryRow {
 
 export const api = {
   createEntry: (input: EntryInput) =>
-    req<{ id: string; contentId: string }>("/api/entries", {
+    req<{ id: string; contentId: string }>(`/api/entries?lang=${i18n.language}`, {
       method: "POST",
       body: JSON.stringify(input),
     }),
-  listEntries: () => req<{ entries: EntryRow[] }>("/api/entries"),
+  listEntries: () =>
+    req<{ entries: EntryRow[] }>(`/api/entries?lang=${i18n.language}`),
   updateEntry: (
     id: string,
     patch: { watchedOn?: string; reaction?: Reaction | null; note?: string | null; platform?: string | null },
@@ -53,6 +54,6 @@ export const api = {
     }),
   publicProfile: (username: string) =>
     req<import("@1ott/shared").PublicProfile>(
-      `/api/u/${encodeURIComponent(username)}`,
+      `/api/u/${encodeURIComponent(username)}?lang=${i18n.language}`,
     ),
 };

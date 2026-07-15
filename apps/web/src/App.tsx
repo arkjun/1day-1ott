@@ -145,9 +145,10 @@ function Dashboard({ user }: { user: SessionUser }) {
     setEntries(e.entries);
     setCells(h.cells);
   }
+  // 언어가 바뀌면 저장된 작품 제목도 그 언어로 다시 받아온다.
   useEffect(() => {
     refresh().catch(console.error);
-  }, []);
+  }, [i18n.language]);
 
   const year = useMemo(() => buildYear(cells), [cells]);
   const streak = useMemo(() => currentStreak(cells), [cells]);

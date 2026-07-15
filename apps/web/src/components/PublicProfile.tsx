@@ -45,6 +45,7 @@ export function PublicProfile({ username }: { username: string }) {
   const [copied, setCopied] = useState(false);
   const { resolved: scheme, toggle } = useTheme();
 
+  // 언어가 바뀌면 포스터 제목도 그 언어로 다시 받아온다.
   useEffect(() => {
     api
       .publicProfile(username)
@@ -53,7 +54,7 @@ export function PublicProfile({ username }: { username: string }) {
         setState("ok");
       })
       .catch(() => setState("notfound"));
-  }, [username]);
+  }, [username, i18n.language]);
 
   if (state === "loading") return <p style={{ padding: 24 }}>{t("common.loading")}</p>;
   if (state === "notfound" || !profile)

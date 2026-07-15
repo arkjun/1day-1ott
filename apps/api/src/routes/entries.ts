@@ -6,6 +6,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { createDb, schema } from "../db";
 import type { Env } from "../env";
+import { LANGS, parseTitles, pickLang, resolveTitles, withTitles } from "../lib/titles";
 
 const entryPatchSchema = z.object({
   watchedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -22,23 +23,37 @@ export const entriesRoute = new Hono<{ Bindings: Env; Variables: Vars }>();
 async function upsertContent(
   db: ReturnType<typeof createDb>,
   input: ReturnType<typeof entryInputSchema.parse>,
+  lang?: string,
 ): Promise<string> {
   const { content } = schema;
+  const cache = lang && LANGS.has(lang) ? lang : undefined;
 
-  if (input.tmdbId != null) {
+  const key =
+    input.tmdbId != null
+      ? and(eq(content.type, input.type), eq(content.tmdbId, input.tmdbId))
+      : input.ytId != null
+        ? and(eq(content.type, input.type), eq(content.ytId, input.ytId))
+        : undefined;
+  if (key) {
     const found = await db
-      .select({ id: content.id })
+      .select({ id: content.id, meta: content.meta })
       .from(content)
-      .where(and(eq(content.type, input.type), eq(content.tmdbId, input.tmdbId)))
+      .where(key)
       .get();
-    if (found) return found.id;
-  } else if (input.ytId != null) {
-    const found = await db
-      .select({ id: content.id })
-      .from(content)
-      .where(and(eq(content.type, input.type), eq(content.ytId, input.ytId)))
-      .get();
-    if (found) return found.id;
+    if (found) {
+      // 저장 언어의 제목을 아직 캐시 안했으면 이번 입력으로 채운다(TMDB 호출 절약).
+      if (cache) {
+        const titles = parseTitles(found.meta);
+        if (!titles[cache]) {
+          titles[cache] = input.title;
+          await db
+            .update(content)
+            .set({ meta: withTitles(found.meta, titles) })
+            .where(eq(content.id, found.id));
+        }
+      }
+      return found.id;
+    }
   }
 
   const id = nanoid();
@@ -49,6 +64,7 @@ async function upsertContent(
     ytId: input.ytId ?? null,
     title: input.title,
     posterUrl: input.posterUrl ?? null,
+    meta: cache ? JSON.stringify({ titles: { [cache]: input.title } }) : null,
   });
   return id;
 }
@@ -63,7 +79,7 @@ entriesRoute.post("/entries", async (c) => {
   const db = createDb(c.env.DB);
   const userId = c.get("userId");
 
-  const contentId = await upsertContent(db, input);
+  const contentId = await upsertContent(db, input, c.req.query("lang"));
   const id = nanoid();
   await db.insert(schema.entries).values({
     id,
@@ -127,6 +143,7 @@ entriesRoute.get("/entries", async (c) => {
   const db = createDb(c.env.DB);
   const userId = c.get("userId");
   const { entries, content } = schema;
+  const lang = pickLang(c.req.query("lang"));
 
   const rows = await db
     .select({
@@ -135,9 +152,12 @@ entriesRoute.get("/entries", async (c) => {
       reaction: entries.reaction,
       note: entries.note,
       platform: entries.platform,
+      contentId: content.id,
       type: content.type,
       title: content.title,
       posterUrl: content.posterUrl,
+      tmdbId: content.tmdbId,
+      meta: content.meta,
     })
     .from(entries)
     .innerJoin(content, eq(entries.contentId, content.id))
@@ -145,7 +165,20 @@ entriesRoute.get("/entries", async (c) => {
     .orderBy(desc(entries.watchedOn), desc(entries.createdAt))
     .all();
 
-  return c.json({ entries: rows });
+  const titleByContent = await resolveTitles(db, c.env, rows, lang);
+
+  const result = rows.map((r) => ({
+    id: r.id,
+    watchedOn: r.watchedOn,
+    reaction: r.reaction,
+    note: r.note,
+    platform: r.platform,
+    type: r.type,
+    title: titleByContent.get(r.contentId) ?? r.title,
+    posterUrl: r.posterUrl,
+  }));
+
+  return c.json({ entries: result });
 });
 
 /** 잔디 데이터 — 날짜별 count 집계 후 level 버킷. */
