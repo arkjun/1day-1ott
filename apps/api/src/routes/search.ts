@@ -8,6 +8,12 @@ export const searchRoute = new Hono<{ Bindings: Env; Variables: Vars }>();
 
 const TMDB_IMG = "https://image.tmdb.org/t/p/w342";
 
+// 앱 언어 → TMDB language 코드. 미지원/미지정은 ko-KR.
+const TMDB_LANG: Record<string, string> = { ko: "ko-KR", en: "en-US", ja: "ja-JP" };
+export function tmdbLang(lang?: string): string {
+  return TMDB_LANG[lang ?? ""] ?? "ko-KR";
+}
+
 interface TmdbItem {
   id: number;
   title?: string; // movie
@@ -75,7 +81,7 @@ searchRoute.get("/search", async (c) => {
 
   // anime 는 TMDB 상 tv 로 검색(장르 필터는 후속). movie 외 나머지는 tv.
   const path = type === "movie" ? "movie" : "tv";
-  const url = `https://api.themoviedb.org/3/search/${path}?query=${encodeURIComponent(q)}&language=ko-KR&include_adult=false&page=1`;
+  const url = `https://api.themoviedb.org/3/search/${path}?query=${encodeURIComponent(q)}&language=${tmdbLang(c.req.query("lang"))}&include_adult=false&page=1`;
 
   const res = await fetch(url, {
     headers: {

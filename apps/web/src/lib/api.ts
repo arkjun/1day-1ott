@@ -1,4 +1,5 @@
 import type { ContentType, EntryInput, HeatmapCell, Reaction, SearchResult } from "@1ott/shared";
+import i18n from "../i18n";
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -41,7 +42,7 @@ export const api = {
   heatmap: () => req<{ cells: HeatmapCell[] }>("/api/heatmap"),
   search: (q: string, type: ContentType) =>
     req<{ results: SearchResult[] }>(
-      `/api/search?q=${encodeURIComponent(q)}&type=${type}`,
+      `/api/search?q=${encodeURIComponent(q)}&type=${type}&lang=${i18n.language}`,
     ),
   yt: (url: string) =>
     req<{ result: SearchResult }>(`/api/yt?url=${encodeURIComponent(url)}`),

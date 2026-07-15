@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { mapTmdb, matchesTypeGenre } from "../src/routes/search";
+import { mapTmdb, matchesTypeGenre, tmdbLang } from "../src/routes/search";
+
+describe("tmdbLang", () => {
+  it("지원 언어는 TMDB 코드로 매핑", () => {
+    expect(tmdbLang("ko")).toBe("ko-KR");
+    expect(tmdbLang("en")).toBe("en-US");
+    expect(tmdbLang("ja")).toBe("ja-JP");
+  });
+  it("미지정/미지원은 ko-KR fallback", () => {
+    expect(tmdbLang(undefined)).toBe("ko-KR");
+    expect(tmdbLang("fr")).toBe("ko-KR");
+  });
+});
 
 /**
  * TMDB search/tv 는 장르 구분 없이 모든 TV 프로그램을 반환하므로
