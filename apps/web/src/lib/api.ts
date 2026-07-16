@@ -23,6 +23,12 @@ export interface EntryRow {
   posterUrl: string | null;
 }
 
+export interface ImportError { row: number; message: string }
+export interface ImportDup { row: number; watchedOn: string; title: string }
+export type ImportResult =
+  | { committed: false; okCount: number; errors: ImportError[]; dupWarnings: ImportDup[] }
+  | { committed: true; inserted: number; errors: ImportError[] };
+
 export const api = {
   createEntry: (input: EntryInput) =>
     req<{ id: string; contentId: string }>(`/api/entries?lang=${i18n.language}`, {
@@ -42,6 +48,27 @@ export const api = {
   deleteEntry: (id: string) =>
     req<{ ok: boolean }>(`/api/entries/${id}`, { method: "DELETE" }),
   heatmap: () => req<{ cells: HeatmapCell[] }>("/api/heatmap"),
+  importEntries: (markdown: string, commit: boolean) =>
+    req<ImportResult>(`/api/entries/import?lang=${i18n.language}`, {
+      method: "POST",
+      body: JSON.stringify({ markdown, commit }),
+    }),
+  exportEntries: async () => {
+    const res = await fetch("/api/entries/export", { credentials: "include" });
+    if (!res.ok) throw new Error(`export → ${res.status}`);
+    const blob = await res.blob();
+    const cd = res.headers.get("content-disposition") ?? "";
+    const name = /filename="([^"]+)"/.exec(cd)?.[1] ?? "1ott.md";
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    // 클릭 직후 바로 revoke하면 일부 브라우저(Safari 등)가 다운로드를
+    // 시작하기 전에 blob URL이 무효화돼 다운로드가 취소될 수 있다.
+    // 매크로태스크 하나만 미루면 브라우저가 다운로드를 개시하기에 충분하다.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  },
   search: (q: string, type: ContentType) =>
     req<{ results: SearchResult[] }>(
       `/api/search?q=${encodeURIComponent(q)}&type=${type}&lang=${i18n.language}`,
