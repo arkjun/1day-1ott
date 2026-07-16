@@ -10,6 +10,7 @@ import { activityLabels } from "./i18n/format";
 import { LanguageSelect } from "./components/LanguageSelect";
 import { api, type EntryRow } from "./lib/api";
 import { signIn, signOut, signUp, useSession } from "./lib/authClient";
+import { buildTypeBreakdown } from "./lib/breakdown";
 import { GREEN, buildYear, currentStreak, isoDaysAgo } from "./lib/heatmap";
 import { REACTION_META } from "./lib/reactions";
 import { useTheme } from "./lib/theme";
@@ -169,16 +170,7 @@ function Dashboard({ user }: { user: SessionUser }) {
     return entries.filter((e) => e.watchedOn.startsWith(pre)).length;
   }, [entries]);
   const breakdown = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const e of entries) counts.set(e.type, (counts.get(e.type) ?? 0) + 1);
-    const total = entries.length || 1;
-    return [...counts.entries()]
-      .map(([type, count]) => ({
-        type,
-        count,
-        pct: Math.round((count / total) * 100),
-      }))
-      .sort((a, b) => b.count - a.count);
+    return buildTypeBreakdown(entries);
   }, [entries]);
   const posters = entries.filter((e) => e.posterUrl).slice(0, 12);
 
@@ -264,7 +256,9 @@ function Dashboard({ user }: { user: SessionUser }) {
                 <div style={st.bdRow}>
                   <span>{t(`type.${b.type}`)}</span>
                   <span style={st.muted}>
-                    {t("count.entry", { count: b.count })} · {b.pct}%
+                    {b.type === "tv"
+                      ? `${t("count.work", { count: b.workCount })} · ${t("count.totalEntry", { count: b.count })} · ${b.pct}%`
+                      : `${t("count.entry", { count: b.count })} · ${b.pct}%`}
                   </span>
                 </div>
                 <div style={st.bdTrack}>

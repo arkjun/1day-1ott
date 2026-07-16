@@ -13,6 +13,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 
 export interface EntryRow {
   id: string;
+  contentId: string;
   watchedOn: string;
   reaction: Reaction | null;
   note: string | null;

@@ -36,7 +36,7 @@ export default {
   },
   stat: { streak: "🔥 현재 연속", thisMonth: "이번 달", total: "총 기록" },
   unit: { day_other: "일", entry_other: "편" },
-  count: { entry_other: "{{count}}편" },
+  count: { entry_other: "{{count}}편", work_other: "{{count}}작품", totalEntry_other: "총 {{count}}편" },
   heatmap: { title: "잔디", hint: "하루 1칸 · 색이 진할수록 그날 많이 봄" },
   posters: { title: "포스터", recent: "최근 기록" },
   byType: { title: "유형별", total_other: "총 {{count}}편" },

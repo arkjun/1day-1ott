@@ -169,6 +169,7 @@ entriesRoute.get("/entries", async (c) => {
 
   const result = rows.map((r) => ({
     id: r.id,
+    contentId: r.contentId,
     watchedOn: r.watchedOn,
     reaction: r.reaction,
     note: r.note,

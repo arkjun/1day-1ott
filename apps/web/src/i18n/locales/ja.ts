@@ -36,7 +36,7 @@ export default {
   },
   stat: { streak: "🔥 連続記録", thisMonth: "今月", total: "総記録" },
   unit: { day_other: "日", entry_other: "本" },
-  count: { entry_other: "{{count}}本" },
+  count: { entry_other: "{{count}}本", work_other: "{{count}}作品", totalEntry_other: "計{{count}}本" },
   heatmap: { title: "アクティビティ", hint: "1日1マス · 濃いほどその日たくさん視聴" },
   posters: { title: "ポスター", recent: "最近の記録" },
   byType: { title: "タイプ別", total_other: "計{{count}}本" },

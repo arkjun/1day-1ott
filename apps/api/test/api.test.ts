@@ -142,6 +142,13 @@ describe("기록 생성 (POST /api/entries)", () => {
     };
     expect(b.contentId).toBe(a.contentId);
     expect(b.id).not.toBe(a.id);
+
+    const list = await app.request("/api/entries", authed(cookie), env);
+    const body = (await list.json()) as { entries: { contentId: string }[] };
+    expect(body.entries.map((entry) => entry.contentId)).toEqual([
+      a.contentId,
+      a.contentId,
+    ]);
   });
 });
 
