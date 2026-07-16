@@ -67,3 +67,5 @@ export function countToLevel(count: number): HeatmapCell["level"] {
   if (count === 3) return 3;
   return 4;
 }
+
+export * from "./markdown";
