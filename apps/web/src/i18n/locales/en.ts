@@ -22,6 +22,9 @@ export default {
     addFailed: "Registration failed — unsupported browser or cancelled",
     signin: "Sign in with Passkey",
     signinFailed: "Passkey sign-in failed — no registered device or cancelled",
+    reauthHint: "Please re-enter your password for security",
+    reauthDo: "Confirm & register",
+    reauthFailed: "Incorrect password",
   },
   settings: { title: "Settings", language: "Language", theme: "Theme", dark: "Dark", light: "Light" },
   action: {

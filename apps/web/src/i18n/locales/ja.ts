@@ -22,6 +22,9 @@ export default {
     addFailed: "登録失敗 — 非対応ブラウザまたはキャンセル",
     signin: "パスキーでログイン",
     signinFailed: "パスキーログイン失敗 — 登録端末がないかキャンセル",
+    reauthHint: "セキュリティのためパスワードを再入力してください",
+    reauthDo: "確認して登録",
+    reauthFailed: "パスワードが正しくありません",
   },
   settings: { title: "設定", language: "言語", theme: "テーマ", dark: "ダーク", light: "ライト" },
   action: {

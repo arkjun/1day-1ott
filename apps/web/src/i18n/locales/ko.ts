@@ -22,6 +22,9 @@ export default {
     addFailed: "등록 실패 — 지원하지 않는 브라우저이거나 취소됨",
     signin: "Passkey로 로그인",
     signinFailed: "Passkey 로그인 실패 — 등록된 기기가 없거나 취소됨",
+    reauthHint: "보안을 위해 비밀번호를 다시 입력하세요",
+    reauthDo: "확인 후 등록",
+    reauthFailed: "비밀번호가 올바르지 않습니다",
   },
   settings: { title: "환경설정", language: "언어", theme: "테마", dark: "다크", light: "라이트" },
   action: {

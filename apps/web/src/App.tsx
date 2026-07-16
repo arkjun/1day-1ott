@@ -18,6 +18,7 @@ import { TYPE_META } from "./lib/typeMeta";
 interface SessionUser {
   id: string;
   name: string;
+  email: string;
   username?: string | null;
   isPublic?: boolean | null;
   lang?: string | null;
