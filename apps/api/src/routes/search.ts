@@ -31,6 +31,8 @@ interface TmdbItem {
 const GENRE_ANIMATION = 16;
 const GENRE_REALITY = 10764;
 const GENRE_TALK = 10767;
+const GENRE_DOCUMENTARY = 99;
+const GENRE_NEWS = 10763;
 
 /**
  * search/tv 는 장르 구분 없이 모든 TV 프로그램을 반환하므로 genre_ids 로 거른다.
@@ -45,8 +47,17 @@ export function matchesTypeGenre(
   if (type === "variety") {
     return (genreIds ?? []).some((g) => g === GENRE_REALITY || g === GENRE_TALK);
   }
+  if (type === "documentary") {
+    return (genreIds ?? []).some((g) => g === GENRE_DOCUMENTARY || g === GENRE_NEWS);
+  }
   if (type === "tv") {
-    const excluded = [GENRE_ANIMATION, GENRE_REALITY, GENRE_TALK];
+    const excluded = [
+      GENRE_ANIMATION,
+      GENRE_REALITY,
+      GENRE_TALK,
+      GENRE_DOCUMENTARY,
+      GENRE_NEWS,
+    ];
     return !(genreIds ?? []).some((g) => excluded.includes(g));
   }
   return true;
@@ -56,9 +67,11 @@ export function mapTmdb(item: TmdbItem, fallbackType: ContentType): SearchResult
   const title = item.title ?? item.name;
   if (!title) return null;
   const date = item.release_date ?? item.first_air_date ?? "";
-  // anime/variety 는 tv 검색 결과라도 탭 의도를 유지한다.
+  // anime/variety/documentary 는 tv 검색 결과라도 탭 의도를 유지한다.
   const type: ContentType =
-    fallbackType === "anime" || fallbackType === "variety"
+    fallbackType === "anime" ||
+    fallbackType === "variety" ||
+    fallbackType === "documentary"
       ? fallbackType
       : item.media_type === "tv" || item.name
         ? "tv"

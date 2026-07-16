@@ -45,6 +45,7 @@ export default {
     movie: "영화",
     tv: "드라마",
     variety: "예능",
+    documentary: "시사·교양",
     anime: "애니",
     youtube: "유튜브",
     other: "직접입력",

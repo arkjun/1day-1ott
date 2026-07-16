@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /** 콘텐츠 유형. TMDB(movie/tv/variety/anime) · YouTube · 기타 자유입력. */
-export const contentTypes = ["tv", "movie", "variety", "anime", "youtube", "other"] as const;
+export const contentTypes = ["tv", "movie", "variety", "documentary", "anime", "youtube", "other"] as const;
 export const contentTypeSchema = z.enum(contentTypes);
 export type ContentType = (typeof contentTypes)[number];
 

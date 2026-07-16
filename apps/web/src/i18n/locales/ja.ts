@@ -45,6 +45,7 @@ export default {
     movie: "映画",
     tv: "ドラマ",
     variety: "バラエティ",
+    documentary: "ドキュメンタリー",
     anime: "アニメ",
     youtube: "YouTube",
     other: "手動入力",

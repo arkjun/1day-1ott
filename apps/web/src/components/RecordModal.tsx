@@ -83,7 +83,11 @@ export function RecordModal({
   const [err, setErr] = useState<string | null>(null);
 
   const searchable =
-    type === "movie" || type === "tv" || type === "variety" || type === "anime";
+    type === "movie" ||
+    type === "tv" ||
+    type === "variety" ||
+    type === "documentary" ||
+    type === "anime";
 
   // 디바운스 TMDB 검색
   useEffect(() => {

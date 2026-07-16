@@ -28,12 +28,22 @@ describe("matchesTypeGenre", () => {
     expect(matchesTypeGenre(undefined, "anime")).toBe(false);
   });
 
-  it("tv: 예능(10764)/토크(10767)/애니(16) 제외", () => {
+  it("tv: 예능(10764)/토크(10767)/애니(16)/다큐(99)/뉴스(10763) 제외", () => {
     expect(matchesTypeGenre([10764], "tv")).toBe(false);
     expect(matchesTypeGenre([10767], "tv")).toBe(false);
     expect(matchesTypeGenre([16, 35], "tv")).toBe(false);
+    expect(matchesTypeGenre([99], "tv")).toBe(false); // 다큐는 시사교양 탭으로
+    expect(matchesTypeGenre([10763], "tv")).toBe(false); // 뉴스도
     expect(matchesTypeGenre([18], "tv")).toBe(true);
     expect(matchesTypeGenre([18, 35], "tv")).toBe(true);
+  });
+
+  it("documentary: 다큐(99)/뉴스(10763) 포함식", () => {
+    expect(matchesTypeGenre([99], "documentary")).toBe(true);
+    expect(matchesTypeGenre([10763, 18], "documentary")).toBe(true);
+    expect(matchesTypeGenre([18], "documentary")).toBe(false);
+    expect(matchesTypeGenre([], "documentary")).toBe(false);
+    expect(matchesTypeGenre(undefined, "documentary")).toBe(false);
   });
 
   it("tv: 장르 태그가 없거나 비어 있으면 통과 (제외식이므로 놓치지 않는다)", () => {
@@ -65,6 +75,11 @@ describe("mapTmdb", () => {
   it("tv/anime 매핑은 기존대로", () => {
     expect(mapTmdb(item, "tv")?.type).toBe("tv");
     expect(mapTmdb(item, "anime")?.type).toBe("anime");
+  });
+
+  it("documentary 탭 검색 결과는 type=documentary 로 매핑", () => {
+    const doc = { id: 9, name: "그것이 알고싶다", first_air_date: "1992-03-31" };
+    expect(mapTmdb(doc, "documentary")?.type).toBe("documentary");
   });
 
   it("overview·rating·genreIds 를 통과시킨다", () => {

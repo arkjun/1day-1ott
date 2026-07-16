@@ -52,6 +52,7 @@ export default {
     movie: "Movie",
     tv: "Drama",
     variety: "Variety",
+    documentary: "Documentary",
     anime: "Anime",
     youtube: "YouTube",
     other: "Custom",
