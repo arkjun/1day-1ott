@@ -63,6 +63,23 @@ export const account = sqliteTable("account", {
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });
 
+/** WebAuthn 자격증명. @better-auth/passkey 플러그인 스키마. */
+export const passkey = sqliteTable("passkey", {
+  id: text("id").primaryKey(),
+  name: text("name"),
+  publicKey: text("public_key").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  credentialID: text("credential_id").notNull(),
+  counter: integer("counter").notNull(),
+  deviceType: text("device_type").notNull(),
+  backedUp: integer("backed_up", { mode: "boolean" }).notNull(),
+  transports: text("transports"),
+  aaguid: text("aaguid"),
+  createdAt: integer("created_at", { mode: "timestamp" }),
+});
+
 export const verification = sqliteTable("verification", {
   id: text("id").primaryKey(),
   identifier: text("identifier").notNull(),
@@ -124,6 +141,7 @@ export const schema = {
   session,
   account,
   verification,
+  passkey,
   content,
   entries,
 };

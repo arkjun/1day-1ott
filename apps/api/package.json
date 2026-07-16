@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@1ott/shared": "workspace:*",
+    "@better-auth/passkey": "^1.6.23",
     "better-auth": "^1.6.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.6.14",

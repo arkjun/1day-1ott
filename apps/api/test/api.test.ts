@@ -406,6 +406,29 @@ describe("프로필/공개 (PATCH /api/me, GET /api/u/:username)", () => {
   });
 });
 
+describe("Passkey 플러그인 (better-auth)", () => {
+  it("로그인 사용자는 빈 passkey 목록을 받는다 (플러그인·테이블 배선 확인)", async () => {
+    const cookie = await signUp();
+    const res = await app.request(
+      "/api/auth/passkey/list-user-passkeys",
+      authed(cookie),
+      env,
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual([]);
+  });
+
+  it("등록 옵션 발급 라우트가 마운트되어 있다 (404 아님)", async () => {
+    const cookie = await signUp();
+    const res = await app.request(
+      "/api/auth/passkey/generate-register-options",
+      authed(cookie),
+      env,
+    );
+    expect(res.status).not.toBe(404);
+  });
+});
+
 describe("검색 (GET /api/search)", () => {
   it("TMDB 토큰이 없으면 503 graceful", async () => {
     const cookie = await signUp();

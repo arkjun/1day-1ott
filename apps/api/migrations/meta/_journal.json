@@ -15,6 +15,13 @@
       "when": 1784035445692,
       "tag": "0001_freezing_firestar",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784168653860,
+      "tag": "0002_pretty_weapon_omega",
+      "breakpoints": true
     }
   ]
 }

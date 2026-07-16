@@ -56,4 +56,21 @@ export const api = {
     req<import("@1ott/shared").PublicProfile>(
       `/api/u/${encodeURIComponent(username)}?lang=${i18n.language}`,
     ),
+  // 목록/삭제는 WebAuthn 의식이 필요 없어 엔드포인트를 직접 호출한다.
+  // (등록·로그인은 브라우저 의식이 필요 → authClient.passkey.* 사용)
+  listPasskeys: () =>
+    req<PasskeyRow[]>("/api/auth/passkey/list-user-passkeys"),
+  deletePasskey: (id: string) =>
+    req<unknown>("/api/auth/passkey/delete-passkey", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    }),
 };
+
+export interface PasskeyRow {
+  id: string;
+  name: string | null;
+  deviceType: string;
+  backedUp: boolean;
+  createdAt: string;
+}

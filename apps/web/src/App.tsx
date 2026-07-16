@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import ActivityCalendar from "react-activity-calendar";
 import { useTranslation } from "react-i18next";
 import { CalendarView } from "./components/CalendarView";
+import { MyPage } from "./components/MyPage";
 import { PublicProfile } from "./components/PublicProfile";
 import { RecordModal, ReactionPicker } from "./components/RecordModal";
 import { activityLabels } from "./i18n/format";
@@ -138,7 +139,7 @@ function Dashboard({ user }: { user: SessionUser }) {
   const [cells, setCells] = useState<HeatmapCell[]>([]);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"home" | "calendar">("home");
-  const { resolved: scheme, toggle } = useTheme();
+  const { resolved: scheme } = useTheme();
 
   async function refresh() {
     const [e, h] = await Promise.all([api.listEntries(), api.heatmap()]);
@@ -185,10 +186,9 @@ function Dashboard({ user }: { user: SessionUser }) {
       <div style={st.top}>
         <b style={{ fontSize: 18, letterSpacing: "-0.02em" }}>🌱 1일 1OTT</b>
         <div style={{ display: "flex", gap: 8 }}>
-          <LanguageSelect user={user} />
-          <button style={st.iconBtn} onClick={toggle} aria-label={t("action.toggleTheme")} title={t("action.toggleTheme")}>
-            {scheme === "dark" ? "☀️" : "🌙"}
-          </button>
+          <a style={{ ...st.ghost, textDecoration: "none" }} href="/me">
+            {t("nav.myPage")}
+          </a>
           <button style={st.primary} onClick={() => setOpen(true)}>
             {t("action.addRecord")}
           </button>
@@ -219,8 +219,6 @@ function Dashboard({ user }: { user: SessionUser }) {
         <Stat k={t("stat.thisMonth")} v={thisMonth} unit={t("unit.entry", { count: thisMonth })} />
         <Stat k={t("stat.total")} v={entries.length} unit={t("unit.entry", { count: entries.length })} />
       </div>
-
-      <ShareSettings user={user} />
 
       <div style={st.card}>
         <div style={st.cardHead}>
@@ -320,6 +318,12 @@ function Auth() {
     if (res.error) setErr(res.error.message ?? t("auth.failed"));
   }
 
+  async function passkeyLogin() {
+    setErr(null);
+    const res = await signIn.passkey();
+    if (res?.error) setErr(t("passkey.signinFailed"));
+  }
+
   return (
     <div style={{ maxWidth: 360, margin: "80px auto", padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
@@ -342,6 +346,9 @@ function Auth() {
           {mode === "up" ? t("auth.signup") : t("auth.signin")}
         </button>
       </form>
+      <button style={{ ...st.ghost, width: "100%", marginTop: 8 }} onClick={passkeyLogin}>
+        🔑 {t("passkey.signin")}
+      </button>
       {err && <p style={{ color: "crimson" }}>{err}</p>}
       <button style={{ ...st.ghost, marginTop: 12 }} onClick={() => setMode((m) => (m === "in" ? "up" : "in"))}>
         {mode === "in" ? t("auth.toSignup") : t("auth.toSignin")}
@@ -350,85 +357,14 @@ function Auth() {
   );
 }
 
-/** 공개 프로필 설정 + 공유. username/공개여부를 PATCH /api/me 로 저장. */
-function ShareSettings({ user }: { user: SessionUser }) {
-  const { t } = useTranslation();
-  const [username, setUsername] = useState(user.username ?? "");
-  const [isPublic, setIsPublic] = useState(!!user.isPublic);
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  const profileUrl =
-    user.username ? `${window.location.origin}/u/${user.username}` : null;
-
-  async function save() {
-    setBusy(true);
-    setMsg(null);
-    try {
-      await api.updateMe({ username: username || undefined, isPublic });
-      setMsg(t("share.saved"));
-      setTimeout(() => window.location.reload(), 600);
-    } catch {
-      setMsg(t("share.error"));
-      setBusy(false);
-    }
-  }
-
-  async function copy() {
-    if (!profileUrl) return;
-    await navigator.clipboard.writeText(profileUrl);
-    setMsg(t("share.linkCopied"));
-    setTimeout(() => setMsg(null), 1500);
-  }
-
-  return (
-    <div style={st.card}>
-      <div style={st.cardHead}>
-        <b>{t("share.title")}</b>
-        {user.isPublic && user.username && (
-          <span style={st.muted}>{t("share.publicNote", { username: user.username })}</span>
-        )}
-      </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={st.muted}>@</span>
-        <input
-          style={{ ...st.input, width: 160 }}
-          placeholder={t("share.usernamePlaceholder")}
-          value={username}
-          onChange={(e) => setUsername(e.target.value.toLowerCase())}
-        />
-        <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 14 }}>
-          <input
-            type="checkbox"
-            checked={isPublic}
-            onChange={(e) => setIsPublic(e.target.checked)}
-          />
-          {t("share.public")}
-        </label>
-        <button style={st.ghost} disabled={busy} onClick={save}>
-          {t("common.save")}
-        </button>
-        {profileUrl && (
-          <>
-            <button style={st.ghost} onClick={copy}>
-              {t("share.copyLink")}
-            </button>
-            <a style={{ ...st.ghost, textDecoration: "none" }} href={profileUrl} target="_blank" rel="noreferrer">
-              {t("share.openProfile")}
-            </a>
-          </>
-        )}
-      </div>
-      {msg && <div style={{ ...st.muted, marginTop: 8 }}>{msg}</div>}
-    </div>
-  );
-}
-
 function AuthedApp() {
   const { t } = useTranslation();
   const { data: session, isPending } = useSession();
   if (isPending) return <p style={{ padding: 24 }}>{t("common.loading")}</p>;
-  return session?.user ? <Dashboard user={session.user as SessionUser} /> : <Auth />;
+  if (!session?.user) return <Auth />;
+  const user = session.user as SessionUser;
+  if (window.location.pathname === "/me") return <MyPage user={user} />;
+  return <Dashboard user={user} />;
 }
 
 export function App() {

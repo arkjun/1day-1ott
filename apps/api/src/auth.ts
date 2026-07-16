@@ -1,3 +1,4 @@
+import { passkey } from "@better-auth/passkey";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createDb, schema } from "./db";
@@ -9,7 +10,12 @@ import type { Env } from "./env";
  */
 export function createAuth(env: Env) {
   const db = createDb(env.DB);
+  // WebAuthn rpID 는 스킴/포트 없는 호스트명. origin 은 웹 앱이 뜨는 곳.
+  const rpID = new URL(env.WEB_ORIGIN).hostname;
   return betterAuth({
+    plugins: [
+      passkey({ rpID, rpName: "1일 1OTT", origin: env.WEB_ORIGIN }),
+    ],
     database: drizzleAdapter(db, { provider: "sqlite", schema }),
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
