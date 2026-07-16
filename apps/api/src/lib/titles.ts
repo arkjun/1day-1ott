@@ -36,7 +36,31 @@ export function withTitles(meta: string | null, titles: Record<string, string>):
   return JSON.stringify({ ...base, titles });
 }
 
-/** tmdbId 로 해당 언어 제목을 조회. 토큰 없거나 실패하면 null(원문 폴백). */
+interface TmdbDetail {
+  title?: string;
+  name?: string;
+  original_title?: string;
+  original_name?: string;
+  original_language?: string;
+}
+
+/**
+ * TMDB 상세 응답에서 요청 언어의 실제 번역만 뽑는다.
+ * 요청 언어 번역이 없으면 TMDB 는 name/title 에 원어 제목을 그대로 준다.
+ * 그 원어 폴백(예: 베트남어)을 한국어 제목인 척 캐시하지 않도록 걸러 null 을 반환한다.
+ * 단, 요청 언어가 원어와 같으면 원어 제목이 곧 정답이므로 통과시킨다.
+ */
+export function pickTmdbTitle(d: TmdbDetail, lang: string): string | null {
+  const localized = d.title ?? d.name;
+  if (!localized) return null;
+  const original = d.original_title ?? d.original_name;
+  if (d.original_language !== lang && original && localized === original) {
+    return null;
+  }
+  return localized;
+}
+
+/** tmdbId 로 해당 언어 제목을 조회. 토큰 없거나 실패/번역없음이면 null(원문 폴백). */
 async function fetchTmdbTitle(
   env: Env,
   type: string,
@@ -50,8 +74,7 @@ async function fetchTmdbTitle(
     headers: { Authorization: `Bearer ${env.TMDB_API_TOKEN}`, Accept: "application/json" },
   });
   if (!res.ok) return null;
-  const d = (await res.json()) as { title?: string; name?: string };
-  return d.title ?? d.name ?? null;
+  return pickTmdbTitle((await res.json()) as TmdbDetail, lang);
 }
 
 interface TitleRow {
