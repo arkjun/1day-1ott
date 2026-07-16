@@ -101,3 +101,14 @@ a {
     transition: none !important;
   }
 }
+
+/* PC 에서는 잔디 1년치를 스크롤 없이 폭에 맞춰 표시. 모바일은 네이티브 가로 스크롤 유지. */
+@media (min-width: 640px) {
+  .react-activity-calendar__scroll-container {
+    overflow-x: visible !important;
+  }
+  .react-activity-calendar__calendar {
+    width: 100% !important;
+    height: auto;
+  }
+}
