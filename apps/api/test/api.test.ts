@@ -451,3 +451,85 @@ describe("검색 (GET /api/search)", () => {
     expect(await res.json()).toEqual({ results: [] });
   });
 });
+
+describe("POST /api/entries/import", () => {
+  const TABLE = `| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 |
+|--|--|--|--|--|--|
+| 2026-07-15 | 무빙 | 드라마 | 좋아요 | 재밌었다 | 디즈니+ |
+| 2026-07-15 | 폭싹 속았수다 | 드라마 | 매우 좋아요 |  |  |
+| 나쁜날짜 | 오류행 |  |  |  |  |`;
+
+  async function importMd(cookie: string, markdown: string, commit: boolean) {
+    return app.request(
+      "/api/entries/import",
+      authed(cookie, { method: "POST", body: JSON.stringify({ markdown, commit }) }),
+      env,
+    );
+  }
+
+  it("dry-run은 파싱만 하고 DB를 바꾸지 않는다", async () => {
+    const cookie = await signUp();
+    const res = await importMd(cookie, TABLE, false);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      committed: boolean;
+      okCount: number;
+      errors: { row: number; message: string }[];
+    };
+    expect(body.committed).toBe(false);
+    expect(body.okCount).toBe(2);
+    expect(body.errors).toHaveLength(1);
+    expect(body.errors[0]?.row).toBe(3);
+
+    // DB 불변 확인: 목록이 비어있어야 한다.
+    const list = await app.request("/api/entries", authed(cookie), env);
+    const listBody = (await list.json()) as { entries: unknown[] };
+    expect(listBody.entries).toHaveLength(0);
+  });
+
+  it("commit은 유효 행만 insert하고 오류 행은 제외한다", async () => {
+    const cookie = await signUp();
+    const res = await importMd(cookie, TABLE, true);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { committed: boolean; inserted: number };
+    expect(body.committed).toBe(true);
+    expect(body.inserted).toBe(2);
+
+    const list = await app.request("/api/entries", authed(cookie), env);
+    const entries = ((await list.json()) as { entries: { title: string }[] }).entries;
+    expect(entries).toHaveLength(2);
+    expect(entries.map((e) => e.title).sort()).toEqual(["무빙", "폭싹 속았수다"].sort());
+  });
+
+  it("이미 있는 (날짜+제목)은 dupWarnings로 표시한다", async () => {
+    const cookie = await signUp();
+    await importMd(cookie, TABLE, true); // 무빙 등록
+    const res = await importMd(cookie, TABLE, false);
+    const body = (await res.json()) as { dupWarnings: { row: number; watchedOn: string; title: string }[] };
+    expect(body.dupWarnings.some((d) => d.title === "무빙")).toBe(true);
+  });
+
+  it("501행이면 400 too_many_rows", async () => {
+    const cookie = await signUp();
+    const rows = Array.from({ length: 501 }, (_, i) => `| 2026-07-15 | 제목${i} |  |  |  |  |`).join("\n");
+    const md = `| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 |\n|--|--|--|--|--|--|\n${rows}`;
+    const res = await importMd(cookie, md, false);
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("too_many_rows");
+  });
+});
+
+describe("GET /api/entries/export", () => {
+  it("내 기록을 markdown 표로 내려준다", async () => {
+    const cookie = await signUp();
+    await createEntry(cookie, { title: "듄", type: "movie", watchedOn: "2026-07-11", reaction: "love" });
+    const res = await app.request("/api/entries/export", authed(cookie), env);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/markdown");
+    expect(res.headers.get("content-disposition")).toContain("attachment");
+    const text = await res.text();
+    expect(text).toContain("| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 |");
+    expect(text).toContain("| 2026-07-11 | 듄 | 영화 | 매우 좋아요 |  |  |");
+  });
+});

@@ -1,5 +1,5 @@
-import { entryInputSchema, countToLevel, reactionSchema } from "@1ott/shared";
-import type { HeatmapCell } from "@1ott/shared";
+import { entryInputSchema, countToLevel, reactionSchema, formatEntriesMarkdown, parseEntriesMarkdown } from "@1ott/shared";
+import type { EntryRowData, HeatmapCell } from "@1ott/shared";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
@@ -13,6 +13,11 @@ const entryPatchSchema = z.object({
   reaction: reactionSchema.nullable().optional(),
   note: z.string().max(1000).nullable().optional(),
   platform: z.string().max(60).nullable().optional(),
+});
+
+const importBodySchema = z.object({
+  markdown: z.string().max(500_000),
+  commit: z.boolean(),
 });
 
 type Vars = { userId: string };
@@ -69,6 +74,25 @@ async function upsertContent(
   return id;
 }
 
+/** 내 기존 entries 중 (watchedOn+title)이 겹치는 파싱 행을 경고로. */
+async function computeDupWarnings(
+  db: ReturnType<typeof createDb>,
+  userId: string,
+  rows: { row: number; watchedOn: string; title: string }[],
+): Promise<{ row: number; watchedOn: string; title: string }[]> {
+  if (rows.length === 0) return [];
+  const existing = await db
+    .select({ watchedOn: schema.entries.watchedOn, title: schema.content.title })
+    .from(schema.entries)
+    .innerJoin(schema.content, eq(schema.entries.contentId, schema.content.id))
+    .where(eq(schema.entries.userId, userId))
+    .all();
+  const seen = new Set(existing.map((e) => `${e.watchedOn}|${e.title}`));
+  return rows
+    .filter((r) => seen.has(`${r.watchedOn}|${r.title}`))
+    .map((r) => ({ row: r.row, watchedOn: r.watchedOn, title: r.title }));
+}
+
 /** 기록 생성 — 웹/북마클릿/확장이 공유하는 단일 엔드포인트. */
 entriesRoute.post("/entries", async (c) => {
   const parsed = entryInputSchema.safeParse(await c.req.json().catch(() => null));
@@ -92,6 +116,93 @@ entriesRoute.post("/entries", async (c) => {
   });
 
   return c.json({ id, contentId }, 201);
+});
+
+/** 대량 업로드 — dry-run(commit:false)은 파싱만, commit:true는 실제 등록. */
+entriesRoute.post("/entries/import", async (c) => {
+  const parsed = importBodySchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) {
+    return c.json({ error: "invalid_input", issues: parsed.error.issues }, 400);
+  }
+  const { markdown, commit } = parsed.data;
+  const { ok, errors } = parseEntriesMarkdown(markdown);
+  if (ok.length + errors.length > 500) {
+    return c.json({ error: "too_many_rows" }, 400);
+  }
+
+  const db = createDb(c.env.DB);
+  const userId = c.get("userId");
+  const dupWarnings = await computeDupWarnings(db, userId, ok);
+
+  if (!commit) {
+    return c.json({ committed: false, okCount: ok.length, errors, dupWarnings });
+  }
+
+  let inserted = 0;
+  for (const r of ok) {
+    const contentId = await upsertContent(
+      db,
+      {
+        type: r.type,
+        title: r.title,
+        watchedOn: r.watchedOn,
+        reaction: r.reaction ?? undefined,
+        note: r.note ?? undefined,
+        platform: r.platform ?? undefined,
+      },
+      c.req.query("lang"),
+    );
+    await db.insert(schema.entries).values({
+      id: nanoid(),
+      userId,
+      contentId,
+      watchedOn: r.watchedOn,
+      reaction: r.reaction ?? null,
+      note: r.note ?? null,
+      platform: r.platform ?? null,
+    });
+    inserted++;
+  }
+  return c.json({ committed: true, inserted, errors });
+});
+
+/** 내 전체 기록을 markdown 표로 다운로드. */
+entriesRoute.get("/entries/export", async (c) => {
+  const db = createDb(c.env.DB);
+  const userId = c.get("userId");
+  const { entries, content } = schema;
+
+  const rows = await db
+    .select({
+      watchedOn: entries.watchedOn,
+      title: content.title,
+      type: content.type,
+      reaction: entries.reaction,
+      note: entries.note,
+      platform: entries.platform,
+    })
+    .from(entries)
+    .innerJoin(content, eq(entries.contentId, content.id))
+    .where(eq(entries.userId, userId))
+    .orderBy(desc(entries.watchedOn), desc(entries.createdAt))
+    .all();
+
+  const data: EntryRowData[] = rows.map((r) => ({
+    watchedOn: r.watchedOn,
+    title: r.title,
+    type: r.type as EntryRowData["type"],
+    reaction: (r.reaction ?? null) as EntryRowData["reaction"],
+    note: r.note ?? null,
+    platform: r.platform ?? null,
+  }));
+
+  const today = new Date().toISOString().slice(0, 10);
+  return new Response(formatEntriesMarkdown(data), {
+    headers: {
+      "content-type": "text/markdown; charset=utf-8",
+      "content-disposition": `attachment; filename="1ott-${today}.md"`,
+    },
+  });
 });
 
 /** 기록 수정(본인 것만). 별점·감상·날짜·플랫폼. */
