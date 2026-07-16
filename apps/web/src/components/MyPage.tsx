@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, type PasskeyRow } from "../lib/api";
+import { api, type ImportResult, type PasskeyRow } from "../lib/api";
 import { authClient, signIn } from "../lib/authClient";
 import { useTheme } from "../lib/theme";
 import { LanguageSelect } from "./LanguageSelect";
@@ -28,6 +28,7 @@ export function MyPage({ user }: { user: MyPageUser }) {
       <ShareSettings user={user} />
       <PasskeyManager user={user} />
       <Settings user={user} />
+      <ImportExport />
     </div>
   );
 }
@@ -280,6 +281,146 @@ function Settings({ user }: { user: MyPageUser }) {
           </button>
         </label>
       </div>
+    </div>
+  );
+}
+
+/** 기록 대량 가져오기/내보내기. dry-run 미리보기 후 확정. */
+function ImportExport() {
+  const { t } = useTranslation();
+  const [text, setText] = useState("");
+  const [preview, setPreview] = useState<Extract<ImportResult, { committed: false }> | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) setText(await file.text());
+    e.target.value = ""; // 같은 파일 재선택 허용
+  }
+
+  async function runPreview() {
+    setBusy(true);
+    setMsg(null);
+    setPreview(null);
+    try {
+      const res = await api.importEntries(text, false);
+      if (res.committed) return; // dry-run이라 도달 안 함
+      setPreview(res);
+    } catch (err) {
+      setMsg(err instanceof Error && err.message.includes("400") ? t("impexport.tooMany") : t("impexport.failed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function commit() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await api.importEntries(text, true);
+      if (res.committed) {
+        setMsg(t("impexport.done", { n: res.inserted }));
+        setPreview(null);
+        setText("");
+        setTimeout(() => window.location.reload(), 800);
+      }
+    } catch {
+      setMsg(t("impexport.failed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function download() {
+    setBusy(true);
+    try {
+      await api.exportEntries();
+    } catch {
+      setMsg(t("impexport.failed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={st.card}>
+      <div style={st.cardHead}>
+        <b>{t("impexport.title")}</b>
+        <span style={st.muted}>{t("impexport.desc")}</span>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
+        <button style={st.ghost} disabled={busy} onClick={download}>
+          {t("impexport.download")}
+        </button>
+        <label style={{ ...st.ghost, cursor: "pointer" }}>
+          {t("impexport.fileLabel")}
+          <input type="file" accept=".md,.markdown,text/markdown" onChange={onFile} style={{ display: "none" }} />
+        </label>
+      </div>
+
+      <textarea
+        style={{ ...st.input, width: "100%", minHeight: 120, fontFamily: "monospace", resize: "vertical" }}
+        placeholder={t("impexport.placeholder")}
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          // 미리보기 이후 텍스트를 수정하면 확정 시 다른 내용이 등록될 수 있어 미리보기를 무효화한다.
+          setPreview(null);
+        }}
+      />
+
+      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        <button style={st.primary} disabled={busy || !text.trim()} onClick={runPreview}>
+          {t("impexport.preview")}
+        </button>
+      </div>
+
+      {preview && (
+        <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+          <div style={{ marginBottom: 8 }}>
+            {t("impexport.summary", {
+              ok: preview.okCount,
+              err: preview.errors.length,
+              dup: preview.dupWarnings.length,
+            })}
+          </div>
+
+          {preview.errors.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ ...st.muted, color: "crimson" }}>{t("impexport.errorsHead")}</div>
+              {preview.errors.map((e) => (
+                <div key={`e${e.row}`} style={{ fontSize: 13 }}>
+                  {t("impexport.rowLabel", { row: e.row })}: {e.message}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {preview.dupWarnings.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              <div style={st.muted}>{t("impexport.dupsHead")}</div>
+              {preview.dupWarnings.map((d) => (
+                <div key={`d${d.row}`} style={{ fontSize: 13 }}>
+                  {t("impexport.rowLabel", { row: d.row })}: {d.watchedOn} · {d.title}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button style={st.primary} disabled={busy || preview.okCount === 0} onClick={commit}>
+              {preview.okCount === 0 ? t("impexport.empty") : t("impexport.confirm", { ok: preview.okCount })}
+            </button>
+            <button style={st.ghost} disabled={busy} onClick={() => setPreview(null)}>
+              {t("impexport.cancel")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {msg && <div style={{ ...st.muted, marginTop: 8 }}>{msg}</div>}
     </div>
   );
 }
