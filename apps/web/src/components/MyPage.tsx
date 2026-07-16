@@ -334,20 +334,34 @@ function ImportExport() {
   }
 
   async function commit() {
-    if (!isPreviewCurrent || previewedText === null) return; // 확정은 항상 미리 본 그 텍스트로만
+    if (!isPreviewCurrent || previewedText === null || preview === null) return; // 확정은 항상 미리 본 그 텍스트로만
+    const okCount = preview.okCount; // 커밋 응답이 오기 전 미리보기가 약속한 건수를 미리 캡처
     setBusy(true);
     setMsg(null);
     try {
       const res = await api.importEntries(previewedText, true);
       if (res.committed) {
-        setMsg(t("impexport.done", { n: res.inserted }));
-        setPreview(null);
-        setPreviewedText(null);
-        setText("");
-        setTimeout(() => window.location.reload(), 800);
+        if (res.inserted < okCount) {
+          // 유효한 행 중 일부가 D1 insert 단계에서 실패 — 조용히 넘어가면 사용자가
+          // 모르고 텍스트를 잃는다. text는 남기고, preview도 지워 재시도 전 새
+          // 미리보기(이미 등록된 행에 대한 중복 경고 포함)를 강제한다.
+          setMsg(t("impexport.partialFail", { inserted: res.inserted, ok: okCount }));
+          setPreview(null);
+          setPreviewedText(null);
+        } else {
+          setMsg(t("impexport.done", { n: res.inserted }));
+          setPreview(null);
+          setPreviewedText(null);
+          setText("");
+          setTimeout(() => window.location.reload(), 800);
+        }
       }
     } catch {
-      setMsg(t("impexport.failed"));
+      // 네트워크 오류여도 서버에는 실제로 커밋됐을 수 있다. preview를 지워 재시도
+      // 전 새 미리보기(중복 경고 포함)를 강제하고, text는 남겨 재시도를 돕는다.
+      setPreview(null);
+      setPreviewedText(null);
+      setMsg(t("impexport.retryWarn"));
     } finally {
       setBusy(false);
     }

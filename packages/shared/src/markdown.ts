@@ -81,8 +81,10 @@ export function parseEntriesMarkdown(md: string): ParseResult {
   for (const line of pipeLines) {
     const cells = splitCells(line);
     if (!headerSeen) {
-      headerSeen = true; // 첫 파이프 라인 = 헤더
-      continue;
+      headerSeen = true;
+      // 첫 파이프 라인은 보통 헤더지만, 첫 셀이 날짜 형식이면 헤더 없이 바로
+      // 데이터가 시작된 것 — 헤더로 오인해 스킵하면 첫 행이 조용히 사라진다.
+      if (!DATE_RE.test(cells[0] ?? "")) continue;
     }
     if (isSeparator(cells)) continue;
 

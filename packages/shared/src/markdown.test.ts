@@ -82,6 +82,33 @@ describe("parseEntriesMarkdown", () => {
     const { ok } = parseEntriesMarkdown(TABLE);
     expect(ok.map((r) => r.row)).toEqual([1, 2, 3]);
   });
+
+  it("헤더 없이 데이터로 바로 시작해도(첫 셀이 날짜) 모든 행을 파싱한다", () => {
+    const md = `| 2026-07-15 | 무빙 | 드라마 | 좋아요 |  |  |\n| 2026-07-14 | 듄 | 영화 |  |  |  |`;
+    const { ok, errors } = parseEntriesMarkdown(md);
+    expect(errors).toEqual([]);
+    expect(ok).toHaveLength(2);
+    expect(ok.map((r) => r.row)).toEqual([1, 2]);
+    expect(ok[0]!.title).toBe("무빙");
+    expect(ok[1]!.title).toBe("듄");
+  });
+
+  it("정상 헤더+구분선 표는 여전히 헤더를 스킵한다", () => {
+    const md = `| 날짜 | 제목 |\n|--|--|\n| 2026-07-01 | A |`;
+    const { ok } = parseEntriesMarkdown(md);
+    expect(ok).toHaveLength(1);
+    expect(ok[0]!.row).toBe(1);
+    expect(ok[0]!.title).toBe("A");
+  });
+
+  it("헤더 없는 한 줄짜리 표도 파싱한다", () => {
+    const md = `| 2026-07-15 | 무빙 |`;
+    const { ok, errors } = parseEntriesMarkdown(md);
+    expect(errors).toEqual([]);
+    expect(ok).toHaveLength(1);
+    expect(ok[0]!.row).toBe(1);
+    expect(ok[0]!.title).toBe("무빙");
+  });
 });
 
 describe("formatEntriesMarkdown", () => {

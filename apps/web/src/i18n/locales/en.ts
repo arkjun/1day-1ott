@@ -133,5 +133,7 @@ export default {
     tooMany: "Up to 500 rows at a time.",
     empty: "No valid rows to add.",
     failed: "Import failed.",
+    partialFail: "Only {{inserted}} of {{ok}} were added — the rest failed, please try again.",
+    retryWarn: "The import request failed. Some rows may have already been added — please preview again before retrying.",
   },
 };
