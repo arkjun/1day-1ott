@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, type ImportResult, type PasskeyRow } from "../lib/api";
 import { authClient, signIn } from "../lib/authClient";
@@ -290,38 +290,59 @@ function ImportExport() {
   const { t } = useTranslation();
   const [text, setText] = useState("");
   const [preview, setPreview] = useState<Extract<ImportResult, { committed: false }> | null>(null);
+  // 미리보기가 계산된 시점의 원문. 이후 text가 바뀌면 preview는 낡은 것이므로
+  // previewedText === text 일 때만(패널 렌더/확정 버튼 활성화) 신뢰한다 —
+  // 파일 재선택이든 타이핑이든, text를 바꾸는 경로가 늘어나도 이 한 곳만 지키면 된다.
+  const [previewedText, setPreviewedText] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  // runPreview 호출마다 증가. 응답이 도착했을 때 더 최신 요청이 시작된 상태라면
+  // (이론상 버튼이 busy 동안 비활성화돼 지금은 발생하지 않지만) 낡은 응답을 버린다.
+  const genRef = useRef(0);
+
+  const isPreviewCurrent = preview !== null && previewedText === text;
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file) setText(await file.text());
     e.target.value = ""; // 같은 파일 재선택 허용
+    if (!file) return;
+    try {
+      setText(await file.text());
+    } catch {
+      setMsg(t("impexport.failed"));
+    }
   }
 
   async function runPreview() {
+    const gen = ++genRef.current;
+    const requestText = text;
     setBusy(true);
     setMsg(null);
-    setPreview(null);
     try {
-      const res = await api.importEntries(text, false);
+      const res = await api.importEntries(requestText, false);
       if (res.committed) return; // dry-run이라 도달 안 함
+      if (gen !== genRef.current) return; // 그 사이 새 미리보기가 시작됨 → 이 응답은 버린다
       setPreview(res);
+      setPreviewedText(requestText);
     } catch (err) {
-      setMsg(err instanceof Error && err.message.includes("400") ? t("impexport.tooMany") : t("impexport.failed"));
+      if (gen === genRef.current) {
+        setMsg(err instanceof Error && err.message.includes("400") ? t("impexport.tooMany") : t("impexport.failed"));
+      }
     } finally {
-      setBusy(false);
+      if (gen === genRef.current) setBusy(false);
     }
   }
 
   async function commit() {
+    if (!isPreviewCurrent || previewedText === null) return; // 확정은 항상 미리 본 그 텍스트로만
     setBusy(true);
     setMsg(null);
     try {
-      const res = await api.importEntries(text, true);
+      const res = await api.importEntries(previewedText, true);
       if (res.committed) {
         setMsg(t("impexport.done", { n: res.inserted }));
         setPreview(null);
+        setPreviewedText(null);
         setText("");
         setTimeout(() => window.location.reload(), 800);
       }
@@ -354,9 +375,14 @@ function ImportExport() {
         <button style={st.ghost} disabled={busy} onClick={download}>
           {t("impexport.download")}
         </button>
-        <label style={{ ...st.ghost, cursor: "pointer" }}>
+        <label style={{ ...st.ghost, cursor: "pointer", position: "relative" }}>
           {t("impexport.fileLabel")}
-          <input type="file" accept=".md,.markdown,text/markdown" onChange={onFile} style={{ display: "none" }} />
+          <input
+            type="file"
+            accept=".md,.markdown,text/markdown"
+            onChange={onFile}
+            style={st.visuallyHidden}
+          />
         </label>
       </div>
 
@@ -364,11 +390,7 @@ function ImportExport() {
         style={{ ...st.input, width: "100%", minHeight: 120, fontFamily: "monospace", resize: "vertical" }}
         placeholder={t("impexport.placeholder")}
         value={text}
-        onChange={(e) => {
-          setText(e.target.value);
-          // 미리보기 이후 텍스트를 수정하면 확정 시 다른 내용이 등록될 수 있어 미리보기를 무효화한다.
-          setPreview(null);
-        }}
+        onChange={(e) => setText(e.target.value)}
       />
 
       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
@@ -377,7 +399,7 @@ function ImportExport() {
         </button>
       </div>
 
-      {preview && (
+      {isPreviewCurrent && preview && (
         <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
           <div style={{ marginBottom: 8 }}>
             {t("impexport.summary", {
@@ -413,7 +435,7 @@ function ImportExport() {
             <button style={st.primary} disabled={busy || preview.okCount === 0} onClick={commit}>
               {preview.okCount === 0 ? t("impexport.empty") : t("impexport.confirm", { ok: preview.okCount })}
             </button>
-            <button style={st.ghost} disabled={busy} onClick={() => setPreview(null)}>
+            <button style={st.ghost} disabled={busy} onClick={() => { setPreview(null); setPreviewedText(null); }}>
               {t("impexport.cancel")}
             </button>
           </div>
@@ -435,6 +457,9 @@ const st: Record<string, React.CSSProperties> = {
   settingRow: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14 },
   primary: { border: 0, borderRadius: 10, padding: "9px 16px", background: "linear-gradient(135deg,var(--accent),var(--accent-ink))", color: "#fff", fontWeight: 700, boxShadow: "0 4px 14px var(--accent-weak)" },
   ghost: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 14px", background: "var(--surface)", color: "inherit" },
+  // display:none이면 탭 순서에서 완전히 빠져 키보드로 파일 선택 다이얼로그에 갈 방법이 없다.
+  // 시각적으로만 숨기고(클립) 포커스는 가능하게 둔다 — label 텍스트가 접근성 이름이 된다.
+  visuallyHidden: { position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 },
   input: { padding: "10px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface-2)", color: "inherit", fontSize: 14 },
   smallBtn: { border: "1px solid var(--border)", borderRadius: 8, padding: "4px 10px", background: "var(--surface)", color: "var(--muted)", fontSize: 12 },
 };

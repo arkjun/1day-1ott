@@ -114,7 +114,6 @@ export default {
     desc: "記録を markdown 表でアップロード・ダウンロードできます。",
     download: "markdown をダウンロード",
     fileLabel: "markdown ファイルを選択",
-    or: "または貼り付け",
     placeholder: "| 日付 | タイトル | 種類 | 反応 | 感想 | プラットフォーム |\n| 2026-07-15 | ムービング | 드라마 | 좋아요 | 面白い | Disney+ |",
     preview: "プレビュー",
     summary: "登録 {{ok}}件 · エラー {{err}}件 · 重複疑い {{dup}}件",

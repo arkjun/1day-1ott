@@ -121,7 +121,6 @@ export default {
     desc: "Upload or download your log as a markdown table.",
     download: "Download markdown",
     fileLabel: "Choose markdown file",
-    or: "or paste",
     placeholder: "| Date | Title | Type | Reaction | Note | Platform |\n| 2026-07-15 | Moving | 드라마 | 좋아요 | Great | Disney+ |",
     preview: "Preview",
     summary: "{{ok}} to add · {{err}} errors · {{dup}} possible dups",

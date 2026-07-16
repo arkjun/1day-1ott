@@ -114,7 +114,6 @@ export default {
     desc: "기록을 markdown 표로 올리거나 내려받아요.",
     download: "markdown 다운로드",
     fileLabel: "markdown 파일 선택",
-    or: "또는 붙여넣기",
     placeholder: "| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 |\n| 2026-07-15 | 무빙 | 드라마 | 좋아요 | 재밌었다 | 디즈니+ |",
     preview: "미리보기",
     summary: "등록 {{ok}}건 · 오류 {{err}}건 · 중복 의심 {{dup}}건",
