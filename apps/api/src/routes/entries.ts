@@ -1,6 +1,6 @@
 import { entryInputSchema, countToLevel, reactionSchema, formatEntriesMarkdown, parseEntriesMarkdown } from "@1ott/shared";
 import type { EntryRowData, HeatmapCell } from "@1ott/shared";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
 import { z } from "zod";
@@ -74,19 +74,28 @@ async function upsertContent(
   return id;
 }
 
-/** 내 기존 entries 중 (watchedOn+title)이 겹치는 파싱 행을 경고로. */
+/**
+ * 내 기존 entries 중 (watchedOn+title)이 겹치는 파싱 행을 경고로.
+ * 전체 히스토리를 매번 조인하면 기록이 쌓일수록(잔디 앱 특성상 계속 누적) 매 import가
+ * 느려지므로, 이번에 들여오는 행들의 watchedOn 날짜로만 좁혀서 조회한다.
+ */
 async function computeDupWarnings(
   db: ReturnType<typeof createDb>,
   userId: string,
   rows: { row: number; watchedOn: string; title: string }[],
 ): Promise<{ row: number; watchedOn: string; title: string }[]> {
   if (rows.length === 0) return [];
+  const watchedOnDates = [...new Set(rows.map((r) => r.watchedOn))];
   const existing = await db
     .select({ watchedOn: schema.entries.watchedOn, title: schema.content.title })
     .from(schema.entries)
     .innerJoin(schema.content, eq(schema.entries.contentId, schema.content.id))
-    .where(eq(schema.entries.userId, userId))
+    .where(and(eq(schema.entries.userId, userId), inArray(schema.entries.watchedOn, watchedOnDates)))
     .all();
+  // key가 `${watchedOn}|${title}` 여도 안전한 이유: watchedOn은 모든 insert 경로에서
+  // ^\d{4}-\d{2}-\d{2}$ (고정 10자)로 검증되므로 분할 지점이 항상 index 10 — title에
+  // '|'가 들어있어도(막을 규칙 없음) 그 위치를 밀어낼 수 없어 서로 다른 (watchedOn,title)
+  // 쌍이 같은 키로 충돌할 수 없다.
   const seen = new Set(existing.map((e) => `${e.watchedOn}|${e.title}`));
   return rows
     .filter((r) => seen.has(`${r.watchedOn}|${r.title}`))
@@ -132,38 +141,49 @@ entriesRoute.post("/entries/import", async (c) => {
 
   const db = createDb(c.env.DB);
   const userId = c.get("userId");
-  const dupWarnings = await computeDupWarnings(db, userId, ok);
 
   if (!commit) {
+    const dupWarnings = await computeDupWarnings(db, userId, ok);
     return c.json({ committed: false, okCount: ok.length, errors, dupWarnings });
   }
 
   let inserted = 0;
+  const commitErrors = [...errors];
   for (const r of ok) {
-    const contentId = await upsertContent(
-      db,
-      {
-        type: r.type,
-        title: r.title,
+    // 행 하나가 실패해도(D1 순간 장애 등) 나머지 행은 계속 진행 — 하나만 배치/트랜잭션이
+    // 아니므로 여기서 멈추면 이미 커밋된 행을 응답에서 숨기는 셈이 되어 재업로드 시 중복
+    // insert를 유발한다. 실패 행은 errors에 합류시켜 inserted가 실제 커밋 수와 맞도록 한다.
+    try {
+      const contentId = await upsertContent(
+        db,
+        {
+          type: r.type,
+          title: r.title,
+          watchedOn: r.watchedOn,
+          reaction: r.reaction ?? undefined,
+          note: r.note ?? undefined,
+          platform: r.platform ?? undefined,
+        },
+        c.req.query("lang"),
+      );
+      await db.insert(schema.entries).values({
+        id: nanoid(),
+        userId,
+        contentId,
         watchedOn: r.watchedOn,
-        reaction: r.reaction ?? undefined,
-        note: r.note ?? undefined,
-        platform: r.platform ?? undefined,
-      },
-      c.req.query("lang"),
-    );
-    await db.insert(schema.entries).values({
-      id: nanoid(),
-      userId,
-      contentId,
-      watchedOn: r.watchedOn,
-      reaction: r.reaction ?? null,
-      note: r.note ?? null,
-      platform: r.platform ?? null,
-    });
-    inserted++;
+        reaction: r.reaction ?? null,
+        note: r.note ?? null,
+        platform: r.platform ?? null,
+      });
+      inserted++;
+    } catch (e) {
+      commitErrors.push({
+        row: r.row,
+        message: `등록 실패: ${e instanceof Error ? e.message : String(e)}`,
+      });
+    }
   }
-  return c.json({ committed: true, inserted, errors });
+  return c.json({ committed: true, inserted, errors: commitErrors });
 });
 
 /** 내 전체 기록을 markdown 표로 다운로드. */

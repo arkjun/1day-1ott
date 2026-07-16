@@ -501,12 +501,17 @@ describe("POST /api/entries/import", () => {
     expect(entries.map((e) => e.title).sort()).toEqual(["무빙", "폭싹 속았수다"].sort());
   });
 
-  it("이미 있는 (날짜+제목)은 dupWarnings로 표시한다", async () => {
+  it("이미 있는 (날짜+제목)은 두 행 모두 dupWarnings로 표시한다", async () => {
     const cookie = await signUp();
-    await importMd(cookie, TABLE, true); // 무빙 등록
+    await importMd(cookie, TABLE, true); // 무빙 + 폭싹 속았수다 등록
     const res = await importMd(cookie, TABLE, false);
     const body = (await res.json()) as { dupWarnings: { row: number; watchedOn: string; title: string }[] };
-    expect(body.dupWarnings.some((d) => d.title === "무빙")).toBe(true);
+    expect(
+      body.dupWarnings.map((d) => ({ row: d.row, title: d.title })).sort((a, b) => a.row - b.row),
+    ).toEqual([
+      { row: 1, title: "무빙" },
+      { row: 2, title: "폭싹 속았수다" },
+    ]);
   });
 
   it("501행이면 400 too_many_rows", async () => {
@@ -517,6 +522,28 @@ describe("POST /api/entries/import", () => {
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: string };
     expect(body.error).toBe("too_many_rows");
+  });
+
+  it("잘못된 요청 본문은 400 invalid_input", async () => {
+    const cookie = await signUp();
+    const res = await app.request(
+      "/api/entries/import",
+      authed(cookie, { method: "POST", body: JSON.stringify({ markdown: 123, commit: false }) }),
+      env,
+    );
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("invalid_input");
+  });
+
+  it("남의 기록과는 dupWarnings가 겹치지 않는다 (사용자 격리)", async () => {
+    const owner = await signUp();
+    await importMd(owner, TABLE, true); // owner가 무빙/폭싹 속았수다 등록
+
+    const stranger = await signUp();
+    const res = await importMd(stranger, TABLE, false);
+    const body = (await res.json()) as { dupWarnings: unknown[] };
+    expect(body.dupWarnings).toEqual([]);
   });
 });
 
@@ -531,5 +558,18 @@ describe("GET /api/entries/export", () => {
     const text = await res.text();
     expect(text).toContain("| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 |");
     expect(text).toContain("| 2026-07-11 | 듄 | 영화 | 매우 좋아요 |  |  |");
+  });
+
+  it("남의 기록은 export에 포함되지 않는다 (사용자 격리)", async () => {
+    const owner = await signUp();
+    await createEntry(owner, { title: "남의 기록", type: "movie", watchedOn: "2026-07-11" });
+
+    const stranger = await signUp();
+    await createEntry(stranger, { title: "내 기록", type: "movie", watchedOn: "2026-07-12" });
+    const res = await app.request("/api/entries/export", authed(stranger), env);
+    expect(res.status).toBe(200);
+    const text = await res.text();
+    expect(text).toContain("내 기록");
+    expect(text).not.toContain("남의 기록");
   });
 });
