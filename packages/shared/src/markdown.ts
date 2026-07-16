@@ -1,4 +1,4 @@
-import { type ContentType, type Reaction, contentTypes, reactions } from "./index";
+import type { ContentType, Reaction } from "./index";
 
 export interface EntryRowData {
   watchedOn: string;
@@ -32,22 +32,16 @@ const TYPE_LABEL: Record<ContentType, string> = {
 };
 /**
  * import 인식용: 한국어 라벨 + 영어 enum 키 → enum (소문자/trim 정규화).
- * index.ts가 이 파일을 `export * from "./markdown"`로 재수출하는 순환 참조 구조라,
- * 모듈 top-level에서 즉시 contentTypes를 순회하면 평가 순서에 따라 아직 초기화되지
- * 않은 상태를 참조할 수 있다. 첫 호출 시점까지 지연 생성해 이를 피한다.
+ * ContentType은 런타임 값이 아니라 type-only import이므로 index.ts와의
+ * 순환 참조(export * from "./markdown")에 얽히지 않는다. TYPE_LABEL(위)이
+ * ContentType을 빠짐없이 커버하므로 그 키만으로 top-level에서 안전하게 구성한다.
  */
-let typeLookupCache: Map<string, ContentType> | null = null;
-function getTypeLookup(): Map<string, ContentType> {
-  if (!typeLookupCache) {
-    const m = new Map<string, ContentType>();
-    for (const t of contentTypes) {
-      m.set(t, t); // 영어 키
-      m.set(TYPE_LABEL[t].toLowerCase(), t); // 한국어 라벨
-    }
-    typeLookupCache = m;
-  }
-  return typeLookupCache;
-}
+const TYPE_LOOKUP: Map<string, ContentType> = new Map(
+  (Object.keys(TYPE_LABEL) as ContentType[]).flatMap((t) => [
+    [t, t], // 영어 키
+    [TYPE_LABEL[t].toLowerCase(), t], // 한국어 라벨
+  ]) as [string, ContentType][],
+);
 
 /** 반응: enum → 한국어 라벨(export). */
 const REACTION_LABEL: Record<Reaction, string> = {
@@ -106,7 +100,7 @@ export function parseEntriesMarkdown(md: string): ParseResult {
 
     let type: ContentType = "other";
     if (typeRaw !== "") {
-      const found = getTypeLookup().get(typeRaw.toLowerCase());
+      const found = TYPE_LOOKUP.get(typeRaw.toLowerCase());
       if (!found) {
         errors.push({ row: dataRow, message: `알 수 없는 유형: "${typeRaw}"` });
         continue;

@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
+import type { ContentType, Reaction } from "./index";
 import { parseEntriesMarkdown, formatEntriesMarkdown } from "./markdown";
+
+/** 유형별 canonical 한국어 라벨. 라벨이 바뀌면 아래 round-trip 테스트가 실패해야 한다. */
+const TYPE_LABELS: Record<ContentType, string> = {
+  movie: "영화",
+  tv: "드라마",
+  variety: "예능",
+  documentary: "시사·교양",
+  anime: "애니",
+  youtube: "유튜브",
+  other: "기타",
+};
+const REACTIONS: Reaction[] = ["down", "up", "love"];
 
 const TABLE = `| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 |
 |------|------|------|------|------|--------|
@@ -104,6 +117,27 @@ describe("formatEntriesMarkdown", () => {
       { watchedOn: "2026-07-14", title: "어떤영화", type: "other" as const, reaction: null, note: null, platform: null },
     ];
     const { ok, errors } = parseEntriesMarkdown(formatEntriesMarkdown(rows));
+    expect(errors).toEqual([]);
+    expect(ok.map(({ row, ...r }) => r)).toEqual(rows);
+  });
+
+  it("모든 유형 × 모든 반응이 format → parse 왕복에서 보존되고, 라벨이 출력에 그대로 나온다", () => {
+    const types = Object.keys(TYPE_LABELS) as ContentType[];
+    const rows = types.map((type, i) => ({
+      watchedOn: "2026-07-15",
+      title: `제목${i}`,
+      type,
+      reaction: REACTIONS[i % REACTIONS.length]!,
+      note: "메모",
+      platform: "넷플릭스",
+    }));
+
+    const md = formatEntriesMarkdown(rows);
+    for (const type of types) {
+      expect(md).toContain(TYPE_LABELS[type]);
+    }
+
+    const { ok, errors } = parseEntriesMarkdown(md);
     expect(errors).toEqual([]);
     expect(ok.map(({ row, ...r }) => r)).toEqual(rows);
   });
