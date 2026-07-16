@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, type PasskeyRow } from "../lib/api";
-import { authClient } from "../lib/authClient";
+import { authClient, signIn } from "../lib/authClient";
 import { useTheme } from "../lib/theme";
 import { LanguageSelect } from "./LanguageSelect";
 
 export interface MyPageUser {
   id: string;
   name: string;
+  email: string;
   username?: string | null;
   isPublic?: boolean | null;
   lang?: string | null;
@@ -25,7 +26,7 @@ export function MyPage({ user }: { user: MyPageUser }) {
         </a>
       </div>
       <ShareSettings user={user} />
-      <PasskeyManager />
+      <PasskeyManager user={user} />
       <Settings user={user} />
     </div>
   );
@@ -103,13 +104,17 @@ function ShareSettings({ user }: { user: MyPageUser }) {
 }
 
 /** Passkey 등록/목록/삭제. 등록·로그인은 브라우저 WebAuthn 의식이 필요. */
-function PasskeyManager() {
+function PasskeyManager({ user }: { user: MyPageUser }) {
   const { t, i18n } = useTranslation();
   const [list, setList] = useState<PasskeyRow[]>([]);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  // Better Auth 는 passkey 등록을 민감 작업으로 보고 fresh 세션을 요구한다.
+  // 세션이 오래되면 SESSION_NOT_FRESH(403) → 비밀번호 재입력으로 재로그인 후 재시도.
+  const [reauth, setReauth] = useState(false);
+  const [password, setPassword] = useState("");
 
   async function load() {
     try {
@@ -128,11 +133,37 @@ function PasskeyManager() {
     const res = await authClient.passkey.addPasskey({ name: name.trim() || undefined });
     setBusy(false);
     if (res?.error) {
-      setMsg(t("passkey.addFailed"));
+      const e = res.error;
+      // 오래된 세션이면 재로그인 폼을 띄운다(그 뒤 자동 재시도).
+      if (("code" in e && e.code === "SESSION_NOT_FRESH") || e.status === 403) {
+        setReauth(true);
+        setMsg(t("passkey.reauthHint"));
+        return;
+      }
+      // 그 외(WebAuthn 취소/미지원 등)는 실제 code/status 를 그대로 노출.
+      console.error("[passkey] addPasskey failed", e);
+      const detail = ("code" in e && e.code) || e.message || e.status;
+      setMsg(detail ? `${t("passkey.addFailed")} (${detail})` : t("passkey.addFailed"));
       return;
     }
     setName("");
     await load();
+  }
+
+  // 비밀번호로 재로그인 → 새 fresh 세션 → passkey 등록 재시도.
+  async function reauthAndAdd() {
+    setBusy(true);
+    setMsg(null);
+    const r = await signIn.email({ email: user.email, password });
+    if (r.error) {
+      setBusy(false);
+      setMsg(t("passkey.reauthFailed"));
+      return;
+    }
+    setBusy(false);
+    setPassword("");
+    setReauth(false);
+    await add();
   }
 
   async function remove(id: string) {
@@ -164,6 +195,31 @@ function PasskeyManager() {
           {t("passkey.add")}
         </button>
       </div>
+
+      {reauth && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            reauthAndAdd();
+          }}
+          style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}
+        >
+          <input
+            style={{ ...st.input, width: 200 }}
+            type="password"
+            autoFocus
+            placeholder={t("auth.password")}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button style={st.primary} type="submit" disabled={busy || !password}>
+            {t("passkey.reauthDo")}
+          </button>
+          <button style={st.ghost} type="button" onClick={() => { setReauth(false); setPassword(""); setMsg(null); }}>
+            {t("common.cancel")}
+          </button>
+        </form>
+      )}
 
       {list.length === 0 ? (
         <div style={st.muted}>{t("passkey.empty")}</div>
