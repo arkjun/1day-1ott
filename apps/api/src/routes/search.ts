@@ -44,11 +44,18 @@ export function matchesTypeGenre(
   type: ContentType,
 ): boolean {
   if (type === "anime") return genreIds?.includes(GENRE_ANIMATION) ?? false;
-  if (type === "variety") {
-    return (genreIds ?? []).some((g) => g === GENRE_REALITY || g === GENRE_TALK);
-  }
   if (type === "documentary") {
     return (genreIds ?? []).some((g) => g === GENRE_DOCUMENTARY || g === GENRE_NEWS);
+  }
+  if (type === "variety") {
+    // 다큐/뉴스가 함께 달린 시사교양(예: 그것이 알고싶다=[99,10767])은 예능에서 제외.
+    const docish = (genreIds ?? []).some(
+      (g) => g === GENRE_DOCUMENTARY || g === GENRE_NEWS,
+    );
+    return (
+      !docish &&
+      (genreIds ?? []).some((g) => g === GENRE_REALITY || g === GENRE_TALK)
+    );
   }
   if (type === "tv") {
     const excluded = [

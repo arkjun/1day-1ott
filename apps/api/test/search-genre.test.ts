@@ -63,6 +63,12 @@ describe("matchesTypeGenre", () => {
     expect(matchesTypeGenre([], "variety")).toBe(false);
     expect(matchesTypeGenre(undefined, "variety")).toBe(false);
   });
+
+  it("variety: 다큐(99)/뉴스(10763)가 함께 달리면 제외 (시사교양 우선)", () => {
+    // 그것이 알고싶다 = [99, 10767]: 토크지만 다큐라 예능 탭엔 안 뜬다
+    expect(matchesTypeGenre([99, 10767], "variety")).toBe(false);
+    expect(matchesTypeGenre([10763, 10764], "variety")).toBe(false);
+  });
 });
 
 describe("mapTmdb", () => {
