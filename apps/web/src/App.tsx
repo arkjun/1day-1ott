@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 import { CalendarView } from "./components/CalendarView";
 import { MyPage } from "./components/MyPage";
 import { PublicProfile } from "./components/PublicProfile";
-import { RecordModal, ReactionPicker } from "./components/RecordModal";
+import { RecentItem } from "./components/RecentItem";
+import { RecordModal } from "./components/RecordModal";
 import { activityLabels } from "./i18n/format";
 import { LanguageSelect } from "./components/LanguageSelect";
 import { api, type EntryRow } from "./lib/api";
@@ -32,104 +33,6 @@ function Stat({ k, v, unit, accent }: { k: string; v: number; unit: string; acce
       <div style={{ ...st.tileV, color: accent ? "#ff5a36" : "inherit" }}>
         {v}
         <small style={st.tileU}>{unit}</small>
-      </div>
-    </div>
-  );
-}
-
-/** 최근 기록 한 줄: 인라인 수정(반응/감상/날짜) + 2단계 삭제. */
-function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: () => void }) {
-  const { t } = useTranslation();
-  const [editing, setEditing] = useState(false);
-  const [confirmDel, setConfirmDel] = useState(false);
-  const [watchedOn, setWatchedOn] = useState(entry.watchedOn);
-  const [reaction, setReaction] = useState<Reaction | null>(entry.reaction);
-  const [note, setNote] = useState(entry.note ?? "");
-  const [busy, setBusy] = useState(false);
-
-  async function save() {
-    setBusy(true);
-    try {
-      await api.updateEntry(entry.id, {
-        watchedOn,
-        reaction: reaction ?? null,
-        note: note.trim() || null,
-      });
-      setEditing(false);
-      onChanged();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function del() {
-    setBusy(true);
-    try {
-      await api.deleteEntry(entry.id);
-      onChanged();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (editing) {
-    return (
-      <div style={st.entryEdit}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>
-          {t(`type.${entry.type}`)} · {entry.title}
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <input
-            type="date"
-            style={{ ...st.input, width: 150 }}
-            value={watchedOn}
-            onChange={(e) => setWatchedOn(e.target.value)}
-          />
-          <ReactionPicker value={reaction} onChange={setReaction} />
-        </div>
-        <input
-          style={{ ...st.input, width: "100%", marginTop: 8 }}
-          placeholder={t("note.placeholder")}
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          <button style={st.primary} disabled={busy} onClick={save}>
-            {t("common.save")}
-          </button>
-          <button style={st.ghost} onClick={() => setEditing(false)}>
-            {t("common.cancel")}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={st.entryRow}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <b>{entry.watchedOn}</b> · {t(`type.${entry.type}`)} · {entry.title}
-        {entry.reaction ? ` · ${REACTION_META[entry.reaction].emoji}` : ""}
-        {entry.note ? <span style={st.muted}> · {entry.note}</span> : null}
-      </div>
-      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-        <button style={st.smallBtn} onClick={() => setEditing(true)}>
-          {t("common.edit")}
-        </button>
-        {confirmDel ? (
-          <>
-            <button style={{ ...st.smallBtn, color: "crimson" }} disabled={busy} onClick={del}>
-              {t("common.confirmDelete")}
-            </button>
-            <button style={st.smallBtn} onClick={() => setConfirmDel(false)}>
-              {t("common.cancel")}
-            </button>
-          </>
-        ) : (
-          <button style={st.smallBtn} onClick={() => setConfirmDel(true)}>
-            {t("common.del")}
-          </button>
-        )}
       </div>
     </div>
   );
