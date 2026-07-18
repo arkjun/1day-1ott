@@ -1,0 +1,1 @@
+CREATE INDEX `entries_content_idx` ON `entries` (`content_id`);

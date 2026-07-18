@@ -133,7 +133,10 @@ export const entries = sqliteTable(
       .notNull()
       .default(sql`(unixepoch())`),
   },
-  (t) => [index("entries_user_day_idx").on(t.userId, t.watchedOn)],
+  (t) => [
+    index("entries_user_day_idx").on(t.userId, t.watchedOn),
+    index("entries_content_idx").on(t.contentId),
+  ],
 );
 
 export const schema = {

@@ -141,6 +141,7 @@ publicRoute.get("/content/:id", async (c) => {
     pickLang(c.req.query("lang")),
   );
 
+  c.header("cache-control", "public, max-age=300");
   return c.json({
     id: row.id,
     type: row.type,
