@@ -76,7 +76,8 @@ export function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: (
   return (
     <div style={st.entryRow}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <b>{entry.watchedOn}</b> · {t(`type.${entry.type}`)} · {entry.title}
+        <b>{entry.watchedOn}</b> · {t(`type.${entry.type}`)} ·{" "}
+        <a href={`/c/${entry.contentId}`} style={{ color: "inherit" }}>{entry.title}</a>
         {entry.reaction ? ` · ${REACTION_META[entry.reaction].emoji}` : ""}
         {entry.note ? <span style={st.muted}> · {entry.note}</span> : null}
       </div>

@@ -141,7 +141,9 @@ function Dashboard({ user }: { user: SessionUser }) {
           </div>
           <div style={st.posterGrid}>
             {posters.map((e) => (
-              <img key={e.id} src={e.posterUrl!} alt={e.title} title={e.title} style={st.poster} />
+              <a key={e.id} href={`/c/${e.contentId}`} style={{ display: "block" }}>
+                <img src={e.posterUrl!} alt={e.title} title={e.title} style={st.poster} />
+              </a>
             ))}
           </div>
         </div>

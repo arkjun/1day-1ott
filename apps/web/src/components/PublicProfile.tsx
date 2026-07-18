@@ -132,7 +132,9 @@ export function PublicProfile({ username }: { username: string }) {
             {profile.posters
               .filter((p) => p.posterUrl)
               .map((p) => (
-                <img key={p.id} src={p.posterUrl!} alt={p.title} title={p.title} style={st.poster} />
+                <a key={p.id} href={`/c/${p.contentId}`} style={{ display: "block" }}>
+                  <img src={p.posterUrl!} alt={p.title} title={p.title} style={st.poster} />
+                </a>
               ))}
           </div>
         </div>
