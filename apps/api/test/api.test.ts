@@ -639,6 +639,6 @@ describe("GET /api/u/:username posters", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { posters: { contentId?: string }[] };
     expect(body.posters.length).toBeGreaterThan(0);
-    expect(typeof body.posters[0].contentId).toBe("string");
+    expect(typeof body.posters[0]?.contentId).toBe("string");
   });
 });
