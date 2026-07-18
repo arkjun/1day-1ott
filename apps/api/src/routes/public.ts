@@ -70,6 +70,7 @@ publicRoute.get("/u/:username", async (c) => {
   const titleByContent = await resolveTitles(db, c.env, posterRows, pickLang(c.req.query("lang")));
   const posters = posterRows.map((p) => ({
     id: p.id,
+    contentId: p.contentId,
     title: titleByContent.get(p.contentId) ?? p.title,
     posterUrl: p.posterUrl,
   }));

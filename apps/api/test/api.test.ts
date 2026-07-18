@@ -622,3 +622,23 @@ describe("GET /api/content/:id/mine (본인 기록)", () => {
     expect(body.entries.map((e) => e.watchedOn)).toEqual(["2026-07-13", "2026-07-10"]);
   });
 });
+
+describe("GET /api/u/:username posters", () => {
+  it("posters 항목에 contentId 가 포함된다", async () => {
+    const a = await signUp();
+    await app.request("/api/me", authed(a, {
+      method: "PATCH",
+      body: JSON.stringify({ username: `poster${seq}`, isPublic: true }),
+    }), env);
+    await createEntry(a, {
+      tmdbId: 27205, title: "인셉션",
+      posterUrl: "https://image.tmdb.org/t/p/w500/x.jpg",
+    });
+
+    const res = await app.request(`/api/u/poster${seq}`, {}, env);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { posters: { contentId?: string }[] };
+    expect(body.posters.length).toBeGreaterThan(0);
+    expect(typeof body.posters[0].contentId).toBe("string");
+  });
+});
