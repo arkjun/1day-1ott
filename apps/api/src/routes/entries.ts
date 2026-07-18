@@ -313,6 +313,26 @@ entriesRoute.get("/entries", async (c) => {
   return c.json({ entries: result });
 });
 
+/** 작품 페이지 하단: 로그인 유저의 이 작품 기록만. */
+entriesRoute.get("/content/:id/mine", async (c) => {
+  const db = createDb(c.env.DB);
+  const userId = c.get("userId");
+  const id = c.req.param("id");
+  const rows = await db
+    .select({
+      id: schema.entries.id,
+      watchedOn: schema.entries.watchedOn,
+      reaction: schema.entries.reaction,
+      note: schema.entries.note,
+      platform: schema.entries.platform,
+    })
+    .from(schema.entries)
+    .where(and(eq(schema.entries.userId, userId), eq(schema.entries.contentId, id)))
+    .orderBy(desc(schema.entries.watchedOn), desc(schema.entries.createdAt))
+    .all();
+  return c.json({ entries: rows });
+});
+
 /** 잔디 데이터 — 날짜별 count 집계 후 level 버킷. */
 entriesRoute.get("/heatmap", async (c) => {
   const db = createDb(c.env.DB);

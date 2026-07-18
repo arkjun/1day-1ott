@@ -601,3 +601,24 @@ describe("GET /api/content/:id (공개 집계)", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("GET /api/content/:id/mine (본인 기록)", () => {
+  it("무인증이면 401", async () => {
+    const res = await app.request("/api/content/whatever/mine", {}, env);
+    expect(res.status).toBe(401);
+  });
+
+  it("해당 작품의 본인 기록만 최신순으로 준다", async () => {
+    const a = await signUp();
+    const b = await signUp();
+    const r1 = await createEntry(a, { tmdbId: 603, title: "매트릭스", watchedOn: "2026-07-10", reaction: "up" });
+    const { contentId } = (await r1.json()) as { contentId: string };
+    await createEntry(a, { tmdbId: 603, title: "매트릭스", watchedOn: "2026-07-13", reaction: "love" });
+    await createEntry(b, { tmdbId: 603, title: "매트릭스", watchedOn: "2026-07-12" }); // 남의 기록
+
+    const res = await app.request(`/api/content/${contentId}/mine`, authed(a), env);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { entries: { watchedOn: string; reaction: string | null }[] };
+    expect(body.entries.map((e) => e.watchedOn)).toEqual(["2026-07-13", "2026-07-10"]);
+  });
+});
