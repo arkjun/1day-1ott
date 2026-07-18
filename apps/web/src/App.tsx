@@ -1,4 +1,4 @@
-import type { HeatmapCell, Reaction } from "@1ott/shared";
+import type { HeatmapCell } from "@1ott/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ActivityCalendar from "react-activity-calendar";
 import { useTranslation } from "react-i18next";
@@ -13,7 +13,6 @@ import { api, type EntryRow } from "./lib/api";
 import { signIn, signOut, signUp, useSession } from "./lib/authClient";
 import { buildTypeBreakdown } from "./lib/breakdown";
 import { GREEN, buildYear, currentStreak, isoDaysAgo } from "./lib/heatmap";
-import { REACTION_META } from "./lib/reactions";
 import { useTheme } from "./lib/theme";
 import { TYPE_META } from "./lib/typeMeta";
 
