@@ -116,6 +116,12 @@ export default {
     toHome: "Go home",
     downloadImage: "⬇ Activity image",
   },
+  content: {
+    notFoundTitle: "Content not found",
+    viewers: "{{count}} watched",
+    myRecords: "My records",
+    myEmpty: "No records for this yet",
+  },
   impexport: {
     title: "Import / Export",
     desc: "Upload or download your log as a markdown table.",

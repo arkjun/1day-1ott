@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import ActivityCalendar from "react-activity-calendar";
 import { useTranslation } from "react-i18next";
 import { CalendarView } from "./components/CalendarView";
+import { ContentPage } from "./components/ContentPage";
 import { MyPage } from "./components/MyPage";
 import { PublicProfile } from "./components/PublicProfile";
 import { RecentItem } from "./components/RecentItem";
@@ -269,6 +270,10 @@ export function App() {
   if (path.startsWith("/u/")) {
     const username = decodeURIComponent(path.slice(3).split("/")[0] ?? "");
     if (username) return <PublicProfile username={username} />;
+  }
+  if (path.startsWith("/c/")) {
+    const id = decodeURIComponent(path.slice(3).split("/")[0] ?? "");
+    if (id) return <ContentPage contentId={id} />;
   }
   return <AuthedApp />;
 }

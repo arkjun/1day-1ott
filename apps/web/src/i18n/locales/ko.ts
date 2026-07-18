@@ -109,6 +109,12 @@ export default {
     toHome: "홈으로",
     downloadImage: "⬇ 잔디 이미지",
   },
+  content: {
+    notFoundTitle: "작품을 찾을 수 없어요",
+    viewers: "{{count}}명이 봤어요",
+    myRecords: "내 기록",
+    myEmpty: "아직 이 작품 기록이 없어요",
+  },
   impexport: {
     title: "가져오기 / 내보내기",
     desc: "기록을 markdown 표로 올리거나 내려받아요.",

@@ -109,6 +109,12 @@ export default {
     toHome: "ホームへ",
     downloadImage: "⬇ アクティビティ画像",
   },
+  content: {
+    notFoundTitle: "作品が見つかりません",
+    viewers: "{{count}}人が視聴",
+    myRecords: "自分の記録",
+    myEmpty: "まだこの作品の記録がありません",
+  },
   impexport: {
     title: "インポート / エクスポート",
     desc: "記録を markdown 表でアップロード・ダウンロードできます。",
