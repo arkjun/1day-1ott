@@ -95,6 +95,61 @@ publicRoute.get("/u/:username/jandi.svg", async (c) => {
   });
 });
 
+/** 작품 공개 페이지 집계(무인증). 없으면 404. */
+publicRoute.get("/content/:id", async (c) => {
+  const db = createDb(c.env.DB);
+  const id = c.req.param("id");
+
+  const row = await db
+    .select({
+      id: schema.content.id,
+      type: schema.content.type,
+      title: schema.content.title,
+      posterUrl: schema.content.posterUrl,
+      tmdbId: schema.content.tmdbId,
+      meta: schema.content.meta,
+    })
+    .from(schema.content)
+    .where(eq(schema.content.id, id))
+    .get();
+  if (!row) return c.json({ error: "not_found" }, 404);
+
+  const vc = await db
+    .select({ n: sql<number>`count(distinct ${schema.entries.userId})` })
+    .from(schema.entries)
+    .where(eq(schema.entries.contentId, id))
+    .get();
+
+  const rx = await db
+    .select({ reaction: schema.entries.reaction, n: sql<number>`count(*)` })
+    .from(schema.entries)
+    .where(eq(schema.entries.contentId, id))
+    .groupBy(schema.entries.reaction)
+    .all();
+  const reactions = { down: 0, up: 0, love: 0 };
+  for (const r of rx) {
+    if (r.reaction === "down" || r.reaction === "up" || r.reaction === "love") {
+      reactions[r.reaction] = Number(r.n);
+    }
+  }
+
+  const titleMap = await resolveTitles(
+    db,
+    c.env,
+    [{ contentId: row.id, type: row.type, title: row.title, tmdbId: row.tmdbId, meta: row.meta }],
+    pickLang(c.req.query("lang")),
+  );
+
+  return c.json({
+    id: row.id,
+    type: row.type,
+    title: titleMap.get(row.id) ?? row.title,
+    posterUrl: row.posterUrl,
+    viewerCount: Number(vc?.n ?? 0),
+    reactions,
+  });
+});
+
 const RAMP = ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"];
 
 function renderJandiSvg(

@@ -573,3 +573,31 @@ describe("GET /api/entries/export", () => {
     expect(text).not.toContain("남의 기록");
   });
 });
+
+describe("GET /api/content/:id (공개 집계)", () => {
+  it("두 유저의 같은 작품을 익명 집계한다", async () => {
+    const a = await signUp();
+    const b = await signUp();
+    // a: 같은 tmdbId 작품을 2회(up, love), b: 1회(up)
+    const r1 = await createEntry(a, { tmdbId: 550, title: "파이트 클럽", reaction: "up" });
+    const { contentId } = (await r1.json()) as { contentId: string };
+    await createEntry(a, { tmdbId: 550, title: "파이트 클럽", reaction: "love", watchedOn: "2026-07-11" });
+    await createEntry(b, { tmdbId: 550, title: "파이트 클럽", reaction: "up", watchedOn: "2026-07-12" });
+
+    const res = await app.request(`/api/content/${contentId}`, {}, env);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      viewerCount: number;
+      reactions: { down: number; up: number; love: number };
+      type: string;
+    };
+    expect(body.viewerCount).toBe(2);
+    expect(body.reactions).toEqual({ down: 0, up: 2, love: 1 });
+    expect(body.type).toBe("movie");
+  });
+
+  it("없는 작품은 404", async () => {
+    const res = await app.request("/api/content/nope", {}, env);
+    expect(res.status).toBe(404);
+  });
+});
