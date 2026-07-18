@@ -1,4 +1,4 @@
-import type { ContentType, EntryInput, HeatmapCell, Reaction, SearchResult } from "@1ott/shared";
+import type { ContentDetail, ContentType, EntryInput, HeatmapCell, MyContentEntry, Reaction, SearchResult } from "@1ott/shared";
 import i18n from "../i18n";
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
@@ -84,6 +84,10 @@ export const api = {
     req<import("@1ott/shared").PublicProfile>(
       `/api/u/${encodeURIComponent(username)}?lang=${i18n.language}`,
     ),
+  content: (id: string) =>
+    req<ContentDetail>(`/api/content/${encodeURIComponent(id)}?lang=${i18n.language}`),
+  contentMine: (id: string) =>
+    req<{ entries: MyContentEntry[] }>(`/api/content/${encodeURIComponent(id)}/mine`),
   // 목록/삭제는 WebAuthn 의식이 필요 없어 엔드포인트를 직접 호출한다.
   // (등록·로그인은 브라우저 의식이 필요 → authClient.passkey.* 사용)
   listPasskeys: () =>
