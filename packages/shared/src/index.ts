@@ -57,7 +57,26 @@ export interface PublicProfile {
   name: string;
   total: number;
   cells: HeatmapCell[];
-  posters: { id: string; title: string; posterUrl: string | null }[];
+  posters: { id: string; contentId: string; title: string; posterUrl: string | null }[];
+}
+
+/** 작품 공개 페이지: 작품 정보 + 익명 집계. */
+export interface ContentDetail {
+  id: string;
+  type: ContentType;
+  title: string;
+  posterUrl: string | null;
+  viewerCount: number;
+  reactions: { down: number; up: number; love: number };
+}
+
+/** 작품 페이지 하단 '내 기록' 한 줄. */
+export interface MyContentEntry {
+  id: string;
+  watchedOn: string;
+  reaction: Reaction | null;
+  note: string | null;
+  platform: string | null;
 }
 
 export function countToLevel(count: number): HeatmapCell["level"] {
