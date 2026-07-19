@@ -102,6 +102,16 @@ a {
   }
 }
 
+/* 랜딩 히어로: 좁은 화면에서는 세로로 쌓고(로그인 카드가 먼저), 글자 크기 축소. */
+@media (max-width: 720px) {
+  .landing-hero {
+    grid-template-columns: 1fr !important;
+  }
+  .landing-hero h1 {
+    font-size: 34px !important;
+  }
+}
+
 /* PC 에서는 잔디 1년치를 스크롤 없이 폭에 맞춰 표시. 모바일은 네이티브 가로 스크롤 유지. */
 @media (min-width: 640px) {
   .react-activity-calendar__scroll-container {

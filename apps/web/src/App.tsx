@@ -224,35 +224,65 @@ function Auth() {
     if (res?.error) setErr(t("passkey.signinFailed"));
   }
 
+  const features = [
+    { t: t("landing.feat1Title"), b: t("landing.feat1Body") },
+    { t: t("landing.feat2Title"), b: t("landing.feat2Body") },
+    { t: t("landing.feat3Title"), b: t("landing.feat3Body") },
+  ];
+
   return (
-    <div style={{ maxWidth: 360, margin: "80px auto", padding: 24 }}>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+    <div style={st.landing}>
+      <div style={st.landingBar}>
+        <b style={{ fontSize: 18, letterSpacing: "-0.02em" }}>🌱 1일 1OTT</b>
         <LanguageSelect />
       </div>
-      <h1>🌱 1일 1OTT</h1>
-      <form onSubmit={submit} style={{ display: "grid", gap: 8 }}>
-        {mode === "up" && (
-          <input style={st.input} placeholder={t("auth.name")} value={name} onChange={(e) => setName(e.target.value)} />
-        )}
-        <input style={st.input} placeholder={t("auth.email")} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input
-          style={st.input}
-          placeholder={t("auth.password")}
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button style={st.primary} type="submit">
-          {mode === "up" ? t("auth.signup") : t("auth.signin")}
-        </button>
-      </form>
-      <button style={{ ...st.ghost, width: "100%", marginTop: 8 }} onClick={passkeyLogin}>
-        🔑 {t("passkey.signin")}
-      </button>
-      {err && <p style={{ color: "crimson" }}>{err}</p>}
-      <button style={{ ...st.ghost, marginTop: 12 }} onClick={() => setMode((m) => (m === "in" ? "up" : "in"))}>
-        {mode === "in" ? t("auth.toSignup") : t("auth.toSignin")}
-      </button>
+
+      <div className="landing-hero" style={st.hero}>
+        <div style={st.heroCopy}>
+          <span style={st.badge}>{t("landing.badge")}</span>
+          <h1 style={st.heroH1}>{t("landing.headline")}</h1>
+          <p style={st.heroSub}>{t("landing.sub")}</p>
+        </div>
+
+        <div style={st.loginCard}>
+          <div style={st.cardHead}>
+            <b>{t("landing.loginTitle")}</b>
+          </div>
+          <p style={{ ...st.muted, marginTop: -6, marginBottom: 14 }}>{t("landing.loginSub")}</p>
+          <form onSubmit={submit} style={{ display: "grid", gap: 8 }}>
+            {mode === "up" && (
+              <input style={st.input} placeholder={t("auth.name")} value={name} onChange={(e) => setName(e.target.value)} />
+            )}
+            <input style={st.input} placeholder={t("auth.email")} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input
+              style={st.input}
+              placeholder={t("auth.password")}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <button style={st.primary} type="submit">
+              {mode === "up" ? t("auth.signup") : t("auth.signin")}
+            </button>
+          </form>
+          <button style={{ ...st.ghost, width: "100%", marginTop: 8 }} onClick={passkeyLogin}>
+            🔑 {t("passkey.signin")}
+          </button>
+          {err && <p style={{ color: "crimson" }}>{err}</p>}
+          <button style={{ ...st.ghost, marginTop: 12, width: "100%" }} onClick={() => setMode((m) => (m === "in" ? "up" : "in"))}>
+            {mode === "in" ? t("auth.toSignup") : t("auth.toSignin")}
+          </button>
+        </div>
+      </div>
+
+      <div style={st.features}>
+        {features.map((f) => (
+          <div key={f.t} style={st.card}>
+            <b style={{ fontSize: 16 }}>{f.t}</b>
+            <p style={{ ...st.muted, fontSize: 14, marginTop: 8, marginBottom: 0 }}>{f.b}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -314,4 +344,13 @@ const st: Record<string, React.CSSProperties> = {
   bdTrack: { height: 8, borderRadius: 999, background: "var(--surface-2)", overflow: "hidden" },
   bdFill: { height: "100%", borderRadius: 999 },
   input: { padding: "10px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface-2)", color: "inherit", fontSize: 14 },
+  landing: { maxWidth: 960, margin: "0 auto", padding: "24px 20px 60px" },
+  landingBar: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 40 },
+  hero: { display: "grid", gridTemplateColumns: "minmax(0,1.15fr) minmax(300px,0.85fr)", gap: 40, alignItems: "center", marginBottom: 48 },
+  heroCopy: { minWidth: 0 },
+  badge: { display: "inline-block", padding: "5px 12px", borderRadius: 999, background: "var(--accent-weak)", color: "var(--accent-ink)", fontSize: 13, fontWeight: 700, marginBottom: 18 },
+  heroH1: { fontSize: 44, lineHeight: 1.12, letterSpacing: "-0.03em", fontWeight: 800, margin: 0, whiteSpace: "pre-line" },
+  heroSub: { marginTop: 18, fontSize: 16, color: "var(--muted)", lineHeight: 1.6, maxWidth: 460 },
+  loginCard: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 22, boxShadow: "var(--shadow)" },
+  features: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 },
 };
