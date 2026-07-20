@@ -139,12 +139,18 @@ export function ContentPage({ contentId }: { contentId: string }) {
         </div>
       )}
 
-      {/* TMDB API 이용약관 3조: 로고 + 아래 문구 표시 의무. */}
+      {/*
+        TMDB API 이용약관 3조가 "the following notice" 로 지정한 문구.
+        번역본이 원문을 대체해도 되는지 약관에 언급이 없어 영어 원문 그대로 둔다.
+      */}
       <div style={st.attribution}>
         <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer noopener">
           <img src="/tmdb.svg" alt="TMDB" style={st.tmdbLogo} />
         </a>
-        <span>{t("tmdb.disclaimer")}</span>
+        <span>
+          This service uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise
+          approved by TMDB.
+        </span>
       </div>
     </div>
   );

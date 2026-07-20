@@ -146,10 +146,6 @@ export default {
     statusPlanned: "Planned",
     statusProduction: "In production",
   },
-  tmdb: {
-    disclaimer:
-      "This service uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.",
-  },
   impexport: {
     title: "Import / Export",
     desc: "Upload or download your log as a markdown table.",

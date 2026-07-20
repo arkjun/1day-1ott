@@ -139,10 +139,6 @@ export default {
     statusPlanned: "방영 예정",
     statusProduction: "제작 중",
   },
-  tmdb: {
-    disclaimer:
-      "이 서비스는 TMDB 와 TMDB API 를 사용하지만 TMDB 의 보증·인증·승인을 받은 것은 아닙니다.",
-  },
   impexport: {
     title: "가져오기 / 내보내기",
     desc: "기록을 markdown 표로 올리거나 내려받아요.",

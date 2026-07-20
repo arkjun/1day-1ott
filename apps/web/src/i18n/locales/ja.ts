@@ -139,10 +139,6 @@ export default {
     statusPlanned: "放送予定",
     statusProduction: "制作中",
   },
-  tmdb: {
-    disclaimer:
-      "このサービスは TMDB および TMDB API を利用していますが、TMDB による保証・認証・承認を受けたものではありません。",
-  },
   impexport: {
     title: "インポート / エクスポート",
     desc: "記録を markdown 表でアップロード・ダウンロードできます。",
