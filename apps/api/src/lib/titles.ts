@@ -2,9 +2,11 @@ import { eq } from "drizzle-orm";
 import type { createDb } from "../db";
 import { schema } from "../db";
 import type { Env } from "../env";
-import { tmdbLang } from "../routes/search";
+import { TMDB_IMG, tmdbLang } from "../routes/search";
 
-// content.meta 는 { titles: { ko, en, ja } } 형태의 언어별 제목 캐시.
+// content.meta 는 { titles: {ko,en,ja}, posters: {ko,en,ja} } 형태의 언어별 캐시.
+// posters 값은 TMDB poster_path, ""(빈 문자열)은 "해당 언어 포스터 없음"을 캐시해
+// 매 요청마다 재조회하지 않기 위한 표식.
 export const LANGS = new Set(["ko", "en", "ja"]);
 
 type Db = ReturnType<typeof createDb>;
@@ -24,7 +26,20 @@ export function parseTitles(meta: string | null): Record<string, string> {
   }
 }
 
-export function withTitles(meta: string | null, titles: Record<string, string>): string {
+export function parsePosters(meta: string | null): Record<string, string> {
+  if (!meta) return {};
+  try {
+    const m = JSON.parse(meta) as { posters?: Record<string, string> };
+    return m?.posters ?? {};
+  } catch {
+    return {};
+  }
+}
+
+export function withCache(
+  meta: string | null,
+  patch: { titles?: Record<string, string>; posters?: Record<string, string> },
+): string {
   let base: Record<string, unknown> = {};
   if (meta) {
     try {
@@ -33,7 +48,11 @@ export function withTitles(meta: string | null, titles: Record<string, string>):
       /* 손상된 meta 는 무시하고 새로 쓴다 */
     }
   }
-  return JSON.stringify({ ...base, titles });
+  return JSON.stringify({ ...base, ...patch });
+}
+
+export function withTitles(meta: string | null, titles: Record<string, string>): string {
+  return withCache(meta, { titles });
 }
 
 interface TmdbDetail {
@@ -42,6 +61,7 @@ interface TmdbDetail {
   original_title?: string;
   original_name?: string;
   original_language?: string;
+  poster_path?: string | null;
 }
 
 /**
@@ -60,13 +80,13 @@ export function pickTmdbTitle(d: TmdbDetail, lang: string): string | null {
   return localized;
 }
 
-/** tmdbId 로 해당 언어 제목을 조회. 토큰 없거나 실패/번역없음이면 null(원문 폴백). */
-async function fetchTmdbTitle(
+/** tmdbId 로 해당 언어 상세를 조회. 토큰 없거나 실패면 null(원문 폴백). */
+async function fetchTmdbDetail(
   env: Env,
   type: string,
   tmdbId: number,
   lang: string,
-): Promise<string | null> {
+): Promise<TmdbDetail | null> {
   if (!env.TMDB_API_TOKEN) return null;
   const path = type === "movie" ? "movie" : "tv";
   const url = `https://api.themoviedb.org/3/${path}/${tmdbId}?language=${tmdbLang(lang)}`;
@@ -74,7 +94,7 @@ async function fetchTmdbTitle(
     headers: { Authorization: `Bearer ${env.TMDB_API_TOKEN}`, Accept: "application/json" },
   });
   if (!res.ok) return null;
-  return pickTmdbTitle((await res.json()) as TmdbDetail, lang);
+  return (await res.json()) as TmdbDetail;
 }
 
 interface TitleRow {
@@ -85,18 +105,24 @@ interface TitleRow {
   meta: string | null;
 }
 
+export interface Localized {
+  title: string;
+  /** 해당 언어 포스터가 있을 때만. 없으면 호출부가 저장된 posterUrl 사용. */
+  posterUrl?: string;
+}
+
 /**
- * 콘텐츠별 현재 언어 제목을 해석해 { contentId → title } 반환.
- * 캐시(content.meta.titles) 히트면 그대로, 미스면 TMDB 1회 조회 후 캐시.
+ * 콘텐츠별 현재 언어의 제목·포스터를 해석해 { contentId → Localized } 반환.
+ * 캐시(content.meta) 히트면 그대로, 미스면 TMDB 상세 1회 조회 후 캐시.
  * lang 미지정이면 빈 맵(호출부가 원문 사용).
  */
-export async function resolveTitles(
+export async function resolveLocalized(
   db: Db,
   env: Env,
   rows: TitleRow[],
   lang: string | undefined,
-): Promise<Map<string, string>> {
-  const out = new Map<string, string>();
+): Promise<Map<string, Localized>> {
+  const out = new Map<string, Localized>();
   if (!lang) return out;
 
   const uniq = new Map<string, TitleRow>();
@@ -104,24 +130,25 @@ export async function resolveTitles(
 
   await Promise.all(
     [...uniq.values()].map(async (r) => {
-      let show = r.title;
-      if (r.tmdbId != null) {
-        const titles = parseTitles(r.meta);
-        if (titles[lang]) {
-          show = titles[lang];
-        } else {
-          const fetched = await fetchTmdbTitle(env, r.type, r.tmdbId, lang);
-          if (fetched) {
-            titles[lang] = fetched;
-            await db
-              .update(schema.content)
-              .set({ meta: withTitles(r.meta, titles) })
-              .where(eq(schema.content.id, r.contentId));
-            show = fetched;
-          }
+      const titles = parseTitles(r.meta);
+      const posters = parsePosters(r.meta);
+      // 제목만 캐시된 기존 레코드는 포스터 캐시가 없으므로 한 번 더 조회한다.
+      if (r.tmdbId != null && (!titles[lang] || posters[lang] === undefined)) {
+        const d = await fetchTmdbDetail(env, r.type, r.tmdbId, lang);
+        if (d) {
+          const t = pickTmdbTitle(d, lang);
+          if (t) titles[lang] = t;
+          posters[lang] = d.poster_path ?? "";
+          await db
+            .update(schema.content)
+            .set({ meta: withCache(r.meta, { titles, posters }) })
+            .where(eq(schema.content.id, r.contentId));
         }
       }
-      out.set(r.contentId, show);
+      out.set(r.contentId, {
+        title: titles[lang] ?? r.title,
+        posterUrl: posters[lang] ? `${TMDB_IMG}${posters[lang]}` : undefined,
+      });
     }),
   );
   return out;

@@ -6,7 +6,7 @@ type Vars = { userId: string };
 
 export const searchRoute = new Hono<{ Bindings: Env; Variables: Vars }>();
 
-const TMDB_IMG = "https://image.tmdb.org/t/p/w342";
+export const TMDB_IMG = "https://image.tmdb.org/t/p/w342";
 
 // 앱 언어 → TMDB language 코드. 미지원/미지정은 ko-KR.
 const TMDB_LANG: Record<string, string> = { ko: "ko-KR", en: "en-US", ja: "ja-JP" };

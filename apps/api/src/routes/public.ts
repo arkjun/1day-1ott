@@ -3,7 +3,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { createDb, schema } from "../db";
 import type { Env } from "../env";
-import { pickLang, resolveTitles } from "../lib/titles";
+import { pickLang, resolveLocalized } from "../lib/titles";
 
 export const publicRoute = new Hono<{ Bindings: Env }>();
 
@@ -67,13 +67,21 @@ publicRoute.get("/u/:username", async (c) => {
     .limit(12)
     .all();
 
-  const titleByContent = await resolveTitles(db, c.env, posterRows, pickLang(c.req.query("lang")));
-  const posters = posterRows.map((p) => ({
-    id: p.id,
-    contentId: p.contentId,
-    title: titleByContent.get(p.contentId) ?? p.title,
-    posterUrl: p.posterUrl,
-  }));
+  const locByContent = await resolveLocalized(
+    db,
+    c.env,
+    posterRows,
+    pickLang(c.req.query("lang")),
+  );
+  const posters = posterRows.map((p) => {
+    const loc = locByContent.get(p.contentId);
+    return {
+      id: p.id,
+      contentId: p.contentId,
+      title: loc?.title ?? p.title,
+      posterUrl: loc?.posterUrl ?? p.posterUrl,
+    };
+  });
 
   return c.json({ username: u.username, name: u.name, total, cells, posters });
 });
@@ -134,19 +142,20 @@ publicRoute.get("/content/:id", async (c) => {
     }
   }
 
-  const titleMap = await resolveTitles(
+  const locMap = await resolveLocalized(
     db,
     c.env,
     [{ contentId: row.id, type: row.type, title: row.title, tmdbId: row.tmdbId, meta: row.meta }],
     pickLang(c.req.query("lang")),
   );
+  const loc = locMap.get(row.id);
 
   c.header("cache-control", "public, max-age=300");
   return c.json({
     id: row.id,
     type: row.type,
-    title: titleMap.get(row.id) ?? row.title,
-    posterUrl: row.posterUrl,
+    title: loc?.title ?? row.title,
+    posterUrl: loc?.posterUrl ?? row.posterUrl,
     viewerCount: Number(vc?.n ?? 0),
     reactions,
   });

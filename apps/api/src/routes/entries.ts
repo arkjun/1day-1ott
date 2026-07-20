@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { createDb, schema } from "../db";
 import type { Env } from "../env";
-import { LANGS, parseTitles, pickLang, resolveTitles, withTitles } from "../lib/titles";
+import { LANGS, parseTitles, pickLang, resolveLocalized, withTitles } from "../lib/titles";
 
 const entryPatchSchema = z.object({
   watchedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -296,19 +296,22 @@ entriesRoute.get("/entries", async (c) => {
     .orderBy(desc(entries.watchedOn), desc(entries.createdAt))
     .all();
 
-  const titleByContent = await resolveTitles(db, c.env, rows, lang);
+  const locByContent = await resolveLocalized(db, c.env, rows, lang);
 
-  const result = rows.map((r) => ({
-    id: r.id,
-    contentId: r.contentId,
-    watchedOn: r.watchedOn,
-    reaction: r.reaction,
-    note: r.note,
-    platform: r.platform,
-    type: r.type,
-    title: titleByContent.get(r.contentId) ?? r.title,
-    posterUrl: r.posterUrl,
-  }));
+  const result = rows.map((r) => {
+    const loc = locByContent.get(r.contentId);
+    return {
+      id: r.id,
+      contentId: r.contentId,
+      watchedOn: r.watchedOn,
+      reaction: r.reaction,
+      note: r.note,
+      platform: r.platform,
+      type: r.type,
+      title: loc?.title ?? r.title,
+      posterUrl: loc?.posterUrl ?? r.posterUrl,
+    };
+  });
 
   return c.json({ entries: result });
 });

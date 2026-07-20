@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pickTmdbTitle } from "../src/lib/titles";
+import { parsePosters, parseTitles, pickTmdbTitle, withCache } from "../src/lib/titles";
 
 describe("pickTmdbTitle", () => {
   it("요청 언어 번역이 있으면 그 제목을 쓴다", () => {
@@ -26,5 +26,28 @@ describe("pickTmdbTitle", () => {
 
   it("제목 없으면 null", () => {
     expect(pickTmdbTitle({ original_language: "en" }, "ko")).toBeNull();
+  });
+});
+
+describe("meta 언어별 포스터 캐시", () => {
+  it("titles/posters 를 함께 보존하며 병합한다", () => {
+    const meta = JSON.stringify({ titles: { ko: "기생충" }, extra: 1 });
+    const next = withCache(meta, {
+      titles: { ko: "기생충", ja: "パラサイト" },
+      posters: { ja: "/jp.jpg" },
+    });
+    expect(parseTitles(next)).toEqual({ ko: "기생충", ja: "パラサイト" });
+    expect(parsePosters(next)).toEqual({ ja: "/jp.jpg" });
+    expect(JSON.parse(next).extra).toBe(1);
+  });
+
+  it("해당 언어 포스터 없음은 빈 문자열로 캐시(재조회 방지)", () => {
+    const next = withCache(null, { posters: { en: "" } });
+    expect(parsePosters(next).en).toBe("");
+    expect(parsePosters(next).en === undefined).toBe(false);
+  });
+
+  it("손상된 meta 는 빈 캐시로 취급", () => {
+    expect(parsePosters("{oops")).toEqual({});
   });
 });
