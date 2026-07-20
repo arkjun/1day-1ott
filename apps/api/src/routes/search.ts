@@ -7,11 +7,14 @@ type Vars = { userId: string };
 export const searchRoute = new Hono<{ Bindings: Env; Variables: Vars }>();
 
 export const TMDB_IMG = "https://image.tmdb.org/t/p/w342";
+export const TMDB_BACKDROP = "https://image.tmdb.org/t/p/w780";
 
 // 앱 언어 → TMDB language 코드. 미지원/미지정은 ko-KR.
+// 브라우저 로케일(en-US 등)이 그대로 올 수 있어 앞 서브태그만 본다.
 const TMDB_LANG: Record<string, string> = { ko: "ko-KR", en: "en-US", ja: "ja-JP" };
 export function tmdbLang(lang?: string): string {
-  return TMDB_LANG[lang ?? ""] ?? "ko-KR";
+  const base = lang?.split("-")[0]?.toLowerCase();
+  return TMDB_LANG[base ?? ""] ?? "ko-KR";
 }
 
 interface TmdbItem {

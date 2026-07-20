@@ -50,6 +50,18 @@ export function ContentPage({ contentId }: { contentId: string }) {
       </div>
     );
 
+  const f = detail.facts;
+  // 제목 위 한 줄: 유형 · 연도 · 러닝타임/시즌·화수 · 방영상태
+  const metaLine = [
+    t(`type.${detail.type}`),
+    f.year,
+    f.seasons ? t("content.seasons", { count: f.seasons }) : undefined,
+    f.episodes ? t("content.episodes", { count: f.episodes }) : undefined,
+    f.runtime ? t("content.runtime", { count: f.runtime }) : undefined,
+    statusLabel(f.status, t),
+  ].filter(Boolean) as string[];
+  const backdrop = backdropLayer(f.backdropUrl);
+
   // /mine 응답을 RecentItem 이 기대하는 EntryRow 로 변환.
   const myRows: EntryRow[] = mine.map((m) => ({
     ...m,
@@ -68,21 +80,51 @@ export function ContentPage({ contentId }: { contentId: string }) {
         <LanguageSelect />
       </div>
 
-      <div style={st.hero}>
-        {detail.posterUrl && (
-          <img src={detail.posterUrl} alt={detail.title} style={st.poster} />
-        )}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={st.muted}>{t(`type.${detail.type}`)}</div>
-          <h1 style={{ margin: "4px 0 12px", letterSpacing: "-0.02em" }}>{detail.title}</h1>
-          <div style={st.aggRow}>
-            <span>👥 {t("content.viewers", { count: detail.viewerCount })}</span>
-            <span>{REACTION_META.up.emoji} {detail.reactions.up}</span>
-            <span>{REACTION_META.love.emoji} {detail.reactions.love}</span>
-            <span>{REACTION_META.down.emoji} {detail.reactions.down}</span>
+      <div style={st.heroBox}>
+        {backdrop && <div style={backdrop} />}
+        <div style={st.hero}>
+          {detail.posterUrl && (
+            <img src={detail.posterUrl} alt={detail.title} style={st.poster} />
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={st.muted}>{metaLine.join(" · ")}</div>
+            <h1 style={{ margin: "4px 0 8px", letterSpacing: "-0.02em" }}>{detail.title}</h1>
+            {f.tagline && <div style={st.tagline}>{f.tagline}</div>}
+            {f.genres && f.genres.length > 0 && (
+              <div style={st.chips}>
+                {f.genres.map((g) => (
+                  <span key={g} style={st.chip}>
+                    {g}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div style={st.aggRow}>
+              <span>👥 {t("content.viewers", { count: detail.viewerCount })}</span>
+              <span>{REACTION_META.up.emoji} {detail.reactions.up}</span>
+              <span>{REACTION_META.love.emoji} {detail.reactions.love}</span>
+              <span>{REACTION_META.down.emoji} {detail.reactions.down}</span>
+              {f.voteAverage != null && (
+                <span>
+                  ⭐ {t("content.tmdbScore", { score: f.voteAverage.toFixed(1) })}{" "}
+                  {f.voteCount != null && (
+                    <span style={st.muted}>{t("content.tmdbVotes", { count: f.voteCount })}</span>
+                  )}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {f.overview && (
+        <div style={st.card}>
+          <div style={{ marginBottom: 8 }}>
+            <b>{t("content.overview")}</b>
+          </div>
+          <p style={st.overview}>{f.overview}</p>
+        </div>
+      )}
 
       {session?.user && (
         <div style={st.card}>
@@ -96,14 +138,73 @@ export function ContentPage({ contentId }: { contentId: string }) {
           )}
         </div>
       )}
+
+      {/* TMDB API 이용약관 3조: 로고 + 아래 문구 표시 의무. */}
+      <div style={st.attribution}>
+        <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer noopener">
+          <img src="/tmdb.svg" alt="TMDB" style={st.tmdbLogo} />
+        </a>
+        <span>{t("tmdb.disclaimer")}</span>
+      </div>
     </div>
   );
+}
+
+// TMDB status 원문 → 번역 키. 매핑에 없으면 표시하지 않는다(영문 노출 방지).
+const STATUS_KEY: Record<string, string> = {
+  "Returning Series": "content.statusReturning",
+  Ended: "content.statusEnded",
+  Canceled: "content.statusCanceled",
+  Planned: "content.statusPlanned",
+  "In Production": "content.statusProduction",
+};
+
+function statusLabel(status: string | undefined, t: (k: string) => string): string | undefined {
+  const key = status ? STATUS_KEY[status] : undefined;
+  return key ? t(key) : undefined;
+}
+
+/**
+ * backdrop 은 배경으로 은은하게만. 라이트/다크 테마가 모두 있어 고정 색 오버레이 대신
+ * 이미지 자체를 옅게 깔아(별도 레이어) 어느 테마에서도 본문 대비를 유지한다.
+ */
+function backdropLayer(url: string | undefined): React.CSSProperties | null {
+  if (!url) return null;
+  return {
+    position: "absolute",
+    inset: 0,
+    backgroundImage: `url(${url})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    opacity: 0.18,
+    pointerEvents: "none",
+  };
 }
 
 const st: Record<string, React.CSSProperties> = {
   wrap: { maxWidth: 780, margin: "0 auto", padding: "28px 20px 60px" },
   top: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
-  hero: { display: "flex", gap: 16, marginBottom: 20 },
+  heroBox: { position: "relative", overflow: "hidden", borderRadius: "var(--radius)", marginBottom: 20 },
+  hero: { position: "relative", display: "flex", gap: 16, padding: 16 },
+  tagline: { fontStyle: "italic", color: "var(--muted)", marginBottom: 10 },
+  chips: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 },
+  chip: {
+    fontSize: 12,
+    padding: "3px 9px",
+    borderRadius: 999,
+    border: "1px solid var(--border)",
+    background: "var(--surface)",
+  },
+  overview: { margin: 0, lineHeight: 1.7, whiteSpace: "pre-wrap" },
+  attribution: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 28,
+    fontSize: 12,
+    color: "var(--muted)",
+  },
+  tmdbLogo: { height: 12, opacity: 0.8 },
   poster: { width: 120, aspectRatio: "2 / 3", objectFit: "cover", borderRadius: 10, border: "1px solid var(--border)" },
   aggRow: { display: "flex", gap: 16, flexWrap: "wrap", fontSize: 15, color: "var(--muted)" },
   card: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 18, marginBottom: 16, boxShadow: "var(--shadow)" },

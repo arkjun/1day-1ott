@@ -127,6 +127,21 @@ export default {
     viewers: "{{count}}人が視聴",
     myRecords: "自分の記録",
     myEmpty: "まだこの作品の記録がありません",
+    overview: "あらすじ",
+    runtime: "{{count}}分",
+    seasons: "シーズン{{count}}",
+    episodes: "全{{count}}話",
+    tmdbScore: "TMDB {{score}}",
+    tmdbVotes: "({{count}}人)",
+    statusReturning: "放送中",
+    statusEnded: "放送終了",
+    statusCanceled: "打ち切り",
+    statusPlanned: "放送予定",
+    statusProduction: "制作中",
+  },
+  tmdb: {
+    disclaimer:
+      "このサービスは TMDB および TMDB API を利用していますが、TMDB による保証・認証・承認を受けたものではありません。",
   },
   impexport: {
     title: "インポート / エクスポート",

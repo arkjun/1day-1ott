@@ -61,6 +61,23 @@ export interface PublicProfile {
 }
 
 /** 작품 공개 페이지: 작품 정보 + 익명 집계. */
+/** TMDB 상세에서 가져오는 부가 정보. 없을 수 있음(자유입력/유튜브 기록). */
+export interface ContentFacts {
+  overview?: string;
+  tagline?: string;
+  genres?: string[];
+  year?: string;
+  /** 영화: 분. TV 는 회당 방영시간. */
+  runtime?: number;
+  seasons?: number;
+  episodes?: number;
+  /** TV 방영 상태 원문(Returning Series / Ended 등). */
+  status?: string;
+  backdropUrl?: string;
+  voteAverage?: number;
+  voteCount?: number;
+}
+
 export interface ContentDetail {
   id: string;
   type: ContentType;
@@ -68,6 +85,7 @@ export interface ContentDetail {
   posterUrl: string | null;
   viewerCount: number;
   reactions: { down: number; up: number; love: number };
+  facts: ContentFacts;
 }
 
 /** 작품 페이지 하단 '내 기록' 한 줄. */

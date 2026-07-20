@@ -127,6 +127,21 @@ export default {
     viewers: "{{count}}명이 봤어요",
     myRecords: "내 기록",
     myEmpty: "아직 이 작품 기록이 없어요",
+    overview: "줄거리",
+    runtime: "{{count}}분",
+    seasons: "시즌 {{count}}",
+    episodes: "{{count}}화",
+    tmdbScore: "TMDB {{score}}",
+    tmdbVotes: "({{count}}명)",
+    statusReturning: "방영 중",
+    statusEnded: "종영",
+    statusCanceled: "방영 취소",
+    statusPlanned: "방영 예정",
+    statusProduction: "제작 중",
+  },
+  tmdb: {
+    disclaimer:
+      "이 서비스는 TMDB 와 TMDB API 를 사용하지만 TMDB 의 보증·인증·승인을 받은 것은 아닙니다.",
   },
   impexport: {
     title: "가져오기 / 내보내기",

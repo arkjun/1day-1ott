@@ -156,6 +156,7 @@ publicRoute.get("/content/:id", async (c) => {
     type: row.type,
     title: loc?.title ?? row.title,
     posterUrl: loc?.posterUrl ?? row.posterUrl,
+    facts: loc?.facts ?? {},
     viewerCount: Number(vc?.n ?? 0),
     reactions,
   });

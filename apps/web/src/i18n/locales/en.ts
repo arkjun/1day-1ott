@@ -134,6 +134,21 @@ export default {
     viewers: "{{count}} watched",
     myRecords: "My records",
     myEmpty: "No records for this yet",
+    overview: "Overview",
+    runtime: "{{count}} min",
+    seasons: "{{count}} seasons",
+    episodes: "{{count}} episodes",
+    tmdbScore: "TMDB {{score}}",
+    tmdbVotes: "({{count}})",
+    statusReturning: "Returning",
+    statusEnded: "Ended",
+    statusCanceled: "Canceled",
+    statusPlanned: "Planned",
+    statusProduction: "In production",
+  },
+  tmdb: {
+    disclaimer:
+      "This service uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.",
   },
   impexport: {
     title: "Import / Export",

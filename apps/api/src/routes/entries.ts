@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { createDb, schema } from "../db";
 import type { Env } from "../env";
-import { LANGS, parseTitles, pickLang, resolveLocalized, withTitles } from "../lib/titles";
+import { parseTitles, pickLang, resolveLocalized, withTitles } from "../lib/titles";
 
 const entryPatchSchema = z.object({
   watchedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -31,7 +31,7 @@ async function upsertContent(
   lang?: string,
 ): Promise<string> {
   const { content } = schema;
-  const cache = lang && LANGS.has(lang) ? lang : undefined;
+  const cache = pickLang(lang);
 
   const key =
     input.tmdbId != null
