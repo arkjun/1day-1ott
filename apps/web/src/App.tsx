@@ -78,7 +78,7 @@ function Dashboard({ user }: { user: SessionUser }) {
   const posters = entries.filter((e) => e.posterUrl).slice(0, 12);
 
   return (
-    <div style={{ ...st.wrap, maxWidth: view === "calendar" ? 1080 : 780 }}>
+    <div style={{ ...st.wrap, maxWidth: view === "calendar" ? 1080 : 920 }}>
       <div style={st.top}>
         <b style={{ fontSize: 18, letterSpacing: "-0.02em" }}>🌱 1일 1OTT</b>
         <div style={{ display: "flex", gap: 8 }}>
@@ -311,7 +311,7 @@ export function App() {
 }
 
 const st: Record<string, React.CSSProperties> = {
-  wrap: { maxWidth: 780, margin: "0 auto", padding: "28px 20px 60px" },
+  wrap: { maxWidth: 920, margin: "0 auto", padding: "28px 20px 60px" },
   top: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   viewTabs: { display: "inline-flex", gap: 4, padding: 4, marginBottom: 16, borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-2)" },
   viewTab: { border: 0, borderRadius: 9, padding: "7px 18px", background: "transparent", color: "var(--muted)", fontWeight: 700, fontSize: 14 },

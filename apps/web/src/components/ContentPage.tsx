@@ -188,7 +188,7 @@ function backdropLayer(url: string | undefined): React.CSSProperties | null {
 }
 
 const st: Record<string, React.CSSProperties> = {
-  wrap: { maxWidth: 780, margin: "0 auto", padding: "28px 20px 60px" },
+  wrap: { maxWidth: 920, margin: "0 auto", padding: "28px 20px 60px" },
   top: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   heroBox: { position: "relative", overflow: "hidden", borderRadius: "var(--radius)", marginBottom: 20 },
   hero: { position: "relative", display: "flex", gap: 16, padding: 16 },

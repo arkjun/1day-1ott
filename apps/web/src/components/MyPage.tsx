@@ -462,7 +462,7 @@ function ImportExport() {
 }
 
 const st: Record<string, React.CSSProperties> = {
-  wrap: { maxWidth: 780, margin: "0 auto", padding: "28px 20px 60px" },
+  wrap: { maxWidth: 920, margin: "0 auto", padding: "28px 20px 60px" },
   top: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   card: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 18, marginBottom: 16, boxShadow: "var(--shadow)" },
   cardHead: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 },

@@ -156,7 +156,7 @@ function Stat({ k, v, unit, accent }: { k: string; v: number; unit: string; acce
 }
 
 const st: Record<string, React.CSSProperties> = {
-  wrap: { maxWidth: 780, margin: "0 auto", padding: "28px 20px 60px" },
+  wrap: { maxWidth: 920, margin: "0 auto", padding: "28px 20px 60px" },
   top: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
   stats: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 16 },
   tile: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "14px 16px", boxShadow: "var(--shadow)" },
