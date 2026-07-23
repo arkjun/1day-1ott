@@ -16,6 +16,7 @@ export type Reaction = (typeof reactions)[number];
  * - watchedOn 은 클라이언트 로컬 날짜 'YYYY-MM-DD'.
  */
 export const entryInputSchema = z.object({
+  contentId: z.string().min(1).optional(),
   type: contentTypeSchema,
   title: z.string().min(1).max(300),
   tmdbId: z.number().int().positive().optional(),
@@ -27,7 +28,10 @@ export const entryInputSchema = z.object({
   reaction: reactionSchema.optional(),
   note: z.string().max(1000).optional(),
   platform: z.string().max(60).optional(),
-});
+}).refine(
+  (input) => !(input.contentId && (input.tmdbId != null || input.ytId != null)),
+  { message: "contentId cannot be combined with tmdbId or ytId" },
+);
 export type EntryInput = z.infer<typeof entryInputSchema>;
 
 /** 잔디 한 칸: 날짜 + 그날 소비량. level 은 색 농도 버킷(0~4). */

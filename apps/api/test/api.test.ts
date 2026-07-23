@@ -150,6 +150,40 @@ describe("기록 생성 (POST /api/entries)", () => {
       a.contentId,
     ]);
   });
+
+  it("contentId로 기존 작품에 새 기록을 연결한다", async () => {
+    const cookie = await signUp();
+    const first = (await (await createEntry(cookie, { tmdbId: 693135 })).json()) as {
+      id: string;
+      contentId: string;
+    };
+
+    const res = await createEntry(cookie, {
+      contentId: first.contentId,
+      watchedOn: "2026-07-11",
+    });
+    expect(res.status).toBe(201);
+    const second = (await res.json()) as { id: string; contentId: string };
+    expect(second.contentId).toBe(first.contentId);
+    expect(second.id).not.toBe(first.id);
+  });
+
+  it("없는 contentId와 외부 ID를 함께 보낸 contentId는 거부한다", async () => {
+    const cookie = await signUp();
+
+    const missing = await createEntry(cookie, { contentId: "missing-content" });
+    expect(missing.status).toBe(400);
+    expect(await missing.json()).toEqual({ error: "invalid_content" });
+
+    const conflicting = await createEntry(cookie, {
+      contentId: "some-content",
+      tmdbId: 693136,
+    });
+    expect(conflicting.status).toBe(400);
+    expect((await conflicting.json()) as { error: string }).toMatchObject({
+      error: "invalid_input",
+    });
+  });
 });
 
 describe("언어별 제목 (GET /api/entries?lang=)", () => {

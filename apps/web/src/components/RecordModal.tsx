@@ -2,7 +2,10 @@ import { contentTypes, type ContentType, type EntryInput, type Reaction, type Se
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
+import type { RecentContent } from "../lib/recentContents";
 import { REACTION_META, REACTION_ORDER } from "../lib/reactions";
+
+type PickedContent = SearchResult & { contentId?: string };
 
 function todayStr(): string {
   const d = new Date();
@@ -62,9 +65,11 @@ export function ReactionPicker({
 }
 
 export function RecordModal({
+  recentContents,
   onClose,
   onSaved,
 }: {
+  recentContents: RecentContent[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -73,7 +78,7 @@ export function RecordModal({
   const [type, setType] = useState<ContentType>("tv");
   const [q, setQ] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [picked, setPicked] = useState<SearchResult | null>(null);
+  const [picked, setPicked] = useState<PickedContent | null>(null);
   const [ytUrl, setYtUrl] = useState("");
   const [tmdbOff, setTmdbOff] = useState(false);
   const [watchedOn, setWatchedOn] = useState(todayStr());
@@ -132,6 +137,7 @@ export function RecordModal({
     let input: EntryInput | null = null;
     if (picked) {
       input = {
+        contentId: picked.contentId,
         type: picked.type,
         title: picked.title,
         tmdbId: picked.tmdbId,
@@ -191,6 +197,40 @@ export function RecordModal({
             </button>
           ))}
         </div>
+
+        {!picked && !q.trim() && !ytUrl.trim() && recentContents.length > 0 && (
+          <div style={S.recentSection}>
+            <div style={S.recentLabel}>{t("modal.recentContents")}</div>
+            <div style={S.recentList}>
+              {recentContents.map((content) => (
+                <button
+                  key={content.contentId}
+                  type="button"
+                  style={S.recentCard}
+                  aria-label={t("modal.pickRecent", { title: content.title })}
+                  title={content.title}
+                  onClick={() =>
+                    setPicked({
+                      contentId: content.contentId,
+                      type: content.type,
+                      title: content.title,
+                      posterUrl: content.posterUrl ?? undefined,
+                    })
+                  }
+                >
+                  {content.posterUrl ? (
+                    <img src={content.posterUrl} alt="" style={S.recentPoster} />
+                  ) : (
+                    <span style={S.recentPlaceholder} aria-hidden="true">
+                      {t(`type.${content.type}`).slice(0, 1)}
+                    </span>
+                  )}
+                  <span style={S.recentTitle}>{content.title}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 입력 영역 */}
         {picked ? (
@@ -333,6 +373,50 @@ const S: Record<string, React.CSSProperties> = {
   head: { display: "flex", justifyContent: "space-between", marginBottom: 14 },
   x: { border: 0, background: "none", cursor: "pointer", fontSize: 16, color: "var(--muted)" },
   tabs: { display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" },
+  recentSection: { marginBottom: 14 },
+  recentLabel: { color: "var(--muted)", fontSize: 12, marginBottom: 6 },
+  recentList: {
+    display: "flex",
+    gap: 8,
+    overflowX: "auto",
+    padding: "2px 2px 4px",
+  },
+  recentCard: {
+    flex: "0 0 64px",
+    minWidth: 64,
+    padding: 4,
+    border: "1px solid transparent",
+    borderRadius: 8,
+    background: "transparent",
+    color: "inherit",
+    textAlign: "center",
+  },
+  recentPoster: {
+    display: "block",
+    width: 56,
+    height: 84,
+    borderRadius: 6,
+    objectFit: "cover",
+  },
+  recentPlaceholder: {
+    display: "grid",
+    placeItems: "center",
+    width: 56,
+    height: 84,
+    borderRadius: 6,
+    background: "var(--surface-2)",
+    color: "var(--muted)",
+    fontSize: 20,
+    fontWeight: 700,
+  },
+  recentTitle: {
+    display: "block",
+    marginTop: 4,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    fontSize: 12,
+  },
   tab: {
     border: "1px solid var(--border)",
     background: "var(--surface-2)",

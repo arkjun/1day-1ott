@@ -16,6 +16,7 @@ import { buildTypeBreakdown } from "./lib/breakdown";
 import { GREEN, buildYear, currentStreak, isoDaysAgo } from "./lib/heatmap";
 import { useTheme } from "./lib/theme";
 import { TYPE_META } from "./lib/typeMeta";
+import { pickRecentContents } from "./lib/recentContents";
 
 interface SessionUser {
   id: string;
@@ -76,6 +77,7 @@ function Dashboard({ user }: { user: SessionUser }) {
     return buildTypeBreakdown(entries);
   }, [entries]);
   const posters = entries.filter((e) => e.posterUrl).slice(0, 12);
+  const recentContents = useMemo(() => pickRecentContents(entries), [entries]);
 
   return (
     <div style={{ ...st.wrap, maxWidth: view === "calendar" ? 1080 : 920 }}>
@@ -195,7 +197,13 @@ function Dashboard({ user }: { user: SessionUser }) {
         </>
       )}
 
-      {open && <RecordModal onClose={() => setOpen(false)} onSaved={refresh} />}
+      {open && (
+        <RecordModal
+          recentContents={recentContents}
+          onClose={() => setOpen(false)}
+          onSaved={refresh}
+        />
+      )}
     </div>
   );
 }

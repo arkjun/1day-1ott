@@ -96,6 +96,8 @@ export default {
   note: { placeholder: "한 줄 감상", placeholderOptional: "한 줄 감상 (선택)" },
   modal: {
     title: "오늘 뭐 봤어요?",
+    recentContents: "최근 기록",
+    pickRecent: "{{title}} 바로 선택",
     ytPlaceholder: "YouTube URL 붙여넣기",
     searchPlaceholder: "제목 검색 (TMDB)",
     manualPlaceholder: "제목 직접 입력",

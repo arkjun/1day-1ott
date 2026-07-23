@@ -96,6 +96,8 @@ export default {
   note: { placeholder: "ひとことメモ", placeholderOptional: "ひとことメモ (任意)" },
   modal: {
     title: "今日は何を観ましたか？",
+    recentContents: "最近の記録",
+    pickRecent: "{{title}}を選択",
     ytPlaceholder: "YouTube URL を貼り付け",
     searchPlaceholder: "タイトル検索 (TMDB)",
     manualPlaceholder: "タイトルを手動入力",

@@ -103,6 +103,8 @@ export default {
   note: { placeholder: "One-line note", placeholderOptional: "One-line note (optional)" },
   modal: {
     title: "What did you watch?",
+    recentContents: "Recently watched",
+    pickRecent: "Select {{title}}",
     ytPlaceholder: "Paste YouTube URL",
     searchPlaceholder: "Search title (TMDB)",
     manualPlaceholder: "Enter title manually",

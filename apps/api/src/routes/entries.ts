@@ -33,6 +33,8 @@ async function upsertContent(
   const { content } = schema;
   const cache = pickLang(lang);
 
+  if (input.contentId) return input.contentId;
+
   const key =
     input.tmdbId != null
       ? and(eq(content.type, input.type), eq(content.tmdbId, input.tmdbId))
@@ -111,6 +113,15 @@ entriesRoute.post("/entries", async (c) => {
   const input = parsed.data;
   const db = createDb(c.env.DB);
   const userId = c.get("userId");
+
+  if (input.contentId) {
+    const found = await db
+      .select({ id: schema.content.id })
+      .from(schema.content)
+      .where(eq(schema.content.id, input.contentId))
+      .get();
+    if (!found) return c.json({ error: "invalid_content" }, 400);
+  }
 
   const contentId = await upsertContent(db, input, c.req.query("lang"));
   const id = nanoid();

@@ -18,7 +18,7 @@ export interface EntryRow {
   reaction: Reaction | null;
   note: string | null;
   platform: string | null;
-  type: string;
+  type: ContentType;
   title: string;
   posterUrl: string | null;
 }
