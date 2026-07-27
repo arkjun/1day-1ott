@@ -93,6 +93,9 @@ export function RecordModal({
     type === "variety" ||
     type === "documentary" ||
     type === "anime";
+  const recentContentsForType = recentContents.filter(
+    (content) => content.type === type,
+  );
 
   // 디바운스 TMDB 검색
   useEffect(() => {
@@ -198,11 +201,14 @@ export function RecordModal({
           ))}
         </div>
 
-        {!picked && !q.trim() && !ytUrl.trim() && recentContents.length > 0 && (
+        {!picked &&
+          !q.trim() &&
+          !ytUrl.trim() &&
+          recentContentsForType.length > 0 && (
           <div style={S.recentSection}>
             <div style={S.recentLabel}>{t("modal.recentContents")}</div>
             <div style={S.recentList}>
-              {recentContents.map((content) => (
+              {recentContentsForType.map((content) => (
                 <button
                   key={content.contentId}
                   type="button"
