@@ -10,6 +10,7 @@ import { RecentItem } from "./components/RecentItem";
 import { RecordModal } from "./components/RecordModal";
 import { activityLabels } from "./i18n/format";
 import { LanguageSelect } from "./components/LanguageSelect";
+import { LandingPreview } from "./components/LandingPreview";
 import { api, type EntryRow } from "./lib/api";
 import { signIn, signOut, signUp, useSession } from "./lib/authClient";
 import { buildTypeBreakdown } from "./lib/breakdown";
@@ -282,6 +283,8 @@ function Auth() {
           </button>
         </div>
       </div>
+
+      <LandingPreview />
 
       <div style={st.features}>
         {features.map((f) => (
