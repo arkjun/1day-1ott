@@ -21,6 +21,7 @@ Use pnpm 10 (the pinned version is recorded in `package.json`).
 - `pnpm typecheck`: run strict TypeScript checks across the workspace.
 - `pnpm --filter @1ott/web build`: create the production frontend bundle.
 - `pnpm db:generate` / `pnpm db:migrate:local`: generate Drizzle migrations and apply them to local D1.
+- When generating a Drizzle migration, always provide a descriptive name with `--name` (for example, `pnpm --filter @1ott/api exec drizzle-kit generate --name=add_user_lang`); do not keep the default randomly generated name.
 
 ## Coding Style & Naming Conventions
 
