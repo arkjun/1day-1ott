@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, type ImportResult, type PasskeyRow } from "../lib/api";
 import { authClient, signIn } from "../lib/authClient";
+import { validatePasswordChange } from "../lib/password";
 import { useTheme } from "../lib/theme";
 import { LanguageSelect } from "./LanguageSelect";
 
@@ -26,6 +27,7 @@ export function MyPage({ user }: { user: MyPageUser }) {
         </a>
       </div>
       <ShareSettings user={user} />
+      <PasswordManager />
       <PasskeyManager user={user} />
       <Settings user={user} />
       <ImportExport />
@@ -100,6 +102,122 @@ function ShareSettings({ user }: { user: MyPageUser }) {
         )}
       </div>
       {msg && <div style={{ ...st.muted, marginTop: 8 }}>{msg}</div>}
+    </div>
+  );
+}
+
+/** 현재 비밀번호 확인 후 credential 비밀번호 변경. */
+function PasswordManager() {
+  const { t } = useTranslation();
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [revokeOtherSessions, setRevokeOtherSessions] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setSuccess(false);
+
+    const validationError = validatePasswordChange(
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    );
+    if (validationError) {
+      setMsg(t(`password.${validationError}`));
+      return;
+    }
+
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await authClient.changePassword({
+        currentPassword,
+        newPassword,
+        revokeOtherSessions,
+      });
+      if (res.error) {
+        setMsg(
+          res.error.code === "INVALID_PASSWORD"
+            ? t("password.incorrect")
+            : t("password.failed"),
+        );
+        return;
+      }
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setSuccess(true);
+      setMsg(t("password.changed"));
+    } catch {
+      setMsg(t("password.failed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={st.card}>
+      <div style={st.cardHead}>
+        <b>{t("password.title")}</b>
+        <span style={st.muted}>{t("password.desc")}</span>
+      </div>
+      <form onSubmit={submit} style={{ display: "grid", gap: 10, maxWidth: 420 }}>
+        <label style={st.field}>
+          <span>{t("password.current")}</span>
+          <input
+            style={st.input}
+            type="password"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+          />
+        </label>
+        <label style={st.field}>
+          <span>{t("password.new")}</span>
+          <input
+            style={st.input}
+            type="password"
+            autoComplete="new-password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+        </label>
+        <label style={st.field}>
+          <span>{t("password.confirm")}</span>
+          <input
+            style={st.input}
+            type="password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+        </label>
+        <label style={{ display: "flex", gap: 7, alignItems: "center", fontSize: 13 }}>
+          <input
+            type="checkbox"
+            checked={revokeOtherSessions}
+            onChange={(e) => setRevokeOtherSessions(e.target.checked)}
+          />
+          {t("password.revokeOtherSessions")}
+        </label>
+        <div>
+          <button style={st.primary} type="submit" disabled={busy}>
+            {busy ? t("password.changing") : t("password.change")}
+          </button>
+        </div>
+      </form>
+      {msg && (
+        <div
+          role="status"
+          style={{ ...st.muted, marginTop: 8, color: success ? "var(--accent-ink)" : "crimson" }}
+        >
+          {msg}
+        </div>
+      )}
     </div>
   );
 }
@@ -467,6 +585,7 @@ const st: Record<string, React.CSSProperties> = {
   card: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 18, marginBottom: 16, boxShadow: "var(--shadow)" },
   cardHead: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 },
   muted: { color: "var(--muted)", fontSize: 12 },
+  field: { display: "grid", gap: 5, fontSize: 13 },
   row: { display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid var(--border)", fontSize: 14 },
   settingRow: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14 },
   primary: { border: 0, borderRadius: 10, padding: "9px 16px", background: "linear-gradient(135deg,var(--accent),var(--accent-ink))", color: "#fff", fontWeight: 700, boxShadow: "0 4px 14px var(--accent-weak)" },

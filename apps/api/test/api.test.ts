@@ -96,6 +96,40 @@ describe("인증 게이트", () => {
   });
 });
 
+describe("비밀번호 변경 (POST /api/auth/change-password)", () => {
+  it("현재 비밀번호를 검증하고 새 비밀번호로 로그인을 전환한다", async () => {
+    const name = `password-user-${++seq}`;
+    const email = `${name}@example.com`;
+    const cookie = await signUp(name);
+
+    const changed = await app.request(
+      "/api/auth/change-password",
+      authed(cookie, {
+        method: "POST",
+        headers: { origin: env.WEB_ORIGIN },
+        body: JSON.stringify({
+          currentPassword: "test-password-123",
+          newPassword: "new-password-456",
+          revokeOtherSessions: true,
+        }),
+      }),
+      env,
+    );
+    expect(changed.status, await changed.clone().text()).toBe(200);
+
+    const newLogin = await app.request(
+      "/api/auth/sign-in/email",
+      {
+        method: "POST",
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ email, password: "new-password-456" }),
+      },
+      env,
+    );
+    expect(newLogin.status).toBe(200);
+  });
+});
+
 describe("기록 생성 (POST /api/entries)", () => {
   it("최소 입력으로 201, 목록에 콘텐츠 조인되어 나타난다", async () => {
     const cookie = await signUp();
