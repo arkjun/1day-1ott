@@ -1,5 +1,12 @@
 import type { HeatmapCell } from "@1ott/shared";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import ActivityCalendar from "react-activity-calendar";
 import { useTranslation } from "react-i18next";
 import { CalendarView } from "./components/CalendarView";
@@ -8,6 +15,7 @@ import { MyPage } from "./components/MyPage";
 import { PublicProfile } from "./components/PublicProfile";
 import { RecentItem } from "./components/RecentItem";
 import { RecordModal } from "./components/RecordModal";
+import { SiteFooter } from "./components/SiteFooter";
 import { activityLabels } from "./i18n/format";
 import { LanguageSelect } from "./components/LanguageSelect";
 import { LandingPreview } from "./components/LandingPreview";
@@ -18,6 +26,12 @@ import { GREEN, buildYear, currentStreak, isoDaysAgo } from "./lib/heatmap";
 import { useTheme } from "./lib/theme";
 import { TYPE_META } from "./lib/typeMeta";
 import { pickRecentContents } from "./lib/recentContents";
+
+const LegalPage = lazy(() =>
+  import("./components/LegalPage").then((module) => ({
+    default: module.LegalPage,
+  })),
+);
 
 interface SessionUser {
   id: string;
@@ -270,6 +284,15 @@ function Auth() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            {mode === "up" ? (
+              <p className="signup-agreement">
+                {t("auth.agreementPrefix")}{" "}
+                <a href="/terms">{t("footer.terms")}</a>
+                {t("auth.agreementAnd")}
+                <a href="/privacy">{t("footer.privacy")}</a>
+                {t("auth.agreementSuffix")}
+              </p>
+            ) : null}
             <button style={st.primary} type="submit">
               {mode === "up" ? t("auth.signup") : t("auth.signin")}
             </button>
@@ -308,8 +331,15 @@ function AuthedApp() {
   return <Dashboard user={user} />;
 }
 
-export function App() {
+function AppContent() {
   const path = window.location.pathname;
+  if (path === "/privacy" || path === "/terms") {
+    return (
+      <Suspense fallback={<p style={{ padding: 24 }}>로딩…</p>}>
+        <LegalPage kind={path === "/privacy" ? "privacy" : "terms"} />
+      </Suspense>
+    );
+  }
   if (path.startsWith("/u/")) {
     const username = decodeURIComponent(path.slice(3).split("/")[0] ?? "");
     if (username) return <PublicProfile username={username} />;
@@ -319,6 +349,17 @@ export function App() {
     if (id) return <ContentPage contentId={id} />;
   }
   return <AuthedApp />;
+}
+
+export function App() {
+  return (
+    <div className="site-shell">
+      <main className="site-content">
+        <AppContent />
+      </main>
+      <SiteFooter />
+    </div>
+  );
 }
 
 const st: Record<string, React.CSSProperties> = {

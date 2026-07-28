@@ -77,6 +77,146 @@ body {
   transition: background 0.2s ease, color 0.2s ease;
 }
 
+.site-shell {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100svh;
+  flex-direction: column;
+}
+
+.site-content {
+  flex: 1;
+}
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.site-footer-inner {
+  display: flex;
+  width: min(920px, 100%);
+  margin: 0 auto;
+  padding: 20px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.site-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.site-footer a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
+.signup-agreement {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.legal-page {
+  width: min(820px, 100%);
+  margin: 0 auto;
+  padding: 28px 20px 72px;
+}
+
+.legal-header {
+  display: flex;
+  margin-bottom: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.legal-header a {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.legal-page h1 {
+  margin: 0 0 12px;
+  font-size: 36px;
+  letter-spacing: -0.04em;
+}
+
+.legal-lead {
+  margin: 0 0 48px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.legal-page section {
+  margin-top: 40px;
+}
+
+.legal-page h2 {
+  margin: 0 0 14px;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.legal-page p,
+.legal-page li {
+  line-height: 1.75;
+}
+
+.legal-page ul {
+  padding-left: 22px;
+}
+
+.legal-page code {
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  font-size: 0.9em;
+}
+
+.legal-table-wrap {
+  overflow-x: auto;
+  margin: 16px 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.legal-page table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.legal-page th,
+.legal-page td {
+  min-width: 140px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.legal-page th {
+  background: var(--surface-2);
+  font-weight: 700;
+}
+
+.legal-page tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 input,
 select,
 button {
@@ -534,6 +674,16 @@ a {
 }
 
 @media (max-width: 440px) {
+  .site-footer-inner,
+  .legal-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .legal-page h1 {
+    font-size: 30px;
+  }
+
   .landing-preview-tabs button {
     min-width: 0;
     flex: 1;

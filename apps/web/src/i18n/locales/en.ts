@@ -11,6 +11,12 @@ export default {
     change: "Change",
   },
   nav: { home: "Home", calendar: "Calendar", myPage: "My Page" },
+  footer: {
+    legalNav: "Policies and source links",
+    privacy: "Privacy Policy",
+    terms: "Terms",
+    source: "Source Code",
+  },
   myPage: { back: "← Home" },
   password: {
     title: "Change password",
@@ -131,6 +137,9 @@ export default {
     toSignup: "Create account",
     toSignin: "Back to sign in",
     failed: "Failed",
+    agreementPrefix: "By signing up, you agree to the",
+    agreementAnd: " and ",
+    agreementSuffix: ".",
   },
   share: {
     title: "Public profile",

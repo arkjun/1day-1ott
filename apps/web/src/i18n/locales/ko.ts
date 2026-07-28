@@ -11,6 +11,12 @@ export default {
     change: "변경",
   },
   nav: { home: "홈", calendar: "달력", myPage: "마이페이지" },
+  footer: {
+    legalNav: "정책 및 소스 링크",
+    privacy: "개인정보 처리방침",
+    terms: "이용약관",
+    source: "소스 코드",
+  },
   myPage: { back: "← 홈" },
   password: {
     title: "비밀번호 변경",
@@ -124,6 +130,9 @@ export default {
     toSignup: "계정 만들기",
     toSignin: "로그인으로",
     failed: "실패",
+    agreementPrefix: "가입하면",
+    agreementAnd: " 및 ",
+    agreementSuffix: "에 동의합니다.",
   },
   share: {
     title: "공개 프로필",

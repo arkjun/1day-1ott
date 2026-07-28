@@ -11,6 +11,12 @@ export default {
     change: "変更",
   },
   nav: { home: "ホーム", calendar: "カレンダー", myPage: "マイページ" },
+  footer: {
+    legalNav: "ポリシーとソースへのリンク",
+    privacy: "プライバシーポリシー",
+    terms: "利用規約",
+    source: "ソースコード",
+  },
   myPage: { back: "← ホーム" },
   password: {
     title: "パスワード変更",
@@ -124,6 +130,9 @@ export default {
     toSignup: "アカウント作成",
     toSignin: "ログインへ",
     failed: "失敗",
+    agreementPrefix: "登録すると、",
+    agreementAnd: "および",
+    agreementSuffix: "に同意したものとみなされます。",
   },
   share: {
     title: "公開プロフィール",
