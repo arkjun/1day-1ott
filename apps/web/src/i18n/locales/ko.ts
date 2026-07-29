@@ -11,7 +11,7 @@ export default {
     close: "닫기",
     change: "변경",
   },
-  nav: { home: "홈", calendar: "달력", myPage: "마이페이지" },
+  nav: { home: "홈", calendar: "달력", all: "전체", myPage: "마이페이지" },
   footer: {
     legalNav: "정책 및 소스 링크",
     privacy: "개인정보 처리방침",
@@ -65,6 +65,13 @@ export default {
   posters: { title: "포스터", recent: "최근 기록" },
   byType: { title: "유형별", total_other: "총 {{count}}편" },
   recent: { title: "최근 기록", empty: "아직 기록이 없어요. “+ 기록”을 눌러보세요." },
+  all: {
+    title: "전체 기록",
+    search: "제목·감상·날짜 검색",
+    more_other: "더 보기 ({{count}}편 남음)",
+    empty: "아직 기록이 없어요. “+ 기록”을 눌러보세요.",
+    noMatch: "검색 결과가 없어요.",
+  },
   type: {
     movie: "영화",
     tv: "드라마",

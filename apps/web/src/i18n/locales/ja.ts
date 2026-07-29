@@ -11,7 +11,7 @@ export default {
     close: "閉じる",
     change: "変更",
   },
-  nav: { home: "ホーム", calendar: "カレンダー", myPage: "マイページ" },
+  nav: { home: "ホーム", calendar: "カレンダー", all: "すべて", myPage: "マイページ" },
   footer: {
     legalNav: "ポリシーとソースへのリンク",
     privacy: "プライバシーポリシー",
@@ -65,6 +65,13 @@ export default {
   posters: { title: "ポスター", recent: "最近の記録" },
   byType: { title: "タイプ別", total_other: "計{{count}}本" },
   recent: { title: "最近の記録", empty: "まだ記録がありません。「＋ 記録」を押してみましょう。" },
+  all: {
+    title: "すべての記録",
+    search: "タイトル・感想・日付で検索",
+    more_other: "もっと見る（残り{{count}}本）",
+    empty: "まだ記録がありません。「＋ 記録」を押してみましょう。",
+    noMatch: "検索結果がありません。",
+  },
   type: {
     movie: "映画",
     tv: "ドラマ",

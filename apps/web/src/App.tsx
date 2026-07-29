@@ -9,6 +9,7 @@ import {
 } from "react";
 import ActivityCalendar from "react-activity-calendar";
 import { useTranslation } from "react-i18next";
+import { AllEntries } from "./components/AllEntries";
 import { CalendarView } from "./components/CalendarView";
 import { ContentPage } from "./components/ContentPage";
 import { MyPage } from "./components/MyPage";
@@ -59,7 +60,7 @@ function Dashboard({ user }: { user: SessionUser }) {
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [cells, setCells] = useState<HeatmapCell[]>([]);
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState<"home" | "calendar">("home");
+  const [view, setView] = useState<"home" | "calendar" | "all">("home");
   const { resolved: scheme } = useTheme();
 
   async function refresh() {
@@ -114,19 +115,21 @@ function Dashboard({ user }: { user: SessionUser }) {
       </div>
 
       <div style={st.viewTabs}>
-        {(["home", "calendar"] as const).map((v) => (
+        {(["home", "calendar", "all"] as const).map((v) => (
           <button
             key={v}
             style={{ ...st.viewTab, ...(view === v ? st.viewTabActive : {}) }}
             onClick={() => setView(v)}
           >
-            {v === "home" ? t("nav.home") : t("nav.calendar")}
+            {t(`nav.${v}`)}
           </button>
         ))}
       </div>
 
       {view === "calendar" ? (
-        <CalendarView entries={entries} onShowAll={() => setView("home")} />
+        <CalendarView entries={entries} onShowAll={() => setView("all")} />
+      ) : view === "all" ? (
+        <AllEntries entries={entries} onChanged={refresh} />
       ) : (
         <>
       <div style={st.stats}>

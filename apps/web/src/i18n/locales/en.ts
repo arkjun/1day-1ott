@@ -11,7 +11,7 @@ export default {
     close: "Close",
     change: "Change",
   },
-  nav: { home: "Home", calendar: "Calendar", myPage: "My Page" },
+  nav: { home: "Home", calendar: "Calendar", all: "All", myPage: "My Page" },
   footer: {
     legalNav: "Policies and source links",
     privacy: "Privacy Policy",
@@ -72,6 +72,14 @@ export default {
   posters: { title: "Posters", recent: "Recent" },
   byType: { title: "By type", total_one: "{{count}} entry total", total_other: "{{count}} entries total" },
   recent: { title: "Recent logs", empty: "No logs yet. Tap “+ Log” to start." },
+  all: {
+    title: "All logs",
+    search: "Search title, note or date",
+    more_one: "Show more ({{count}} left)",
+    more_other: "Show more ({{count}} left)",
+    empty: "No logs yet. Tap “+ Log” to start.",
+    noMatch: "No matching logs.",
+  },
   type: {
     movie: "Movie",
     tv: "Drama",
