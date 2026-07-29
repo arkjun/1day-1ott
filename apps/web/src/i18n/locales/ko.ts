@@ -13,10 +13,9 @@ export default {
   },
   nav: { home: "홈", calendar: "달력", all: "전체", myPage: "마이페이지" },
   footer: {
-    legalNav: "정책 및 소스 링크",
+    legalNav: "정책 링크",
     privacy: "개인정보 처리방침",
     terms: "이용약관",
-    source: "소스 코드",
   },
   myPage: { back: "← 홈" },
   password: {

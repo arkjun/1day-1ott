@@ -39,11 +39,11 @@ describe("법적 고지", () => {
     expect(html).toContain("만 14세");
   });
 
-  it("footer에서 정책과 소스 저장소로 이동할 수 있다", async () => {
+  it("footer에서 정책 페이지로 이동할 수 있다", async () => {
     const html = await render(<SiteFooter />);
 
     expect(html).toContain('href="/privacy"');
     expect(html).toContain('href="/terms"');
-    expect(html).toContain("github.com/arkjun/1day-1ott");
+    expect(html).not.toContain("github.com");
   });
 });

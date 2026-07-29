@@ -13,10 +13,9 @@ export default {
   },
   nav: { home: "Home", calendar: "Calendar", all: "All", myPage: "My Page" },
   footer: {
-    legalNav: "Policies and source links",
+    legalNav: "Policy links",
     privacy: "Privacy Policy",
     terms: "Terms",
-    source: "Source Code",
   },
   myPage: { back: "← Home" },
   password: {

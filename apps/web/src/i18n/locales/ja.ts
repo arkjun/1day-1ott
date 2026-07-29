@@ -13,10 +13,9 @@ export default {
   },
   nav: { home: "ホーム", calendar: "カレンダー", all: "すべて", myPage: "マイページ" },
   footer: {
-    legalNav: "ポリシーとソースへのリンク",
+    legalNav: "ポリシーへのリンク",
     privacy: "プライバシーポリシー",
     terms: "利用規約",
-    source: "ソースコード",
   },
   myPage: { back: "← ホーム" },
   password: {

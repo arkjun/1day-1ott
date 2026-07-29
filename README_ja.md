@@ -1,4 +1,4 @@
-# 1日1OTT
+# 1日 1OTT
 
 [English](./README.md) · [한국어](./README_ko.md) · [日本語](./README_ja.md)
 
