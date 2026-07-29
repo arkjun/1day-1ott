@@ -195,7 +195,11 @@ export function RecordModal({
 
   return (
     <div style={S.backdrop} onClick={onClose}>
-      <div style={S.modal} onClick={(e) => e.stopPropagation()}>
+      <div
+        className="record-modal"
+        style={S.modal}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={S.head}>
           <b>{t("modal.title")}</b>
           <button style={S.x} onClick={onClose} aria-label={t("common.close")}>

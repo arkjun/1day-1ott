@@ -650,6 +650,16 @@ a {
   from { transform: translateY(8px) scale(0.98); }
 }
 
+@media (max-width: 720px) {
+  .record-modal {
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* 랜딩 히어로: 좁은 화면에서는 세로로 쌓고(로그인 카드가 먼저), 글자 크기 축소. */
 @media (max-width: 720px) {
   .landing-hero {
