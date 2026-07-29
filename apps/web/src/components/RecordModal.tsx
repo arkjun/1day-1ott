@@ -86,7 +86,7 @@ export function RecordModal({
 }) {
   const { t } = useTranslation();
   const genreNames = useGenreNames();
-  const [type, setType] = useState<RecordTab>("tv");
+  const [type, setType] = useState<RecordTab>("all");
   const [q, setQ] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [picked, setPicked] = useState<PickedContent | null>(null);

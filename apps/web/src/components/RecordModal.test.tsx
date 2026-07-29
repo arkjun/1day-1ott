@@ -6,7 +6,7 @@ import { resources } from "../i18n/locales";
 import { RecordModal } from "./RecordModal";
 
 describe("RecordModal", () => {
-  it("최근 기록이 5개일 때 모바일 스크롤용 팝업을 렌더링한다", async () => {
+  it("전체를 기본 선택하고 최근 기록을 렌더링한다", async () => {
     const i18n = createInstance();
     await i18n.init({
       lng: "ko",
@@ -30,6 +30,9 @@ describe("RecordModal", () => {
       </I18nextProvider>,
     );
     expect(html).toContain('class="record-modal"');
+    expect(html).toMatch(
+      /<button style="[^"]*background:var\(--accent\)[^"]*">전체<\/button>/,
+    );
     expect(html).toContain("드라마 4");
   });
 });
