@@ -72,6 +72,7 @@ export default {
     noMatch: "검색 결과가 없어요.",
   },
   type: {
+    all: "전체",
     movie: "영화",
     tv: "드라마",
     variety: "예능",
@@ -159,12 +160,14 @@ export default {
     pickRecent: "{{title}} 바로 선택",
     ytPlaceholder: "YouTube URL 붙여넣기",
     searchPlaceholder: "제목 검색 (TMDB)",
+    searchAllPlaceholder: "드라마·영화·예능·시사·애니 통합 검색",
     manualPlaceholder: "제목 직접 입력",
     tmdbOff: "TMDB 토큰 미설정 — 지금은 직접 입력으로 저장됩니다.",
     date: "날짜",
     reactionPrompt: "어땠어요?",
     ytError: "유튜브 URL을 인식하지 못했습니다.",
     needTitle: "제목을 선택하거나 입력하세요.",
+    needCategory: "검색 결과에서 작품을 선택하거나 유형을 먼저 고르세요.",
     saveFailed: "저장 실패",
   },
   calendar: {

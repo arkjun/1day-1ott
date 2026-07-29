@@ -80,6 +80,7 @@ export default {
     noMatch: "No matching logs.",
   },
   type: {
+    all: "All",
     movie: "Movie",
     tv: "Drama",
     variety: "Variety",
@@ -167,12 +168,14 @@ export default {
     pickRecent: "Select {{title}}",
     ytPlaceholder: "Paste YouTube URL",
     searchPlaceholder: "Search title (TMDB)",
+    searchAllPlaceholder: "Search drama, movie, variety, documentary, and anime",
     manualPlaceholder: "Enter title manually",
     tmdbOff: "TMDB token not set — saving as manual entry for now.",
     date: "Date",
     reactionPrompt: "How was it?",
     ytError: "Couldn’t recognize the YouTube URL.",
     needTitle: "Pick or enter a title.",
+    needCategory: "Pick a search result or choose a type first.",
     saveFailed: "Save failed",
   },
   calendar: {

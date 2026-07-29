@@ -72,6 +72,7 @@ export default {
     noMatch: "検索結果がありません。",
   },
   type: {
+    all: "すべて",
     movie: "映画",
     tv: "ドラマ",
     variety: "バラエティ",
@@ -159,12 +160,14 @@ export default {
     pickRecent: "{{title}}を選択",
     ytPlaceholder: "YouTube URL を貼り付け",
     searchPlaceholder: "タイトル検索 (TMDB)",
+    searchAllPlaceholder: "ドラマ・映画・バラエティ・ドキュメンタリー・アニメを検索",
     manualPlaceholder: "タイトルを手動入力",
     tmdbOff: "TMDB トークン未設定 — 今は手動入力として保存されます。",
     date: "日付",
     reactionPrompt: "どうでしたか？",
     ytError: "YouTube URL を認識できませんでした。",
     needTitle: "タイトルを選択または入力してください。",
+    needCategory: "検索結果から作品を選ぶか、先にタイプを選択してください。",
     saveFailed: "保存に失敗しました",
   },
   calendar: {

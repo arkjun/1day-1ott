@@ -69,7 +69,7 @@ export const api = {
     // 매크로태스크 하나만 미루면 브라우저가 다운로드를 개시하기에 충분하다.
     setTimeout(() => URL.revokeObjectURL(url), 0);
   },
-  search: (q: string, type: ContentType) =>
+  search: (q: string, type: ContentType | "all") =>
     req<{ results: SearchResult[] }>(
       `/api/search?q=${encodeURIComponent(q)}&type=${type}&lang=${i18n.language}`,
     ),

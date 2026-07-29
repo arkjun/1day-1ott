@@ -6,6 +6,17 @@ import type { RecentContent } from "../lib/recentContents";
 import { REACTION_META, REACTION_ORDER } from "../lib/reactions";
 
 type PickedContent = SearchResult & { contentId?: string };
+type RecordTab = ContentType | "all";
+
+const recordTabs: readonly RecordTab[] = ["all", ...contentTypes];
+const searchableTypes: readonly RecordTab[] = [
+  "all",
+  "movie",
+  "tv",
+  "variety",
+  "documentary",
+  "anime",
+];
 
 function todayStr(): string {
   const d = new Date();
@@ -75,7 +86,7 @@ export function RecordModal({
 }) {
   const { t } = useTranslation();
   const genreNames = useGenreNames();
-  const [type, setType] = useState<ContentType>("tv");
+  const [type, setType] = useState<RecordTab>("tv");
   const [q, setQ] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [picked, setPicked] = useState<PickedContent | null>(null);
@@ -87,19 +98,17 @@ export function RecordModal({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const searchable =
-    type === "movie" ||
-    type === "tv" ||
-    type === "variety" ||
-    type === "documentary" ||
-    type === "anime";
-  const recentContentsForType = recentContents.filter(
-    (content) => content.type === type,
+  const searchable = searchableTypes.includes(type);
+  const recentContentsForType = recentContents.filter((content) =>
+    type === "all"
+      ? searchableTypes.includes(content.type)
+      : content.type === type,
   );
 
   // 디바운스 TMDB 검색
   useEffect(() => {
     if (!searchable || picked) return;
+    let cancelled = false;
     const term = q.trim();
     if (term.length < 2) {
       setResults([]);
@@ -108,14 +117,19 @@ export function RecordModal({
     const t = setTimeout(async () => {
       try {
         const r = await api.search(term, type);
+        if (cancelled) return;
         setResults(r.results);
         setTmdbOff(false);
       } catch {
+        if (cancelled) return;
         setResults([]);
         setTmdbOff(true); // 503 등: 토큰 미설정 → 직접입력 폴백
       }
     }, 300);
-    return () => clearTimeout(t);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [q, type, searchable, picked]);
 
   function reset() {
@@ -151,6 +165,10 @@ export function RecordModal({
         note: note.trim() || undefined,
       };
     } else if (q.trim()) {
+      if (type === "all") {
+        setErr(t("modal.needCategory"));
+        return;
+      }
       input = {
         type: type === "youtube" ? "youtube" : type,
         title: q.trim(),
@@ -187,7 +205,7 @@ export function RecordModal({
 
         {/* 유형 탭 */}
         <div style={S.tabs}>
-          {contentTypes.map((ct) => (
+          {recordTabs.map((ct) => (
             <button
               key={ct}
               onClick={() => {
@@ -279,7 +297,11 @@ export function RecordModal({
             <input
               style={S.input}
               placeholder={
-                searchable ? t("modal.searchPlaceholder") : t("modal.manualPlaceholder")
+                type === "all"
+                  ? t("modal.searchAllPlaceholder")
+                  : searchable
+                    ? t("modal.searchPlaceholder")
+                    : t("modal.manualPlaceholder")
               }
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -304,6 +326,9 @@ export function RecordModal({
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600 }}>{r.title}</div>
                       <div style={S.muted}>
+                        {type === "all" && (
+                          <span style={S.typeBadge}>{t(`type.${r.type}`)}</span>
+                        )}
                         {r.rating ? `★ ${r.rating.toFixed(1)}` : ""}
                         {r.rating && r.year ? " · " : ""}
                         {r.year ?? ""}
@@ -479,6 +504,15 @@ const S: Record<string, React.CSSProperties> = {
   },
   posterSm: { width: 46, height: 69, borderRadius: 6, objectFit: "cover" },
   muted: { color: "var(--muted)", fontSize: 12 },
+  typeBadge: {
+    display: "inline-block",
+    marginRight: 6,
+    padding: "1px 6px",
+    borderRadius: 999,
+    background: "var(--accent-weak)",
+    color: "var(--accent-ink)",
+    fontWeight: 700,
+  },
   clamp2: {
     color: "var(--muted)",
     fontSize: 12,

@@ -37,6 +37,27 @@ const GENRE_TALK = 10767;
 const GENRE_DOCUMENTARY = 99;
 const GENRE_NEWS = 10763;
 
+type SearchType =
+  | "all"
+  | "movie"
+  | "tv"
+  | "variety"
+  | "documentary"
+  | "anime";
+
+const SEARCH_TYPES = new Set<SearchType>([
+  "all",
+  "movie",
+  "tv",
+  "variety",
+  "documentary",
+  "anime",
+]);
+
+function searchType(value?: string): SearchType {
+  return SEARCH_TYPES.has(value as SearchType) ? (value as SearchType) : "movie";
+}
+
 /**
  * search/tv 는 장르 구분 없이 모든 TV 프로그램을 반환하므로 genre_ids 로 거른다.
  * anime(16)·variety(10764/10767)는 포함식(확실한 것만), tv 는 예능·토크·애니 제외식
@@ -73,19 +94,37 @@ export function matchesTypeGenre(
   return true;
 }
 
-export function mapTmdb(item: TmdbItem, fallbackType: ContentType): SearchResult | null {
+/** multi 검색 결과를 기록 가능한 단일 유형으로 분류한다. */
+export function classifyTmdbType(item: TmdbItem): ContentType | null {
+  if (item.media_type === "movie") return "movie";
+  if (item.media_type !== "tv") return null;
+
+  const genres = item.genre_ids ?? [];
+  if (genres.includes(GENRE_ANIMATION)) return "anime";
+  if (genres.some((g) => g === GENRE_DOCUMENTARY || g === GENRE_NEWS)) {
+    return "documentary";
+  }
+  if (genres.some((g) => g === GENRE_REALITY || g === GENRE_TALK)) {
+    return "variety";
+  }
+  return "tv";
+}
+
+export function mapTmdb(item: TmdbItem, fallbackType: SearchType): SearchResult | null {
   const title = item.title ?? item.name;
   if (!title) return null;
   const date = item.release_date ?? item.first_air_date ?? "";
-  // anime/variety/documentary 는 tv 검색 결과라도 탭 의도를 유지한다.
-  const type: ContentType =
-    fallbackType === "anime" ||
-    fallbackType === "variety" ||
-    fallbackType === "documentary"
-      ? fallbackType
-      : item.media_type === "tv" || item.name
-        ? "tv"
-        : "movie";
+  const type =
+    fallbackType === "all"
+      ? classifyTmdbType(item)
+      : fallbackType === "anime" ||
+          fallbackType === "variety" ||
+          fallbackType === "documentary"
+        ? fallbackType
+        : item.media_type === "tv" || item.name
+          ? "tv"
+          : "movie";
+  if (!type) return null;
   return {
     type,
     title,
@@ -98,17 +137,17 @@ export function mapTmdb(item: TmdbItem, fallbackType: ContentType): SearchResult
   };
 }
 
-/** TMDB 검색 프록시. 키는 서버에만. type=movie|tv|anime 로 엔드포인트 선택. */
+/** TMDB 검색 프록시. 키는 서버에만. type=all 이면 영화·TV 통합 검색. */
 searchRoute.get("/search", async (c) => {
   const q = c.req.query("q")?.trim();
-  const type = (c.req.query("type") ?? "movie") as ContentType;
+  const type = searchType(c.req.query("type"));
   if (!q) return c.json({ results: [] });
   if (!c.env.TMDB_API_TOKEN) {
     return c.json({ error: "tmdb_not_configured" }, 503);
   }
 
-  // anime 는 TMDB 상 tv 로 검색(장르 필터는 후속). movie 외 나머지는 tv.
-  const path = type === "movie" ? "movie" : "tv";
+  // anime 는 TMDB 상 tv 로 검색(장르 필터는 후속). all 은 인물도 섞이는 multi.
+  const path = type === "all" ? "multi" : type === "movie" ? "movie" : "tv";
   const url = `https://api.themoviedb.org/3/search/${path}?query=${encodeURIComponent(q)}&language=${tmdbLang(c.req.query("lang"))}&include_adult=false&page=1`;
 
   const res = await fetch(url, {
@@ -121,8 +160,9 @@ searchRoute.get("/search", async (c) => {
 
   const data = (await res.json()) as { results?: TmdbItem[] };
   const results = (data.results ?? [])
+    .filter((it) => type !== "all" || classifyTmdbType(it) !== null)
     // slice 전에 걸러야 필터된 항목이 8칸을 잡아먹지 않는다.
-    .filter((it) => matchesTypeGenre(it.genre_ids, type))
+    .filter((it) => type === "all" || matchesTypeGenre(it.genre_ids, type))
     .slice(0, 8)
     .map((it) => mapTmdb(it, type))
     .filter((r): r is SearchResult => r !== null);
