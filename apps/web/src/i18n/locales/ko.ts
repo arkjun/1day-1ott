@@ -181,7 +181,6 @@ export default {
     notFoundTitle: "프로필을 찾을 수 없어요",
     notFoundBody: "비공개거나 없는 사용자입니다.",
     toHome: "홈으로",
-    downloadImage: "⬇ 잔디 이미지",
   },
   content: {
     notFoundTitle: "작품을 찾을 수 없어요",

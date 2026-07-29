@@ -189,7 +189,6 @@ export default {
     notFoundTitle: "Profile not found",
     notFoundBody: "This user is private or doesn’t exist.",
     toHome: "Go home",
-    downloadImage: "⬇ Activity image",
   },
   content: {
     notFoundTitle: "Content not found",

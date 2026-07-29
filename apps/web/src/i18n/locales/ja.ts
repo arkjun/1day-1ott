@@ -181,7 +181,6 @@ export default {
     notFoundTitle: "プロフィールが見つかりません",
     notFoundBody: "非公開または存在しないユーザーです。",
     toHome: "ホームへ",
-    downloadImage: "⬇ アクティビティ画像",
   },
   content: {
     notFoundTitle: "作品が見つかりません",

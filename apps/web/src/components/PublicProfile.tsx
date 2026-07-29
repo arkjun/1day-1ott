@@ -8,34 +8,37 @@ import { LanguageSelect } from "./LanguageSelect";
 import { GREEN, buildYear, currentStreak, isoDaysAgo } from "../lib/heatmap";
 import { useTheme } from "../lib/theme";
 
-/** SVG 잔디를 클라이언트 canvas 로 PNG 변환 후 다운로드(폰트/서버 렌더 불필요). */
-async function downloadPng(username: string) {
-  const res = await fetch(`/api/u/${encodeURIComponent(username)}/jandi.svg`);
-  const svgText = await res.text();
-  const blob = new Blob([svgText], { type: "image/svg+xml" });
-  const url = URL.createObjectURL(blob);
-  const img = new Image();
-  img.onload = () => {
-    const scale = 2;
-    const canvas = document.createElement("canvas");
-    canvas.width = img.width * scale;
-    canvas.height = img.height * scale;
-    const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.scale(scale, scale);
-    ctx.drawImage(img, 0, 0);
-    canvas.toBlob((b) => {
-      if (!b) return;
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(b);
-      a.download = `${username}-jandi.png`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-      URL.revokeObjectURL(url);
-    }, "image/png");
-  };
-  img.src = url;
+interface PublicProfileActionsProps {
+  scheme: "light" | "dark";
+  copied: boolean;
+  onToggle: () => void;
+  onCopyLink: () => void;
+}
+
+export function PublicProfileActions({
+  scheme,
+  copied,
+  onToggle,
+  onCopyLink,
+}: PublicProfileActionsProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div style={{ display: "flex", gap: 8 }}>
+      <LanguageSelect />
+      <button
+        style={st.iconBtn}
+        onClick={onToggle}
+        aria-label={t("action.toggleTheme")}
+        title={t("action.toggleTheme")}
+      >
+        {scheme === "dark" ? "☀️" : "🌙"}
+      </button>
+      <button style={st.ghost} onClick={onCopyLink}>
+        {copied ? t("common.copied") : t("share.copyLink")}
+      </button>
+    </div>
+  );
 }
 
 export function PublicProfile({ username }: { username: string }) {
@@ -88,18 +91,12 @@ export function PublicProfile({ username }: { username: string }) {
           </div>
           <h1 style={{ margin: "2px 0 0" }}>@{profile.username}</h1>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <LanguageSelect />
-          <button style={st.iconBtn} onClick={toggle} aria-label={t("action.toggleTheme")} title={t("action.toggleTheme")}>
-            {scheme === "dark" ? "☀️" : "🌙"}
-          </button>
-          <button style={st.ghost} onClick={copyLink}>
-            {copied ? t("common.copied") : t("share.copyLink")}
-          </button>
-          <button style={st.primary} onClick={() => downloadPng(profile.username)}>
-            {t("profile.downloadImage")}
-          </button>
-        </div>
+        <PublicProfileActions
+          scheme={scheme}
+          copied={copied}
+          onToggle={toggle}
+          onCopyLink={copyLink}
+        />
       </div>
 
       <div style={st.stats}>
@@ -170,7 +167,6 @@ const st: Record<string, React.CSSProperties> = {
   muted: { color: "var(--muted)", fontSize: 12 },
   posterGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(78px,1fr))", gap: 10 },
   poster: { width: "100%", aspectRatio: "2 / 3", objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" },
-  primary: { border: 0, borderRadius: 10, padding: "9px 16px", background: "linear-gradient(135deg,var(--accent),var(--accent-ink))", color: "#fff", fontWeight: 700, boxShadow: "0 4px 14px var(--accent-weak)" },
   ghost: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 14px", background: "var(--surface)", color: "inherit" },
   iconBtn: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px", background: "var(--surface)", lineHeight: 1 },
 };
