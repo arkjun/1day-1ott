@@ -1,5 +1,6 @@
 export default {
   common: {
+    serviceName: "1일 1OTT",
     loading: "로딩…",
     copied: "복사됨!",
     cancel: "취소",

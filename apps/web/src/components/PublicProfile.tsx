@@ -83,7 +83,9 @@ export function PublicProfile({ username }: { username: string }) {
     <div style={st.wrap}>
       <div style={st.top}>
         <div>
-          <div style={{ fontSize: 12, color: "#8890a0" }}>🌱 1일 1OTT</div>
+          <div style={{ fontSize: 12, color: "#8890a0" }}>
+            🌱 {t("common.serviceName")}
+          </div>
           <h1 style={{ margin: "2px 0 0" }}>@{profile.username}</h1>
         </div>
         <div style={{ display: "flex", gap: 8 }}>

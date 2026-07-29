@@ -1,5 +1,6 @@
 export default {
   common: {
+    serviceName: "1DAY 1OTT",
     loading: "Loading…",
     copied: "Copied!",
     cancel: "Cancel",
@@ -104,7 +105,7 @@ export default {
   },
   preview: {
     eyebrow: "Preview",
-    title: "See what using 1일 1OTT feels like",
+    title: "See what using 1DAY 1OTT feels like",
     sub: "From watching your activity grow to logging what you watched today.",
     tabsLabel: "Product screen preview",
     dashboardTab: "My activity",

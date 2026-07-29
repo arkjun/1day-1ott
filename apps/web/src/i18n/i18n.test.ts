@@ -39,6 +39,14 @@ describe("로케일 사전 파리티", () => {
   });
 });
 
+describe("서비스명", () => {
+  it("언어별 표기를 사용한다", () => {
+    expect(resources.ko.translation.common.serviceName).toBe("1일 1OTT");
+    expect(resources.en.translation.common.serviceName).toBe("1DAY 1OTT");
+    expect(resources.ja.translation.common.serviceName).toBe("1日 1OTT");
+  });
+});
+
 describe("복수형(i18next)", () => {
   function t(lng: string) {
     const i = createInstance();

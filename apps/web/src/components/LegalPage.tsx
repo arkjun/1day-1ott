@@ -1,10 +1,14 @@
+import { useTranslation } from "react-i18next";
+
 export type LegalKind = "privacy" | "terms";
 
 export function LegalPage({ kind }: { kind: LegalKind }) {
+  const { t } = useTranslation();
+
   return (
     <article className="legal-page">
       <header className="legal-header">
-        <a href="/">🌱 1일 1OTT</a>
+        <a href="/">🌱 {t("common.serviceName")}</a>
         <span>시행일: 2026년 7월 28일</span>
       </header>
       {kind === "privacy" ? <PrivacyPolicy /> : <Terms />}

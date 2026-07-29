@@ -65,7 +65,7 @@ export function LandingPreview() {
 
         <div className="landing-preview-screen">
           <div className="landing-preview-appbar">
-            <b>🌱 1일 1OTT</b>
+            <b>🌱 {t("common.serviceName")}</b>
             <div>
               <span>{t("preview.myPage")}</span>
               <span className="landing-preview-add">{t("action.addRecord")}</span>

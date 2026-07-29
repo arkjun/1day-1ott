@@ -6,7 +6,7 @@ export function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
-        <span>© 2026 1일 1OTT</span>
+        <span>© 2026 {t("common.serviceName")}</span>
         <nav aria-label={t("footer.legalNav")}>
           <a href="/privacy">{t("footer.privacy")}</a>
           <a href="/terms">{t("footer.terms")}</a>

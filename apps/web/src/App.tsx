@@ -97,7 +97,9 @@ function Dashboard({ user }: { user: SessionUser }) {
   return (
     <div style={{ ...st.wrap, maxWidth: view === "calendar" ? 1080 : 920 }}>
       <div style={st.top}>
-        <b style={{ fontSize: 18, letterSpacing: "-0.02em" }}>🌱 1일 1OTT</b>
+        <b style={{ fontSize: 18, letterSpacing: "-0.02em" }}>
+          🌱 {t("common.serviceName")}
+        </b>
         <div style={{ display: "flex", gap: 8 }}>
           <a style={{ ...st.ghost, textDecoration: "none" }} href="/me">
             {t("nav.myPage")}
@@ -256,7 +258,9 @@ function Auth() {
   return (
     <div style={st.landing}>
       <div style={st.landingBar}>
-        <b style={{ fontSize: 18, letterSpacing: "-0.02em" }}>🌱 1일 1OTT</b>
+        <b style={{ fontSize: 18, letterSpacing: "-0.02em" }}>
+          🌱 {t("common.serviceName")}
+        </b>
         <LanguageSelect />
       </div>
 
@@ -352,6 +356,12 @@ function AppContent() {
 }
 
 export function App() {
+  const { t, i18n } = useTranslation();
+
+  useEffect(() => {
+    document.title = t("common.serviceName");
+  }, [i18n.resolvedLanguage, t]);
+
   return (
     <div className="site-shell">
       <main className="site-content">
