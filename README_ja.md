@@ -6,7 +6,7 @@
 
 - サービス: [https://1day1ott.com](https://1day1ott.com)
 - ソースコード: [MIT License](./LICENSE)
-- ポリシー: [プライバシーポリシー](./PRIVACY.md) · [利用規約](./TERMS.md)
+- ポリシー: [プライバシーポリシー](https://1day1ott.com/privacy?lang=ja) · [利用規約](https://1day1ott.com/terms?lang=ja)（韓国語原本: [PRIVACY.md](./PRIVACY.md) · [TERMS.md](./TERMS.md)）
 
 ## 主な機能
 

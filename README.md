@@ -6,7 +6,7 @@ A web service for logging the movies, TV shows, variety shows, anime, YouTube vi
 
 - Service: [https://1day1ott.com](https://1day1ott.com)
 - Source code: [MIT License](./LICENSE)
-- Policies: [Privacy Policy](./PRIVACY.md) · [Terms of Service](./TERMS.md)
+- Policies: [Privacy Policy](https://1day1ott.com/privacy?lang=en) · [Terms of Service](https://1day1ott.com/terms?lang=en) (Korean originals: [PRIVACY.md](./PRIVACY.md) · [TERMS.md](./TERMS.md))
 
 ## Features
 

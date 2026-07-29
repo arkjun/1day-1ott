@@ -6,7 +6,7 @@
 
 - 서비스: [https://1day1ott.com](https://1day1ott.com)
 - 소스 코드: [MIT License](./LICENSE)
-- 정책: [개인정보 처리방침](./PRIVACY.md) · [이용약관](./TERMS.md)
+- 정책: [개인정보 처리방침](https://1day1ott.com/privacy?lang=ko) · [이용약관](https://1day1ott.com/terms?lang=ko) (저장소 원본: [PRIVACY.md](./PRIVACY.md) · [TERMS.md](./TERMS.md))
 
 ## 주요 기능
 

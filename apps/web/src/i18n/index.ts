@@ -16,7 +16,9 @@ i18n
     nonExplicitSupportedLngs: true,
     interpolation: { escapeValue: false }, // React 가 이미 XSS 방어
     detection: {
-      order: ["localStorage", "navigator"],
+      // ?lang= 이 먼저다. 외부에서 언어를 지정해 링크할 수 있어야 한다(README 정책 링크).
+      order: ["querystring", "localStorage", "navigator"],
+      lookupQuerystring: "lang",
       lookupLocalStorage: LANG_STORAGE_KEY,
       caches: ["localStorage"],
     },
