@@ -114,6 +114,14 @@ To deploy through GitHub Actions, configure these repository secrets:
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
 
+Configure the public repository variable `VITE_GA_MEASUREMENT_ID` with the
+Google Analytics 4 measurement ID (`G-...`). When omitted or invalid, the
+analytics code remains disabled and no Google script is loaded.
+
+```bash
+gh variable set VITE_GA_MEASUREMENT_ID --body "G-..." --repo arkjun/1day-1ott
+```
+
 Update the custom domain, `BETTER_AUTH_URL`, `WEB_ORIGIN`, and D1 binding in `apps/api/wrangler.jsonc` for your environment. A push to `main` runs CI, applies remote D1 migrations, and deploys to production after CI succeeds.
 
 ## External Services

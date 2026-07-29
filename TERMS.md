@@ -49,7 +49,7 @@
 
 ## 제6조 외부 서비스
 
-서비스는 TMDB, YouTube, Cloudflare 등 제3자의 서비스와 인프라를 사용합니다. 외부 서비스의 정보 정확성·가용성과 정책은 해당 제공자가 관리하며, 외부 서비스의 중단이나 정책 변경으로 일부 기능이 제한될 수 있습니다.
+서비스는 TMDB, YouTube, Cloudflare, Google Analytics 등 제3자의 서비스와 인프라를 사용합니다. 외부 서비스의 정보 정확성·가용성과 정책은 해당 제공자가 관리하며, 외부 서비스의 중단이나 정책 변경으로 일부 기능이 제한될 수 있습니다.
 
 This service uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.
 

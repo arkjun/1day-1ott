@@ -7,6 +7,7 @@ import { activityLabels } from "../i18n/format";
 import { LanguageSelect } from "./LanguageSelect";
 import { GREEN, buildYear, currentStreak, isoDaysAgo } from "../lib/heatmap";
 import { useTheme } from "../lib/theme";
+import { updatePageMetadata } from "../lib/seo";
 
 interface PublicProfileActionsProps {
   scheme: "light" | "dark";
@@ -58,6 +59,32 @@ export function PublicProfile({ username }: { username: string }) {
       })
       .catch(() => setState("notfound"));
   }, [username, i18n.language]);
+
+  useEffect(() => {
+    if (state === "notfound") {
+      updatePageMetadata(
+        window.location.pathname,
+        i18n.resolvedLanguage ?? i18n.language,
+        {
+          title: `${t("profile.notFoundTitle")} | ${t("common.serviceName")}`,
+          robots: "noindex,nofollow",
+        },
+      );
+      return;
+    }
+    if (!profile) return;
+    updatePageMetadata(
+      window.location.pathname,
+      i18n.resolvedLanguage ?? i18n.language,
+      {
+        title: `${t("seo.profileTitle", { username: profile.username })} | ${t("common.serviceName")}`,
+        description: t("seo.profileDescription", {
+          username: profile.username,
+          count: profile.total,
+        }),
+      },
+    );
+  }, [i18n.language, i18n.resolvedLanguage, profile, state, t]);
 
   if (state === "loading") return <p style={{ padding: 24 }}>{t("common.loading")}</p>;
   if (state === "notfound" || !profile)

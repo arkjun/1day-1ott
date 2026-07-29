@@ -16,6 +16,21 @@ export default {
     legalNav: "ポリシーへのリンク",
     privacy: "プライバシーポリシー",
     terms: "利用規約",
+    analyticsSettings: "アクセス解析設定",
+  },
+  analytics: {
+    title: "サービス改善のためのアクセス解析",
+    description:
+      "同意した場合に限り、Google Analyticsで仮名化された利用統計を収集します。",
+    learnMore: "詳細を見る",
+    reject: "拒否",
+    accept: "同意",
+  },
+  seo: {
+    profileTitle: "@{{username}}の視聴記録",
+    profileDescription:
+      "@{{username}}の映画・ドラマ視聴記録とアクティビティをご覧ください。計{{count}}本を記録しています。",
+    contentDescription: "{{title}}の視聴記録とリアクションをご覧ください。",
   },
   myPage: { back: "← ホーム" },
   password: {

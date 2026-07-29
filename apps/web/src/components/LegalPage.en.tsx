@@ -52,6 +52,14 @@ export function EnglishPrivacyPolicy() {
                 </td>
               </tr>
               <tr>
+                <td>Service usage analytics</td>
+                <td>
+                  Google Analytics client ID, consent status, access time,
+                  visited pages and usage events, referrer, device and browser
+                  information, and approximate location
+                </td>
+              </tr>
+              <tr>
                 <td>Troubleshooting and security</td>
                 <td>
                   Request, error and deployment logs, access date and time, and
@@ -69,9 +77,13 @@ export function EnglishPrivacyPolicy() {
         </p>
         <p>
           The browser stores essential session cookies and the language (
-          <code>1ott.lang</code>) and theme (<code>theme</code>) settings. The
-          Operator does not use advertising, behavioral tracking, or
-          personalized marketing cookies.
+          <code>1ott.lang</code>), theme (<code>theme</code>), and analytics
+          consent (<code>1ott.analytics-consent</code>) settings. Google
+          Analytics loads only after the data subject consents to analytics and
+          may use <code>_ga</code> and <code>_ga_*</code> cookies. Advertising
+          and personalized marketing features are disabled. The Operator does
+          not send names, email addresses, viewing records, or user IDs to
+          Google Analytics.
         </p>
       </section>
 
@@ -83,6 +95,10 @@ export function EnglishPrivacyPolicy() {
           requests, secure the Service, and prevent misuse. Optional
           information is processed only when the data subject uses the relevant
           feature.
+        </p>
+        <p>
+          Service usage analytics is based on the data subject&apos;s consent.
+          Refusing consent does not limit any core Service feature.
         </p>
         <p>
           The Operator does not provide the Service to children under 14. If the
@@ -108,6 +124,11 @@ export function EnglishPrivacyPolicy() {
           </li>
           <li>
             Troubleshooting and security logs: up to 30 days from creation
+          </li>
+          <li>
+            Google Analytics data: for the period set in the Google Analytics
+            property&apos;s data-retention settings and under Google&apos;s
+            policies
           </li>
           <li>
             Information subject to a statutory retention duty: for the period
@@ -188,6 +209,24 @@ export function EnglishPrivacyPolicy() {
                   request
                 </td>
               </tr>
+              <tr>
+                <td>Google LLC</td>
+                <td>Service usage analytics through Google Analytics</td>
+                <td>
+                  Consenting data subject&apos;s client ID, access time, visited
+                  pages and usage events, referrer, device and browser
+                  information, and approximate location
+                </td>
+                <td>
+                  Transferred over an encrypted network after consent when the
+                  Service is used, to the United States and other countries
+                  where Google&apos;s global infrastructure is located
+                </td>
+                <td>
+                  For the period set in the Google Analytics property&apos;s
+                  data-retention settings and under Google&apos;s policies
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -213,6 +252,10 @@ export function EnglishPrivacyPolicy() {
           personal information. Viewing records can be edited, deleted, or
           exported as Markdown directly in the Service, and public profiles can
           be disabled at any time from My Page.
+        </p>
+        <p>
+          Analytics consent can be withdrawn at any time through “Analytics
+          settings” in the footer.
         </p>
         <p>
           Send requests to delete an account and all personal information, or
@@ -412,10 +455,10 @@ export function EnglishTerms() {
         <h2>Article 6. External Services</h2>
         <p>
           The Service uses third-party services and infrastructure, including
-          TMDB, YouTube, and Cloudflare. Those providers control the accuracy
-          and availability of their information and their own policies. An
-          outage of an external service or a change to its policies may limit
-          certain features.
+          TMDB, YouTube, Cloudflare, and Google Analytics. Those providers
+          control the accuracy and availability of their information and their
+          own policies. An outage of an external service or a change to its
+          policies may limit certain features.
         </p>
         <p>
           This service uses TMDB and the TMDB APIs but is not endorsed,

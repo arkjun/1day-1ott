@@ -33,6 +33,7 @@ describe("법적 고지", () => {
     expect(html).toContain("IP 주소");
     expect(html).toContain("Passkey");
     expect(html).toContain("Cloudflare");
+    expect(html).toContain("Google Analytics");
     expect(html).toContain("support@1day1ott.com");
   });
 
@@ -45,8 +46,8 @@ describe("법적 고지", () => {
   });
 
   it.each([
-    ["en", "Privacy Policy", "Effective date: July 28, 2026", "Personal Information Protection Act"],
-    ["ja", "プライバシーポリシー", "施行日：2026年7月28日", "個人情報保護法"],
+    ["en", "Privacy Policy", "Effective date: July 29, 2026", "Personal Information Protection Act"],
+    ["ja", "プライバシーポリシー", "施行日：2026年7月29日", "個人情報保護法"],
   ])(
     "개인정보 처리방침을 %s로 표시한다",
     async (lng, title, effectiveDate, privacyAct) => {

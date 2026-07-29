@@ -16,6 +16,21 @@ export default {
     legalNav: "Policy links",
     privacy: "Privacy Policy",
     terms: "Terms",
+    analyticsSettings: "Analytics settings",
+  },
+  analytics: {
+    title: "Analytics for service improvement",
+    description:
+      "We use Google Analytics only with your consent to collect pseudonymous usage statistics.",
+    learnMore: "Learn more",
+    reject: "Reject",
+    accept: "Accept",
+  },
+  seo: {
+    profileTitle: "@{{username}}’s watch journal",
+    profileDescription:
+      "Explore @{{username}}’s movie and TV watch journal with {{count}} logged entries.",
+    contentDescription: "Explore viewing logs and reactions for {{title}}.",
   },
   myPage: { back: "← Home" },
   password: {

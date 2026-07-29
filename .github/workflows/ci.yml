@@ -32,6 +32,8 @@ jobs:
 
       - name: Build web
         run: pnpm --filter @1ott/web build
+        env:
+          VITE_GA_MEASUREMENT_ID: ${{ vars.VITE_GA_MEASUREMENT_ID }}
 
   # main 이 그린이면 프로덕션 배포 (PR 에서는 안 돈다)
   deploy:
@@ -59,6 +61,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VITE_GA_MEASUREMENT_ID: ${{ vars.VITE_GA_MEASUREMENT_ID }}
 
       # 루트 deploy 스크립트 = web 빌드 → wrangler deploy (pnpm 내장 deploy 와 충돌하므로 run 필수)
       - name: Deploy

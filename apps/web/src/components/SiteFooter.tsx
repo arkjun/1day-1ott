@@ -1,6 +1,10 @@
 import { useTranslation } from "react-i18next";
 
-export function SiteFooter() {
+export function SiteFooter({
+  onAnalyticsSettings,
+}: {
+  onAnalyticsSettings?: () => void;
+}) {
   const { t } = useTranslation();
 
   return (
@@ -10,6 +14,11 @@ export function SiteFooter() {
         <nav aria-label={t("footer.legalNav")}>
           <a href="/privacy">{t("footer.privacy")}</a>
           <a href="/terms">{t("footer.terms")}</a>
+          {onAnalyticsSettings ? (
+            <button type="button" onClick={onAnalyticsSettings}>
+              {t("footer.analyticsSettings")}
+            </button>
+          ) : null}
         </nav>
       </div>
     </footer>

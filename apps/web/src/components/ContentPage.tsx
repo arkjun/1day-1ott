@@ -6,6 +6,7 @@ import { useSession } from "../lib/authClient";
 import { LanguageSelect } from "./LanguageSelect";
 import { RecentItem } from "./RecentItem";
 import { REACTION_META } from "../lib/reactions";
+import { updatePageMetadata } from "../lib/seo";
 
 export function ContentPage({ contentId }: { contentId: string }) {
   const { t, i18n } = useTranslation();
@@ -35,6 +36,30 @@ export function ContentPage({ contentId }: { contentId: string }) {
   // 언어 바뀌면 제목 다시. 로그인/작품 바뀌면 내 기록 다시.
   useEffect(() => loadDetail(), [loadDetail, i18n.language]);
   useEffect(() => loadMine(), [loadMine]);
+  useEffect(() => {
+    if (state === "notfound") {
+      updatePageMetadata(
+        window.location.pathname,
+        i18n.resolvedLanguage ?? i18n.language,
+        {
+          title: `${t("content.notFoundTitle")} | ${t("common.serviceName")}`,
+          robots: "noindex,nofollow",
+        },
+      );
+      return;
+    }
+    if (!detail) return;
+    updatePageMetadata(
+      window.location.pathname,
+      i18n.resolvedLanguage ?? i18n.language,
+      {
+        title: `${detail.title} | ${t("common.serviceName")}`,
+        description:
+          detail.facts.overview ??
+          t("seo.contentDescription", { title: detail.title }),
+      },
+    );
+  }, [detail, i18n.language, i18n.resolvedLanguage, state, t]);
 
   function refresh() {
     loadDetail();

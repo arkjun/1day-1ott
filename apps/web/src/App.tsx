@@ -10,6 +10,7 @@ import {
 import ActivityCalendar from "react-activity-calendar";
 import { useTranslation } from "react-i18next";
 import { AllEntries } from "./components/AllEntries";
+import { AnalyticsConsentBanner } from "./components/AnalyticsConsent";
 import { CalendarView } from "./components/CalendarView";
 import { ContentPage } from "./components/ContentPage";
 import { MyPage } from "./components/MyPage";
@@ -27,6 +28,15 @@ import { GREEN, buildYear, currentStreak, isoDaysAgo } from "./lib/heatmap";
 import { useTheme } from "./lib/theme";
 import { TYPE_META } from "./lib/typeMeta";
 import { pickRecentContents } from "./lib/recentContents";
+import {
+  denyGoogleAnalytics,
+  grantGoogleAnalytics,
+  isAnalyticsConfigured,
+  readAnalyticsConsent,
+  scheduleGoogleAnalytics,
+  type AnalyticsConsent,
+} from "./lib/analytics";
+import { updatePageMetadata } from "./lib/seo";
 
 const LegalPage = lazy(() =>
   import("./components/LegalPage").then((module) => ({
@@ -359,18 +369,41 @@ function AppContent() {
 }
 
 export function App() {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
+  const analyticsConfigured = isAnalyticsConfigured();
+  const [analyticsConsent, setAnalyticsConsent] =
+    useState<AnalyticsConsent | null>(() => readAnalyticsConsent());
 
   useEffect(() => {
-    document.title = t("common.serviceName");
-  }, [i18n.resolvedLanguage, t]);
+    updatePageMetadata(
+      window.location.pathname,
+      i18n.resolvedLanguage ?? i18n.language,
+    );
+  }, [i18n.language, i18n.resolvedLanguage]);
+
+  useEffect(() => {
+    if (analyticsConsent === "granted") scheduleGoogleAnalytics();
+  }, [analyticsConsent]);
+
+  function decideAnalytics(consent: AnalyticsConsent) {
+    if (consent === "denied") denyGoogleAnalytics();
+    else grantGoogleAnalytics();
+    setAnalyticsConsent(consent);
+  }
 
   return (
     <div className="site-shell">
       <main className="site-content">
         <AppContent />
       </main>
-      <SiteFooter />
+      <SiteFooter
+        onAnalyticsSettings={
+          analyticsConfigured ? () => setAnalyticsConsent(null) : undefined
+        }
+      />
+      {analyticsConfigured && analyticsConsent === null ? (
+        <AnalyticsConsentBanner onDecision={decideAnalytics} />
+      ) : null}
     </div>
   );
 }

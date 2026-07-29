@@ -10,9 +10,9 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
   const { t, i18n } = useTranslation();
   const lang = normalizeLang(i18n.resolvedLanguage ?? i18n.language) ?? "ko";
   const effectiveDate = {
-    ko: "시행일: 2026년 7월 28일",
-    en: "Effective date: July 28, 2026",
-    ja: "施行日：2026年7月28日",
+    ko: "시행일: 2026년 7월 29일",
+    en: "Effective date: July 29, 2026",
+    ja: "施行日：2026年7月29日",
   }[lang];
 
   return (
@@ -94,6 +94,14 @@ function PrivacyPolicy() {
                 </td>
               </tr>
               <tr>
+                <td>서비스 이용 분석</td>
+                <td>
+                  Google Analytics 클라이언트 ID, 동의 상태, 접속 일시,
+                  방문 페이지와 이용 이벤트, 유입 경로, 기기·브라우저 정보,
+                  대략적 위치
+                </td>
+              </tr>
+              <tr>
                 <td>장애 대응과 보안</td>
                 <td>요청·오류·배포 로그, 접속 일시와 요청 메타데이터</td>
               </tr>
@@ -107,8 +115,12 @@ function PrivacyPolicy() {
         </p>
         <p>
           브라우저에는 필수 세션 쿠키와 언어(<code>1ott.lang</code>)·테마(
-          <code>theme</code>) 설정이 저장됩니다. 광고, 행동 추적 또는 맞춤형
-          마케팅 쿠키는 사용하지 않습니다.
+          <code>theme</code>)·분석 동의(<code>1ott.analytics-consent</code>)
+          설정이 저장됩니다. Google Analytics는 이용자가 분석에 동의한
+          경우에만 로드되며 <code>_ga</code>, <code>_ga_*</code> 쿠키를
+          사용할 수 있습니다. 광고 및 맞춤형 마케팅 기능은 사용하지 않으며
+          이름, 이메일, 시청 기록 또는 사용자 ID를 Google Analytics에
+          전송하지 않습니다.
         </p>
       </section>
 
@@ -119,6 +131,10 @@ function PrivacyPolicy() {
           보안과 부정 이용 방지를 위해 필요한 범위에서 개인정보를
           처리합니다. 선택 항목은 이용자가 해당 기능을 사용할 때만
           처리합니다.
+        </p>
+        <p>
+          서비스 이용 분석은 이용자의 동의를 근거로 처리하며, 동의하지
+          않아도 서비스의 모든 핵심 기능을 이용할 수 있습니다.
         </p>
         <p>
           만 14세 미만 아동을 대상으로 서비스를 제공하지 않으며, 만 14세
@@ -133,6 +149,10 @@ function PrivacyPolicy() {
           <li>세션 정보: 세션 만료, 로그아웃 또는 다른 세션 해지 시까지</li>
           <li>일회성 인증정보: 인증 목적 달성 또는 유효기간 만료 시까지</li>
           <li>장애 대응·보안 로그: 생성일로부터 최대 30일</li>
+          <li>
+            Google Analytics 데이터: Google Analytics 속성의 데이터 보관
+            설정과 Google 정책에 따른 기간
+          </li>
           <li>
             관계 법령에 별도 보존 의무가 있는 정보: 해당 법령에서 정한 기간
           </li>
@@ -202,6 +222,22 @@ function PrivacyPolicy() {
                   요청 처리 시까지
                 </td>
               </tr>
+              <tr>
+                <td>Google LLC</td>
+                <td>Google Analytics를 통한 서비스 이용 분석</td>
+                <td>
+                  동의한 이용자의 클라이언트 ID, 접속 일시, 방문 페이지와
+                  이용 이벤트, 유입 경로, 기기·브라우저 정보, 대략적 위치
+                </td>
+                <td>
+                  미국 등 Google 글로벌 인프라 소재 국가로 동의 후 서비스
+                  이용 시 암호화된 네트워크를 통해 전송
+                </td>
+                <td>
+                  Google Analytics 속성의 데이터 보관 설정과 Google 정책에
+                  따른 기간
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -226,6 +262,10 @@ function PrivacyPolicy() {
           철회를 요청할 수 있습니다. 시청 기록은 서비스에서 직접
           수정·삭제하거나 Markdown으로 내보낼 수 있으며, 공개 프로필은
           마이페이지에서 언제든 비활성화할 수 있습니다.
+        </p>
+        <p>
+          분석 동의는 페이지 하단의 “분석 설정”에서 언제든 철회할 수
+          있습니다.
         </p>
         <p>
           계정과 개인정보 전체 삭제 또는 그 밖의 요청은{" "}
@@ -385,10 +425,10 @@ function Terms() {
       <section>
         <h2>제6조 외부 서비스</h2>
         <p>
-          서비스는 TMDB, YouTube, Cloudflare 등 제3자의 서비스와 인프라를
-          사용합니다. 외부 서비스의 정보 정확성·가용성과 정책은 해당
-          제공자가 관리하며, 외부 서비스의 중단이나 정책 변경으로 일부
-          기능이 제한될 수 있습니다.
+          서비스는 TMDB, YouTube, Cloudflare, Google Analytics 등 제3자의
+          서비스와 인프라를 사용합니다. 외부 서비스의 정보 정확성·가용성과
+          정책은 해당 제공자가 관리하며, 외부 서비스의 중단이나 정책
+          변경으로 일부 기능이 제한될 수 있습니다.
         </p>
         <p lang="en">
           This service uses TMDB and the TMDB APIs but is not endorsed,

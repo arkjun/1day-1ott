@@ -16,6 +16,21 @@ export default {
     legalNav: "정책 링크",
     privacy: "개인정보 처리방침",
     terms: "이용약관",
+    analyticsSettings: "분석 설정",
+  },
+  analytics: {
+    title: "서비스 개선을 위한 방문 분석",
+    description:
+      "동의한 경우에만 Google Analytics로 가명 이용 통계를 수집합니다.",
+    learnMore: "자세히 보기",
+    reject: "거부",
+    accept: "동의",
+  },
+  seo: {
+    profileTitle: "@{{username}}의 시청 기록",
+    profileDescription:
+      "@{{username}}님의 영화·드라마 시청 기록과 잔디를 확인하세요. 총 {{count}}편을 기록했습니다.",
+    contentDescription: "{{title}} 시청 기록과 반응을 확인하세요.",
   },
   myPage: { back: "← 홈" },
   password: {
