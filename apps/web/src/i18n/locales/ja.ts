@@ -176,7 +176,13 @@ export default {
     warning:
       "Fediverseを初めて有効にすると、後で無効にしても@ユーザー名は変更できません。無効にしても、すでに他のサーバーへ配信された投稿は残る場合があります。",
   },
-  note: { placeholder: "ひとことメモ", placeholderOptional: "ひとことメモ (任意)" },
+  note: {
+    placeholder: "ひとことメモ",
+    placeholderOptional: "ひとことメモ (任意)",
+    visibility: "感想を公開",
+    visibilityHint: "公開プロフィールとFediverseに表示",
+    publicTitle: "感想",
+  },
   modal: {
     title: "今日は何を観ましたか？",
     recentContents: "最近の記録",

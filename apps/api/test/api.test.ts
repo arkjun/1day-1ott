@@ -182,7 +182,26 @@ describe("기록 생성 (POST /api/entries)", () => {
       watchedOn: "2026-07-10",
       reaction: "love",
       note: "최고",
+      isNotePublic: true,
     });
+  });
+
+  it("감상평은 기본 공개이며 기록별로 비공개할 수 있다", async () => {
+    const cookie = await signUp();
+    await createEntry(cookie, { note: "기본 공개" });
+    await createEntry(cookie, {
+      title: "비공개 작품",
+      note: "나만 보는 감상",
+      isNotePublic: false,
+    });
+
+    const entries = await listEntries(cookie);
+    expect(entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ note: "기본 공개", isNotePublic: true }),
+        expect.objectContaining({ note: "나만 보는 감상", isNotePublic: false }),
+      ]),
+    );
   });
 
   it("잘못된 입력은 400 (제목 없음/날짜 형식/모르는 reaction)", async () => {
@@ -342,6 +361,28 @@ describe("기록 수정 (PATCH /api/entries/:id)", () => {
       env,
     );
     expect((await listEntries(cookie))[0]).toMatchObject({ reaction: null });
+  });
+
+  it("감상평 공개 여부를 기록별로 수정할 수 있다", async () => {
+    const cookie = await signUp();
+    const { id } = (await (
+      await createEntry(cookie, { note: "숨길 감상" })
+    ).json()) as { id: string };
+
+    const patch = await app.request(
+      `/api/entries/${id}`,
+      authed(cookie, {
+        method: "PATCH",
+        body: JSON.stringify({ isNotePublic: false }),
+      }),
+      env,
+    );
+
+    expect(patch.status).toBe(200);
+    expect((await listEntries(cookie))[0]).toMatchObject({
+      note: "숨길 감상",
+      isNotePublic: false,
+    });
   });
 
   it("남의 기록/없는 기록은 404, 잘못된 값은 400", async () => {
@@ -529,6 +570,46 @@ describe("프로필/공개 (PATCH /api/me, GET /api/u/:username)", () => {
     expect(profile.cells).toEqual([{ date: "2026-07-10", count: 2, level: 2 }]);
     // 포스터 그리드에는 posterUrl 있는 콘텐츠만
     expect(profile.posters).toHaveLength(1);
+  });
+
+  it("공개 감상평만 최신순으로 공개 프로필에 노출한다", async () => {
+    const cookie = await signUp();
+    await createEntry(cookie, {
+      title: "공개 작품",
+      note: "모두에게 보이는 감상",
+      reaction: "love",
+      watchedOn: "2026-07-12",
+    });
+    await createEntry(cookie, {
+      title: "비공개 작품",
+      note: "나만 보는 감상",
+      isNotePublic: false,
+      watchedOn: "2026-07-13",
+    });
+    await createEntry(cookie, {
+      title: "감상 없는 작품",
+      watchedOn: "2026-07-14",
+    });
+    await setProfile(cookie, { username: "review_user", isPublic: true });
+
+    const res = await app.request("/api/u/review_user", undefined, env);
+    expect(res.status).toBe(200);
+    const profile = (await res.json()) as {
+      notes: {
+        title: string;
+        note: string;
+        reaction: string | null;
+        watchedOn: string;
+      }[];
+    };
+    expect(profile.notes).toEqual([
+      expect.objectContaining({
+        title: "공개 작품",
+        note: "모두에게 보이는 감상",
+        reaction: "love",
+        watchedOn: "2026-07-12",
+      }),
+    ]);
   });
 
   it("공개 프로필 포스터 제목도 요청 언어를 따른다", async () => {

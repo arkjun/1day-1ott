@@ -13,6 +13,7 @@ export function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: (
   const [watchedOn, setWatchedOn] = useState(entry.watchedOn);
   const [reaction, setReaction] = useState<Reaction | null>(entry.reaction);
   const [note, setNote] = useState(entry.note ?? "");
+  const [isNotePublic, setIsNotePublic] = useState(entry.isNotePublic);
   const [busy, setBusy] = useState(false);
 
   async function save() {
@@ -22,6 +23,7 @@ export function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: (
         watchedOn,
         reaction: reaction ?? null,
         note: note.trim() || null,
+        isNotePublic,
       });
       setEditing(false);
       onChanged();
@@ -61,6 +63,14 @@ export function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: (
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
+        <label style={st.visibility}>
+          <input
+            type="checkbox"
+            checked={isNotePublic}
+            onChange={(e) => setIsNotePublic(e.target.checked)}
+          />
+          {t("note.visibility")}
+        </label>
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <button style={st.primary} disabled={busy} onClick={save}>
             {t("common.save")}
@@ -120,4 +130,11 @@ const st: Record<string, React.CSSProperties> = {
   entryEdit: { padding: "12px", margin: "6px 0", border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface-2)" },
   smallBtn: { border: "1px solid var(--border)", borderRadius: 8, padding: "4px 10px", background: "var(--surface)", color: "var(--muted)", fontSize: 12 },
   input: { padding: "10px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface-2)", color: "inherit", fontSize: 14 },
+  visibility: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+    fontSize: 13,
+  },
 };

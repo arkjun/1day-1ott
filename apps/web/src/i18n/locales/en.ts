@@ -184,7 +184,13 @@ export default {
     warning:
       "Once you enable federation for the first time, your @username cannot be changed even if you disable it later. Posts already delivered to other servers may remain after disabling federation.",
   },
-  note: { placeholder: "One-line note", placeholderOptional: "One-line note (optional)" },
+  note: {
+    placeholder: "One-line note",
+    placeholderOptional: "One-line note (optional)",
+    visibility: "Make note public",
+    visibilityHint: "Show on your public profile and the fediverse",
+    publicTitle: "Notes",
+  },
   modal: {
     title: "What did you watch?",
     recentContents: "Recently watched",

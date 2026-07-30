@@ -221,6 +221,7 @@ describe("ActivityPub Actor와 WebFinger", () => {
           watchedOn: "2026-07-30",
           reaction: "love",
           note: "압도적 & 아름답다",
+          posterUrl: "https://image.tmdb.org/t/p/w500/dune-part-two.jpg",
         }),
       },
       env,
@@ -255,6 +256,14 @@ describe("ActivityPub Actor와 WebFinger", () => {
     });
     expect(note.content).toContain("&lt;듄&gt; 파트 2");
     expect(note.content).toContain("압도적 &amp; 아름답다");
+    expect(note.attachment).toEqual(
+      expect.objectContaining({
+        type: "Image",
+        url: "https://image.tmdb.org/t/p/w500/dune-part-two.jpg",
+        name: "<듄> 파트 2",
+        summary: "<듄> 파트 2 poster",
+      }),
+    );
   });
 
   it("연합우주 비활성 사용자와 감상 없는 기록은 발행하지 않는다", async () => {
@@ -291,6 +300,82 @@ describe("ActivityPub Actor와 WebFinger", () => {
       .bind(result.id)
       .first();
     expect(publication).toBeNull();
+  });
+
+  it("비공개 감상은 발행하지 않고 공개로 전환하면 발행한다", async () => {
+    const { cookie } = await enableFederation();
+    const created = await app.request(
+      "/api/entries",
+      {
+        method: "POST",
+        headers: { ...JSON_HEADERS, cookie },
+        body: JSON.stringify({
+          type: "movie",
+          title: "처음엔 비공개",
+          watchedOn: "2026-07-30",
+          note: "나만 보는 감상",
+          isNotePublic: false,
+        }),
+      },
+      env,
+    );
+    const { id } = (await created.json()) as { id: string };
+    expect(
+      await env.DB.prepare(
+        "SELECT status FROM federation_publications WHERE entry_id = ?",
+      )
+        .bind(id)
+        .first(),
+    ).toBeNull();
+
+    const madePublic = await app.request(
+      `/api/entries/${id}`,
+      {
+        method: "PATCH",
+        headers: { ...JSON_HEADERS, cookie },
+        body: JSON.stringify({ isNotePublic: true }),
+      },
+      env,
+    );
+    expect(madePublic.status).toBe(200);
+    expect(await madePublic.json()).toMatchObject({
+      ok: true,
+      federationStatus: "published",
+    });
+  });
+
+  it("발행된 감상을 비공개로 전환하면 연합우주에서도 삭제한다", async () => {
+    const { cookie } = await enableFederation();
+    const created = await app.request(
+      "/api/entries",
+      {
+        method: "POST",
+        headers: { ...JSON_HEADERS, cookie },
+        body: JSON.stringify({
+          type: "movie",
+          title: "공개 후 비공개",
+          watchedOn: "2026-07-30",
+          note: "곧 숨길 감상",
+        }),
+      },
+      env,
+    );
+    const { id } = (await created.json()) as { id: string };
+
+    const madePrivate = await app.request(
+      `/api/entries/${id}`,
+      {
+        method: "PATCH",
+        headers: { ...JSON_HEADERS, cookie },
+        body: JSON.stringify({ isNotePublic: false }),
+      },
+      env,
+    );
+    expect(madePrivate.status).toBe(200);
+    expect(await madePrivate.json()).toMatchObject({
+      ok: true,
+      federationStatus: "deleted",
+    });
   });
 
   it("발행된 감상 수정은 Note 역참조 결과를 갱신한다", async () => {

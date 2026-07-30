@@ -9,6 +9,7 @@ function row(p: Partial<EntryRow>): EntryRow {
     watchedOn: "2026-07-01",
     reaction: null,
     note: null,
+    isNotePublic: true,
     platform: null,
     type: "movie",
     title: "무제",

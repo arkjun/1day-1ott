@@ -13,6 +13,7 @@ function makeEntries(n: number): EntryRow[] {
     watchedOn: `2026-01-${String((i % 28) + 1).padStart(2, "0")}`,
     reaction: null,
     note: null,
+    isNotePublic: true,
     platform: null,
     type: "movie" as const,
     title: `작품 ${i}`,

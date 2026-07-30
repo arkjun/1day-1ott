@@ -17,6 +17,7 @@ const entryPatchSchema = z.object({
   watchedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   reaction: reactionSchema.nullable().optional(),
   note: z.string().max(1000).nullable().optional(),
+  isNotePublic: z.boolean().optional(),
   platform: z.string().max(60).nullable().optional(),
 });
 
@@ -137,11 +138,12 @@ entriesRoute.post("/entries", async (c) => {
     watchedOn: input.watchedOn,
     reaction: input.reaction ?? null,
     note: input.note ?? null,
+    isNotePublic: input.isNotePublic,
     platform: input.platform ?? null,
   });
 
   let federationStatus: "published" | "failed" | undefined;
-  if (input.note?.trim()) {
+  if (input.note?.trim() && input.isNotePublic) {
     const actor = await db
       .select({ enabled: schema.user.federationEnabled })
       .from(schema.user)
@@ -195,6 +197,7 @@ entriesRoute.post("/entries/import", async (c) => {
           watchedOn: r.watchedOn,
           reaction: r.reaction ?? undefined,
           note: r.note ?? undefined,
+          isNotePublic: true,
           platform: r.platform ?? undefined,
         },
         c.req.query("lang"),
@@ -206,6 +209,7 @@ entriesRoute.post("/entries/import", async (c) => {
         watchedOn: r.watchedOn,
         reaction: r.reaction ?? null,
         note: r.note ?? null,
+        isNotePublic: true,
         platform: r.platform ?? null,
       });
       inserted++;
@@ -283,21 +287,56 @@ entriesRoute.patch("/entries/:id", async (c) => {
     await db.update(schema.entries).set(patch).where(eq(schema.entries.id, id));
   }
   let federationStatus: "published" | "failed" | "deleted" | undefined;
-  const publication = await db
-    .select({ status: schema.federationPublications.status })
-    .from(schema.federationPublications)
-    .where(eq(schema.federationPublications.entryId, id))
-    .get();
-  if (publication?.status === "published") {
-    if (parsed.data.note === null || parsed.data.note?.trim() === "") {
-      federationStatus = await deletePublishedEntry(c.req.raw, c.env, id);
-    } else if (
+  const [publication, entry, actor] = await Promise.all([
+    db
+      .select({ status: schema.federationPublications.status })
+      .from(schema.federationPublications)
+      .where(eq(schema.federationPublications.entryId, id))
+      .get(),
+    db
+      .select({
+        note: schema.entries.note,
+        isNotePublic: schema.entries.isNotePublic,
+      })
+      .from(schema.entries)
+      .where(eq(schema.entries.id, id))
+      .get(),
+    db
+      .select({ enabled: schema.user.federationEnabled })
+      .from(schema.user)
+      .where(eq(schema.user.id, userId))
+      .get(),
+  ]);
+  const shouldPublish = !!entry?.note?.trim() && entry.isNotePublic && actor?.enabled;
+
+  if (!shouldPublish && publication && publication.status !== "deleted") {
+    federationStatus = await deletePublishedEntry(c.req.raw, c.env, id);
+  } else if (shouldPublish && publication?.status === "published") {
+    if (
       parsed.data.note !== undefined ||
       parsed.data.reaction !== undefined ||
       parsed.data.watchedOn !== undefined
     ) {
       federationStatus = await updatePublishedEntry(c.req.raw, c.env, id);
     }
+  } else if (shouldPublish) {
+    await db
+      .insert(schema.federationPublications)
+      .values({
+        entryId: id,
+        userId,
+        status: "pending",
+      })
+      .onConflictDoUpdate({
+        target: schema.federationPublications.entryId,
+        set: {
+          status: "pending",
+          deletedAt: null,
+          updatedAt: new Date(),
+          lastError: null,
+        },
+      });
+    federationStatus = await publishEntry(c.req.raw, c.env, id);
   }
   return c.json({ ok: true, federationStatus });
 });
@@ -333,6 +372,7 @@ entriesRoute.get("/entries", async (c) => {
       watchedOn: entries.watchedOn,
       reaction: entries.reaction,
       note: entries.note,
+      isNotePublic: entries.isNotePublic,
       platform: entries.platform,
       contentId: content.id,
       type: content.type,
@@ -357,6 +397,7 @@ entriesRoute.get("/entries", async (c) => {
       watchedOn: r.watchedOn,
       reaction: r.reaction,
       note: r.note,
+      isNotePublic: r.isNotePublic,
       platform: r.platform,
       type: r.type,
       title: loc?.title ?? r.title,
@@ -378,6 +419,7 @@ entriesRoute.get("/content/:id/mine", async (c) => {
       watchedOn: schema.entries.watchedOn,
       reaction: schema.entries.reaction,
       note: schema.entries.note,
+      isNotePublic: schema.entries.isNotePublic,
       platform: schema.entries.platform,
     })
     .from(schema.entries)

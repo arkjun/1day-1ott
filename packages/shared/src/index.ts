@@ -27,12 +27,13 @@ export const entryInputSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "watchedOn must be YYYY-MM-DD"),
   reaction: reactionSchema.optional(),
   note: z.string().max(1000).optional(),
+  isNotePublic: z.boolean().default(true),
   platform: z.string().max(60).optional(),
 }).refine(
   (input) => !(input.contentId && (input.tmdbId != null || input.ytId != null)),
   { message: "contentId cannot be combined with tmdbId or ytId" },
 );
-export type EntryInput = z.infer<typeof entryInputSchema>;
+export type EntryInput = z.input<typeof entryInputSchema>;
 
 /** 잔디 한 칸: 날짜 + 그날 소비량. level 은 색 농도 버킷(0~4). */
 export interface HeatmapCell {
@@ -56,12 +57,23 @@ export interface SearchResult {
 }
 
 /** 공개 프로필 응답. */
+export interface PublicNote {
+  id: string;
+  contentId: string;
+  title: string;
+  posterUrl: string | null;
+  watchedOn: string;
+  reaction: Reaction | null;
+  note: string;
+}
+
 export interface PublicProfile {
   username: string;
   name: string;
   total: number;
   cells: HeatmapCell[];
   posters: { id: string; contentId: string; title: string; posterUrl: string | null }[];
+  notes: PublicNote[];
 }
 
 /** 작품 공개 페이지: 작품 정보 + 익명 집계. */
@@ -98,6 +110,7 @@ export interface MyContentEntry {
   watchedOn: string;
   reaction: Reaction | null;
   note: string | null;
+  isNotePublic: boolean;
   platform: string | null;
 }
 

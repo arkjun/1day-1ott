@@ -34,5 +34,7 @@ describe("RecordModal", () => {
       /<button style="[^"]*background:var\(--accent\)[^"]*">전체<\/button>/,
     );
     expect(html).toContain("드라마 4");
+    expect(html).toContain("감상평 공개");
+    expect(html).toMatch(/type="checkbox"[^>]*checked=""/);
   });
 });

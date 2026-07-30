@@ -67,10 +67,36 @@ publicRoute.get("/u/:username", async (c) => {
     .limit(12)
     .all();
 
+  const noteRows = await db
+    .select({
+      id: schema.entries.id,
+      contentId: schema.content.id,
+      type: schema.content.type,
+      title: schema.content.title,
+      posterUrl: schema.content.posterUrl,
+      tmdbId: schema.content.tmdbId,
+      meta: schema.content.meta,
+      watchedOn: schema.entries.watchedOn,
+      reaction: schema.entries.reaction,
+      note: schema.entries.note,
+    })
+    .from(schema.entries)
+    .innerJoin(schema.content, eq(schema.entries.contentId, schema.content.id))
+    .where(
+      and(
+        eq(schema.entries.userId, u.id),
+        eq(schema.entries.isNotePublic, true),
+        sql`${schema.entries.note} is not null`,
+        sql`trim(${schema.entries.note}) <> ''`,
+      ),
+    )
+    .orderBy(desc(schema.entries.watchedOn), desc(schema.entries.createdAt))
+    .all();
+
   const locByContent = await resolveLocalized(
     db,
     c.env,
-    posterRows,
+    [...posterRows, ...noteRows],
     pickLang(c.req.query("lang")),
   );
   const posters = posterRows.map((p) => {
@@ -82,8 +108,27 @@ publicRoute.get("/u/:username", async (c) => {
       posterUrl: loc?.posterUrl ?? p.posterUrl,
     };
   });
+  const notes = noteRows.map((entry) => {
+    const loc = locByContent.get(entry.contentId);
+    return {
+      id: entry.id,
+      contentId: entry.contentId,
+      title: loc?.title ?? entry.title,
+      posterUrl: loc?.posterUrl ?? entry.posterUrl,
+      watchedOn: entry.watchedOn,
+      reaction: entry.reaction,
+      note: entry.note!,
+    };
+  });
 
-  return c.json({ username: u.username, name: u.name, total, cells, posters });
+  return c.json({
+    username: u.username,
+    name: u.name,
+    total,
+    cells,
+    posters,
+    notes,
+  });
 });
 
 /** 공유용 잔디 SVG (무인증). 폰트 의존 없음(rect + latin 텍스트). */

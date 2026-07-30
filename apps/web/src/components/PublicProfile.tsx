@@ -1,4 +1,7 @@
-import type { PublicProfile as Profile } from "@1ott/shared";
+import type {
+  PublicNote,
+  PublicProfile as Profile,
+} from "@1ott/shared";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ActivityCalendar from "react-activity-calendar";
@@ -8,6 +11,7 @@ import { LanguageSelect } from "./LanguageSelect";
 import { GREEN, buildYear, currentStreak, isoDaysAgo } from "../lib/heatmap";
 import { useTheme } from "../lib/theme";
 import { updatePageMetadata } from "../lib/seo";
+import { REACTION_META } from "../lib/reactions";
 
 interface PublicProfileActionsProps {
   scheme: "light" | "dark";
@@ -165,6 +169,51 @@ export function PublicProfile({ username }: { username: string }) {
           </div>
         </div>
       )}
+
+      <PublicNotes notes={profile.notes} />
+    </div>
+  );
+}
+
+export function PublicNotes({ notes }: { notes: PublicNote[] }) {
+  const { t } = useTranslation();
+  if (notes.length === 0) return null;
+
+  return (
+    <div style={st.card}>
+      <div style={st.cardHead}>
+        <b>{t("note.publicTitle")}</b>
+      </div>
+      <div>
+        {notes.map((entry) => (
+          <article key={entry.id} style={st.noteRow}>
+            {entry.posterUrl ? (
+              <a href={`/c/${entry.contentId}`} style={st.notePosterLink}>
+                <img
+                  src={entry.posterUrl}
+                  alt=""
+                  loading="lazy"
+                  style={st.notePoster}
+                />
+              </a>
+            ) : null}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={st.noteMeta}>
+                <a href={`/c/${entry.contentId}`} style={st.noteTitle}>
+                  {entry.title}
+                </a>
+                <span>{entry.watchedOn}</span>
+                {entry.reaction ? (
+                  <span title={t(`reaction.${entry.reaction}`)}>
+                    {REACTION_META[entry.reaction].emoji}
+                  </span>
+                ) : null}
+              </div>
+              <p style={st.noteBody}>{entry.note}</p>
+            </div>
+          </article>
+        ))}
+      </div>
     </div>
   );
 }
@@ -194,6 +243,38 @@ const st: Record<string, React.CSSProperties> = {
   muted: { color: "var(--muted)", fontSize: 12 },
   posterGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(78px,1fr))", gap: 10 },
   poster: { width: "100%", aspectRatio: "2 / 3", objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" },
+  noteRow: {
+    display: "flex",
+    gap: 12,
+    padding: "12px 0",
+    borderBottom: "1px solid var(--border)",
+    contentVisibility: "auto",
+    containIntrinsicSize: "80px",
+  },
+  notePosterLink: { display: "block", flex: "0 0 48px" },
+  notePoster: {
+    display: "block",
+    width: 48,
+    aspectRatio: "2 / 3",
+    objectFit: "cover",
+    borderRadius: 6,
+    border: "1px solid var(--border)",
+  },
+  noteMeta: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+    color: "var(--muted)",
+    fontSize: 12,
+  },
+  noteTitle: { color: "inherit", fontWeight: 700 },
+  noteBody: {
+    margin: "6px 0 0",
+    lineHeight: 1.6,
+    whiteSpace: "pre-wrap",
+    overflowWrap: "anywhere",
+  },
   ghost: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 14px", background: "var(--surface)", color: "inherit" },
   iconBtn: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px", background: "var(--surface)", lineHeight: 1 },
 };

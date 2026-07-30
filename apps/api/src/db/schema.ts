@@ -133,6 +133,9 @@ export const entries = sqliteTable(
     watchedOn: text("watched_on").notNull(), // 'YYYY-MM-DD'
     reaction: text("reaction"), // 'down' | 'up' | 'love' (넷플릭스식 따봉)
     note: text("note"),
+    isNotePublic: integer("is_note_public", { mode: "boolean" })
+      .notNull()
+      .default(true),
     platform: text("platform"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()

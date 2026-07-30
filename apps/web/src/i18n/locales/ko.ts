@@ -176,7 +176,13 @@ export default {
     warning:
       "연합우주를 최초 활성화하면 @사용자명은 이후 비활성화하더라도 변경할 수 없습니다. 비활성화해도 이미 다른 서버에 전달된 게시물은 남을 수 있습니다.",
   },
-  note: { placeholder: "한 줄 감상", placeholderOptional: "한 줄 감상 (선택)" },
+  note: {
+    placeholder: "한 줄 감상",
+    placeholderOptional: "한 줄 감상 (선택)",
+    visibility: "감상평 공개",
+    visibilityHint: "공개 프로필과 연합우주에 표시",
+    publicTitle: "감상평",
+  },
   modal: {
     title: "오늘 뭐 봤어요?",
     recentContents: "최근 기록",

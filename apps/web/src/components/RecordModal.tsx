@@ -95,6 +95,7 @@ export function RecordModal({
   const [watchedOn, setWatchedOn] = useState(todayStr());
   const [reaction, setReaction] = useState<Reaction | null>(null);
   const [note, setNote] = useState("");
+  const [isNotePublic, setIsNotePublic] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -163,6 +164,7 @@ export function RecordModal({
         watchedOn,
         reaction: reaction ?? undefined,
         note: note.trim() || undefined,
+        isNotePublic,
       };
     } else if (q.trim()) {
       if (type === "all") {
@@ -175,6 +177,7 @@ export function RecordModal({
         watchedOn,
         reaction: reaction ?? undefined,
         note: note.trim() || undefined,
+        isNotePublic,
       };
     }
     if (!input) {
@@ -371,6 +374,19 @@ export function RecordModal({
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
+        <label style={S.visibility}>
+          <input
+            type="checkbox"
+            checked={isNotePublic}
+            onChange={(e) => setIsNotePublic(e.target.checked)}
+          />
+          <span>
+            <b>{t("note.visibility")}</b>
+            <span style={{ ...S.muted, display: "block" }}>
+              {t("note.visibilityHint")}
+            </span>
+          </span>
+        </label>
 
         {err && <div style={{ color: "crimson", marginTop: 8 }}>{err}</div>}
 
@@ -552,5 +568,12 @@ const S: Record<string, React.CSSProperties> = {
     color: "#fff",
     fontWeight: 700,
     padding: 12,
+  },
+  visibility: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 8,
+    marginTop: 10,
+    fontSize: 13,
   },
 };

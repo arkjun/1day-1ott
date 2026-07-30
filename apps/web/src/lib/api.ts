@@ -17,6 +17,7 @@ export interface EntryRow {
   watchedOn: string;
   reaction: Reaction | null;
   note: string | null;
+  isNotePublic: boolean;
   platform: string | null;
   type: ContentType;
   title: string;
@@ -39,7 +40,13 @@ export const api = {
     req<{ entries: EntryRow[] }>(`/api/entries?lang=${i18n.language}`),
   updateEntry: (
     id: string,
-    patch: { watchedOn?: string; reaction?: Reaction | null; note?: string | null; platform?: string | null },
+    patch: {
+      watchedOn?: string;
+      reaction?: Reaction | null;
+      note?: string | null;
+      isNotePublic?: boolean;
+      platform?: string | null;
+    },
   ) =>
     req<{ ok: boolean }>(`/api/entries/${id}`, {
       method: "PATCH",

@@ -1,6 +1,7 @@
 import type { Context } from "@fedify/fedify";
 import {
   Create,
+  Image,
   Note,
   PUBLIC_COLLECTION,
   Tombstone,
@@ -18,6 +19,7 @@ export interface PublishedEntry {
   watchedOn: string;
   reaction: string | null;
   note: string;
+  posterUrl: string | null;
 }
 
 function escapeHtml(value: string): string {
@@ -52,6 +54,7 @@ export async function loadPublishedEntry(
       watchedOn: schema.entries.watchedOn,
       reaction: schema.entries.reaction,
       note: schema.entries.note,
+      posterUrl: schema.content.posterUrl,
     })
     .from(schema.federationPublications)
     .innerJoin(
@@ -64,6 +67,7 @@ export async function loadPublishedEntry(
       and(
         eq(schema.federationPublications.entryId, entryId),
         inArray(schema.federationPublications.status, [...statuses]),
+        eq(schema.entries.isNotePublic, true),
       ),
     )
     .get();
@@ -86,7 +90,24 @@ export function buildNote(
     content: `<p><strong>${title}</strong>${reactionEmoji(entry.reaction)}</p><p>${note}</p><p><small>${entry.watchedOn}</small></p>`,
     mediaType: "text/html",
     url: new URL(`/c/${encodeURIComponent(entry.contentId)}`, ctx.origin),
+    attachments: buildPosterAttachments(entry),
   });
+}
+
+function buildPosterAttachments(entry: PublishedEntry): Image[] {
+  if (!entry.posterUrl) return [];
+  try {
+    return [
+      new Image({
+        url: new URL(entry.posterUrl),
+        name: entry.title,
+        summary: `${entry.title} poster`,
+      }),
+    ];
+  } catch {
+    // 과거 데이터의 잘못된 URL 때문에 감상평 전체 발행이 실패하지 않게 한다.
+    return [];
+  }
 }
 
 export function buildCreate(
