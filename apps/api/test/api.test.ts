@@ -69,6 +69,19 @@ async function listEntries(cookie: string) {
 }
 
 describe("인증 게이트", () => {
+  it("기존 공개 프로필 URL을 @ URL로 영구 리다이렉트한다", async () => {
+    const res = await app.request(
+      "https://1day1ott.com/u/arkjun?ref=legacy",
+      undefined,
+      env,
+    );
+
+    expect(res.status).toBe(308);
+    expect(res.headers.get("location")).toBe(
+      "https://1day1ott.com/@arkjun?ref=legacy",
+    );
+  });
+
   it("세션 없이 보호 라우트는 401", async () => {
     for (const [path, init] of [
       ["/api/entries", undefined],

@@ -159,7 +159,7 @@ export default {
   },
   share: {
     title: "공개 프로필",
-    publicNote: "/u/{{username}} 공개 중",
+    publicNote: "/@{{username}} 공개 중",
     usernamePlaceholder: "username",
     public: "공개",
     copyLink: "링크 복사",

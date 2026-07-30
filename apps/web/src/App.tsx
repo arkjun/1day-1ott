@@ -36,6 +36,7 @@ import {
   scheduleGoogleAnalytics,
   type AnalyticsConsent,
 } from "./lib/analytics";
+import { usernameFromPublicProfilePath } from "./lib/publicProfilePath";
 import { updatePageMetadata } from "./lib/seo";
 
 const LegalPage = lazy(() =>
@@ -357,10 +358,8 @@ function AppContent() {
       </Suspense>
     );
   }
-  if (path.startsWith("/u/")) {
-    const username = decodeURIComponent(path.slice(3).split("/")[0] ?? "");
-    if (username) return <PublicProfile username={username} />;
-  }
+  const profileUsername = usernameFromPublicProfilePath(path);
+  if (profileUsername) return <PublicProfile username={profileUsername} />;
   if (path.startsWith("/c/")) {
     const id = decodeURIComponent(path.slice(3).split("/")[0] ?? "");
     if (id) return <ContentPage contentId={id} />;

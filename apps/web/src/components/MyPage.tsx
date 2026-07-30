@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { api, type ImportResult, type PasskeyRow } from "../lib/api";
 import { authClient, signIn } from "../lib/authClient";
 import { validatePasswordChange } from "../lib/password";
+import { publicProfilePath } from "../lib/publicProfilePath";
 import { useTheme } from "../lib/theme";
 import { LanguageSelect } from "./LanguageSelect";
 
@@ -44,7 +45,7 @@ function ShareSettings({ user }: { user: MyPageUser }) {
   const [msg, setMsg] = useState<string | null>(null);
 
   const profileUrl = user.username
-    ? `${window.location.origin}/u/${user.username}`
+    ? `${window.location.origin}${publicProfilePath(user.username)}`
     : null;
 
   async function save() {

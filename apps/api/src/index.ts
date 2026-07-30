@@ -21,6 +21,12 @@ app.use("/api/*", (c, next) =>
   })(c, next),
 );
 
+app.get("/u/:username", (c) => {
+  const target = new URL(c.req.url);
+  target.pathname = `/@${encodeURIComponent(c.req.param("username"))}`;
+  return c.redirect(target.toString(), 308);
+});
+
 app.get("/health", (c) => c.json({ ok: true }));
 
 // Better Auth 핸들러 마운트.

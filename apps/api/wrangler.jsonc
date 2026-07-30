@@ -6,11 +6,11 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
   // 웹 빌드 결과물을 같은 Worker 에서 서빙 (same-origin → CORS/쿠키 문제 없음).
-  // /api/*, /health 만 Worker 가 먼저 받고, 나머지는 정적 자산 + SPA 폴백.
+  // /api/*, /health, 기존 프로필 URL만 Worker가 먼저 받고, 나머지는 정적 자산 + SPA 폴백.
   "assets": {
     "directory": "../web/dist",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*", "/health"]
+    "run_worker_first": ["/api/*", "/health", "/u/*"]
   },
   // 프로덕션 공개 값. 시크릿(BETTER_AUTH_SECRET, TMDB_API_TOKEN)은 `wrangler secret put` 으로.
   "vars": {

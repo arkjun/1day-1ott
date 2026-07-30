@@ -159,7 +159,7 @@ export default {
   },
   share: {
     title: "公開プロフィール",
-    publicNote: "/u/{{username}} を公開中",
+    publicNote: "/@{{username}} を公開中",
     usernamePlaceholder: "username",
     public: "公開",
     copyLink: "リンクをコピー",

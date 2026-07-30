@@ -167,7 +167,7 @@ export default {
   },
   share: {
     title: "Public profile",
-    publicNote: "/u/{{username}} is public",
+    publicNote: "/@{{username}} is public",
     usernamePlaceholder: "username",
     public: "Public",
     copyLink: "Copy link",

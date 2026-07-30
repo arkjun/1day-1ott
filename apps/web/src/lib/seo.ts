@@ -1,3 +1,5 @@
+import { usernameFromPublicProfilePath } from "./publicProfilePath";
+
 const SITE_URL = "https://1day1ott.com";
 
 type SupportedLanguage = "ko" | "en" | "ja";
@@ -101,7 +103,7 @@ function metadataForPath(
 
   if (pathname === "/privacy") pageName = names.privacy;
   else if (pathname === "/terms") pageName = names.terms;
-  else if (pathname.startsWith("/u/")) pageName = names.profile;
+  else if (usernameFromPublicProfilePath(pathname)) pageName = names.profile;
   else if (pathname.startsWith("/c/")) pageName = names.content;
   else if (pathname === "/me") {
     pageName = names.myPage;
