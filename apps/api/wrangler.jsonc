@@ -43,11 +43,11 @@
   "kv_namespaces": [
     {
       "binding": "FEDIFY_KV",
-      "id": "REPLACE_WITH_FEDIFY_KV_ID"
+      "id": "9930f29e784647c1af528e78f337108f"
     },
     {
       "binding": "FEDIFY_ORDERING_KV",
-      "id": "REPLACE_WITH_FEDIFY_ORDERING_KV_ID"
+      "id": "640fb51d4c47462f8bbf758f83aab9d0"
     }
   ],
   "queues": {
