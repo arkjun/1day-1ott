@@ -1,4 +1,7 @@
-import type { SearchResult } from "@1ott/shared";
+import {
+  PROFILE_NAME_MAX_LENGTH,
+  type SearchResult,
+} from "@1ott/shared";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -57,17 +60,18 @@ export function MyPage({ user }: { user: MyPageUser }) {
 
 function ProfileSettings({ user }: { user: MyPageUser }) {
   const { t } = useTranslation();
+  const [name, setName] = useState(user.name);
   const [bio, setBio] = useState(user.bio ?? "");
   const [image, setImage] = useState(avatarUrl(user.avatarKey));
   const [hasCustomAvatar, setHasCustomAvatar] = useState(!!user.avatarKey);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  async function saveBio() {
+  async function saveProfile() {
     setBusy(true);
     setMsg(null);
     try {
-      await api.updateMe({ bio });
+      await api.updateMe({ name, bio });
       setMsg(t("profileSettings.saved"));
     } catch {
       setMsg(t("profileSettings.saveFailed"));
@@ -119,7 +123,7 @@ function ProfileSettings({ user }: { user: MyPageUser }) {
       </div>
       <div style={st.profileGrid}>
         <div style={st.avatarColumn}>
-          <Avatar src={image} alt={t("profileSettings.avatarAlt", { name: user.name })} size={88} />
+          <Avatar src={image} alt={t("profileSettings.avatarAlt", { name })} size={88} />
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
             <label style={st.ghost}>
               {t("profileSettings.chooseImage")}
@@ -143,23 +147,39 @@ function ProfileSettings({ user }: { user: MyPageUser }) {
           </div>
           <span style={st.muted}>{t("profileSettings.imageHint")}</span>
         </div>
-        <label style={{ ...st.field, flex: "2 1 240px" }}>
-          {t("profileSettings.bio")}
-          <textarea
-            value={bio}
-            maxLength={PROFILE_BIO_MAX_LENGTH}
-            rows={5}
-            placeholder={t("profileSettings.bioPlaceholder")}
-            onChange={(event) => setBio(event.target.value)}
-            style={{ ...st.input, resize: "vertical", lineHeight: 1.6 }}
-          />
-          <span style={{ ...st.muted, textAlign: "right" }}>
-            {bio.length}/{PROFILE_BIO_MAX_LENGTH}
-          </span>
-          <button style={st.primary} disabled={busy} onClick={saveBio}>
+        <div style={{ ...st.field, flex: "2 1 240px" }}>
+          <label style={st.field}>
+            {t("profileSettings.name")}
+            <input
+              value={name}
+              maxLength={PROFILE_NAME_MAX_LENGTH}
+              required
+              onChange={(event) => setName(event.target.value)}
+              style={st.input}
+            />
+          </label>
+          <label style={st.field}>
+            {t("profileSettings.bio")}
+            <textarea
+              value={bio}
+              maxLength={PROFILE_BIO_MAX_LENGTH}
+              rows={5}
+              placeholder={t("profileSettings.bioPlaceholder")}
+              onChange={(event) => setBio(event.target.value)}
+              style={{ ...st.input, resize: "vertical", lineHeight: 1.6 }}
+            />
+            <span style={{ ...st.muted, textAlign: "right" }}>
+              {bio.length}/{PROFILE_BIO_MAX_LENGTH}
+            </span>
+          </label>
+          <button
+            style={st.primary}
+            disabled={busy || !name.trim()}
+            onClick={saveProfile}
+          >
             {t("common.save")}
           </button>
-        </label>
+        </div>
       </div>
       {msg ? <div role="status" style={{ ...st.muted, marginTop: 10 }}>{msg}</div> : null}
     </div>

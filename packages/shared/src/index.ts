@@ -35,6 +35,7 @@ export const entryInputSchema = z.object({
 );
 export type EntryInput = z.input<typeof entryInputSchema>;
 
+export const PROFILE_NAME_MAX_LENGTH = 100;
 export const PROFILE_BIO_MAX_LENGTH = 500;
 
 /** 잔디 한 칸: 날짜 + 그날 소비량. level 은 색 농도 버킷(0~4). */

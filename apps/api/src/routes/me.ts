@@ -1,4 +1,7 @@
-import { PROFILE_BIO_MAX_LENGTH } from "@1ott/shared";
+import {
+  PROFILE_BIO_MAX_LENGTH,
+  PROFILE_NAME_MAX_LENGTH,
+} from "@1ott/shared";
 import { and, eq, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -16,6 +19,12 @@ type Vars = { userId: string };
 export const meRoute = new Hono<{ Bindings: Env; Variables: Vars }>();
 
 const patchSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1)
+    .max(PROFILE_NAME_MAX_LENGTH)
+    .optional(),
   username: z
     .string()
     .regex(/^[a-z0-9_]{3,20}$/, "소문자/숫자/_ 3~20자")
@@ -41,6 +50,7 @@ meRoute.patch("/me", async (c) => {
   const userId = c.get("userId");
   const current = await db
     .select({
+      name: schema.user.name,
       username: schema.user.username,
       isPublic: schema.user.isPublic,
       federationEnabled: schema.user.federationEnabled,
@@ -72,6 +82,7 @@ meRoute.patch("/me", async (c) => {
   }
 
   const patch: Record<string, unknown> = { updatedAt: new Date() };
+  if (parsed.data.name !== undefined) patch.name = parsed.data.name;
   if (parsed.data.username !== undefined) patch.username = parsed.data.username;
   if (parsed.data.isPublic !== undefined) patch.isPublic = parsed.data.isPublic;
   if (parsed.data.federationEnabled !== undefined) {
@@ -95,7 +106,8 @@ meRoute.patch("/me", async (c) => {
     throw error;
   }
   const profileChanged =
-    parsed.data.bio !== undefined && parsed.data.bio !== current.bio;
+    (parsed.data.name !== undefined && parsed.data.name !== current.name) ||
+    (parsed.data.bio !== undefined && parsed.data.bio !== current.bio);
   const federationStatus =
     nextIsPublic && nextFederationEnabled &&
     (profileChanged || parsed.data.federationEnabled === true)

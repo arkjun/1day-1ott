@@ -44,6 +44,8 @@ describe("MyPage 연합우주 설정", () => {
     expect(html).toContain("연합우주");
     expect(html).toContain("Mastodon");
     expect(html).toContain("프로필 정보");
+    expect(html).toContain("사용자 이름");
+    expect(html).toContain('value="테스터"');
     expect(html).toContain("OTT를 좋아합니다");
     expect(html).toContain("https://media.1day1ott.com/avatars/tester.webp");
     expect(html).toContain('accept="image/jpeg,image/png,image/webp"');

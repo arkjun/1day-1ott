@@ -104,6 +104,7 @@ export const api = {
   yt: (url: string) =>
     req<{ result: SearchResult }>(`/api/yt?url=${encodeURIComponent(url)}`),
   updateMe: (patch: {
+    name?: string;
     username?: string;
     isPublic?: boolean;
     federationEnabled?: boolean;

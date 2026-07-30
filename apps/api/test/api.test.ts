@@ -477,6 +477,31 @@ describe("프로필/공개 (PATCH /api/me, GET /api/u/:username)", () => {
     expect((await setProfile(cookie, { username: "valid_name1" })).status).toBe(200);
   });
 
+  it("사용자 이름을 정규화해 세션과 공개 프로필에 반영한다", async () => {
+    const cookie = await signUp("before-name");
+    const updated = await setProfile(cookie, {
+      name: "  바뀐 이름  ",
+      username: "renamed_user",
+      isPublic: true,
+    });
+    expect(updated.status).toBe(200);
+
+    const session = await app.request(
+      "/api/auth/get-session",
+      { headers: { cookie } },
+      env,
+    );
+    expect(await session.json()).toMatchObject({
+      user: { name: "바뀐 이름" },
+    });
+
+    const profile = await app.request("/api/u/renamed_user", undefined, env);
+    expect(await profile.json()).toMatchObject({ name: "바뀐 이름" });
+
+    expect((await setProfile(cookie, { name: "   " })).status).toBe(400);
+    expect((await setProfile(cookie, { name: "x".repeat(101) })).status).toBe(400);
+  });
+
   it("중복 username 은 409", async () => {
     const a = await signUp();
     expect((await setProfile(a, { username: "taken_name" })).status).toBe(200);
