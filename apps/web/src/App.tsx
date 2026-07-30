@@ -43,6 +43,11 @@ import {
   scheduleGoogleAnalytics,
   type AnalyticsConsent,
 } from "./lib/analytics";
+import {
+  clearPendingVerificationEmail,
+  readPendingVerificationEmail,
+  savePendingVerificationEmail,
+} from "./lib/pendingEmailVerification";
 import { usernameFromPublicProfilePath } from "./lib/publicProfilePath";
 import { updatePageMetadata } from "./lib/seo";
 
@@ -257,7 +262,9 @@ function Auth() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [err, setErr] = useState<string | null>(null);
-  const [verificationSent, setVerificationSent] = useState(false);
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<
+    string | null
+  >(() => readPendingVerificationEmail());
   const [verificationResent, setVerificationResent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -265,9 +272,9 @@ function Auth() {
   async function submit(ev: React.FormEvent) {
     ev.preventDefault();
     setErr(null);
-    setVerificationSent(false);
     setVerificationResent(false);
     setIsSubmitting(true);
+    if (mode === "up") savePendingVerificationEmail(email);
     try {
       const res =
         mode === "up"
@@ -279,16 +286,23 @@ function Auth() {
             })
           : await signIn.email({ email, password, callbackURL: "/" });
       if (!res.error) {
-        if (mode === "up") setVerificationSent(true);
+        if (mode === "up") {
+          setPendingVerificationEmail(email);
+        } else {
+          clearPendingVerificationEmail();
+        }
         return;
       }
       if (res.error.code === "EMAIL_NOT_VERIFIED") {
-        setVerificationSent(true);
+        savePendingVerificationEmail(email);
+        setPendingVerificationEmail(email);
         setErr(t("auth.emailNotVerified"));
         return;
       }
+      if (mode === "up") clearPendingVerificationEmail();
       setErr(res.error.message ?? t("auth.failed"));
     } catch {
+      if (mode === "up") clearPendingVerificationEmail();
       setErr(t("auth.failed"));
     } finally {
       setIsSubmitting(false);
@@ -300,7 +314,7 @@ function Auth() {
     setIsResending(true);
     try {
       const res = await sendVerificationEmail({
-        email,
+        email: pendingVerificationEmail ?? email,
         callbackURL: "/",
       });
       if (res.error) {
@@ -318,8 +332,18 @@ function Auth() {
   function toggleMode() {
     setMode((current) => (current === "in" ? "up" : "in"));
     setErr(null);
-    setVerificationSent(false);
     setVerificationResent(false);
+    clearPendingVerificationEmail();
+    setPendingVerificationEmail(null);
+  }
+
+  function backToSignIn() {
+    setEmail(pendingVerificationEmail ?? email);
+    setMode("in");
+    setErr(null);
+    setVerificationResent(false);
+    clearPendingVerificationEmail();
+    setPendingVerificationEmail(null);
   }
 
   async function passkeyLogin() {
@@ -354,58 +378,91 @@ function Auth() {
           <div style={st.cardHead}>
             <b>{t("landing.loginTitle")}</b>
           </div>
-          <p style={{ ...st.muted, marginTop: -6, marginBottom: 14 }}>{t("landing.loginSub")}</p>
-          <form onSubmit={submit} style={{ display: "grid", gap: 8 }}>
-            {mode === "up" && (
-              <input style={st.input} placeholder={t("auth.name")} value={name} onChange={(e) => setName(e.target.value)} />
-            )}
-            <input style={st.input} placeholder={t("auth.email")} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <input
-              style={st.input}
-              placeholder={t("auth.password")}
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            {mode === "up" ? (
-              <p className="signup-agreement">
-                {t("auth.agreementPrefix")}{" "}
-                <a href="/terms">{t("footer.terms")}</a>
-                {t("auth.agreementAnd")}
-                <a href="/privacy">{t("footer.privacy")}</a>
-                {t("auth.agreementSuffix")}
+          {pendingVerificationEmail ? (
+            <>
+              {err ? (
+                <p role="alert" style={{ color: "crimson" }}>
+                  {err}
+                </p>
+              ) : null}
+              <AuthVerificationNotice
+                email={pendingVerificationEmail}
+                resent={verificationResent}
+                isResending={isResending}
+                onResend={resendVerification}
+              />
+              <button
+                type="button"
+                style={{ ...st.ghost, marginTop: 12, width: "100%" }}
+                onClick={backToSignIn}
+              >
+                {t("auth.toSignin")}
+              </button>
+            </>
+          ) : (
+            <>
+              <p style={{ ...st.muted, marginTop: -6, marginBottom: 14 }}>
+                {t("landing.loginSub")}
               </p>
-            ) : null}
-            <button style={st.primary} type="submit" disabled={isSubmitting}>
-              {isSubmitting
-                ? t("auth.processing")
-                : mode === "up"
-                  ? t("auth.signup")
-                  : t("auth.signin")}
-            </button>
-          </form>
-          <button style={{ ...st.ghost, width: "100%", marginTop: 8 }} onClick={passkeyLogin}>
-            🔑 {t("passkey.signin")}
-          </button>
-          {err ? (
-            <p role="alert" style={{ color: "crimson" }}>
-              {err}
-            </p>
-          ) : null}
-          {verificationSent ? (
-            <AuthVerificationNotice
-              email={email}
-              resent={verificationResent}
-              isResending={isResending}
-              onResend={resendVerification}
-            />
-          ) : null}
-          <button
-            style={{ ...st.ghost, marginTop: 12, width: "100%" }}
-            onClick={toggleMode}
-          >
-            {mode === "in" ? t("auth.toSignup") : t("auth.toSignin")}
-          </button>
+              <form onSubmit={submit} style={{ display: "grid", gap: 8 }}>
+                {mode === "up" ? (
+                  <input
+                    style={st.input}
+                    placeholder={t("auth.name")}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                ) : null}
+                <input
+                  style={st.input}
+                  placeholder={t("auth.email")}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <input
+                  style={st.input}
+                  placeholder={t("auth.password")}
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                {mode === "up" ? (
+                  <p className="signup-agreement">
+                    {t("auth.agreementPrefix")}{" "}
+                    <a href="/terms">{t("footer.terms")}</a>
+                    {t("auth.agreementAnd")}
+                    <a href="/privacy">{t("footer.privacy")}</a>
+                    {t("auth.agreementSuffix")}
+                  </p>
+                ) : null}
+                <button style={st.primary} type="submit" disabled={isSubmitting}>
+                  {isSubmitting
+                    ? t("auth.processing")
+                    : mode === "up"
+                      ? t("auth.signup")
+                      : t("auth.signin")}
+                </button>
+              </form>
+              <button
+                style={{ ...st.ghost, width: "100%", marginTop: 8 }}
+                onClick={passkeyLogin}
+              >
+                🔑 {t("passkey.signin")}
+              </button>
+              {err ? (
+                <p role="alert" style={{ color: "crimson" }}>
+                  {err}
+                </p>
+              ) : null}
+              <button
+                style={{ ...st.ghost, marginTop: 12, width: "100%" }}
+                onClick={toggleMode}
+              >
+                {mode === "in" ? t("auth.toSignup") : t("auth.toSignin")}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -426,6 +483,10 @@ function Auth() {
 function AuthedApp() {
   const { t } = useTranslation();
   const { data: session, isPending } = useSession();
+  const sessionUserId = session?.user?.id;
+  useEffect(() => {
+    if (sessionUserId) clearPendingVerificationEmail();
+  }, [sessionUserId]);
   if (isPending) return <p style={{ padding: 24 }}>{t("common.loading")}</p>;
   if (!session?.user) return <Auth />;
   const user = session.user as SessionUser;
