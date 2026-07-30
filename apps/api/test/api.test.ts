@@ -532,6 +532,96 @@ describe("프로필/공개 (PATCH /api/me, GET /api/u/:username)", () => {
     expect(await cleared.json()).toMatchObject({ bio: null });
   });
 
+  it("공개 프로필 HTML에 사용자별 OG 메타데이터를 서버에서 렌더링한다", async () => {
+    const cookie = await signUp("og-before");
+    await setProfile(cookie, {
+      name: "OG & 이름",
+      username: "og_user",
+      isPublic: true,
+      bio: "개발 & 영화 <기록>",
+    });
+    const avatar = await uploadAvatar(
+      cookie,
+      new File([new Uint8Array([0xff, 0xd8, 0xff])], "profile.jpg", {
+        type: "image/jpeg",
+      }),
+    );
+    expect(avatar.status).toBe(200);
+
+    const shell = `<!doctype html>
+<html><head>
+<meta name="description" content="홈 설명" />
+<link rel="canonical" href="https://1day1ott.com/" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="홈 제목" />
+<meta property="og:description" content="홈 설명" />
+<meta property="og:url" content="https://1day1ott.com/" />
+<meta property="og:image" content="https://1day1ott.com/og-image.png" />
+<meta property="og:image:secure_url" content="https://1day1ott.com/og-image.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="홈 이미지" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="홈 제목" />
+<meta name="twitter:description" content="홈 설명" />
+<meta name="twitter:image" content="https://1day1ott.com/og-image.png" />
+<meta name="twitter:image:alt" content="홈 이미지" />
+<title>1일 1OTT</title>
+    </head><body><div id="root"></div></body></html>`;
+    const assets = {
+      fetch: async (_input: RequestInfo | URL) =>
+        new Response(shell, {
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            etag: '"home-shell"',
+          },
+        }),
+    } as Fetcher;
+
+    const res = await app.request(
+      "https://1day1ott.com/@og_user",
+      undefined,
+      {
+        ...env,
+        ASSETS: assets,
+        WEB_ORIGIN: "https://1day1ott.com",
+      },
+    );
+    const html = await res.text();
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("public, max-age=300");
+    expect(res.headers.get("etag")).toBeNull();
+    expect(html).toContain(
+      "<title>OG &amp; 이름 (@og_user) | 1일 1OTT</title>",
+    );
+    expect(html).toContain(
+      '<meta name="description" content="개발 &amp; 영화 &lt;기록&gt;" />',
+    );
+    expect(html).toContain('<meta property="og:type" content="profile" />');
+    expect(html).toContain(
+      '<meta property="og:url" content="https://1day1ott.com/@og_user" />',
+    );
+    expect(html).toContain(
+      '<meta property="og:title" content="OG &amp; 이름 (@og_user) | 1일 1OTT" />',
+    );
+    expect(html).toContain(
+      '<meta property="og:description" content="개발 &amp; 영화 &lt;기록&gt;" />',
+    );
+    expect(html).toMatch(
+      /<meta property="og:image" content="https:\/\/media\.test\/avatars\/[0-9a-f-]+\.jpg" \/>/,
+    );
+    expect(html).toContain(
+      '<meta property="profile:username" content="og_user" />',
+    );
+    expect(html).toContain('<meta name="twitter:card" content="summary" />');
+    expect(html).not.toContain("https://1day1ott.com/og-image.png");
+    expect(html).not.toContain('property="og:image:width"');
+    expect(html).not.toContain('property="og:image:height"');
+    expect(html).toContain('<div id="root"></div>');
+  });
+
   it("아바타를 R2에 UUID 키로 등록·교체·삭제한다", async () => {
     const cookie = await signUp();
     await setProfile(cookie, { username: "avatar_user", isPublic: true });

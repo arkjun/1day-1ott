@@ -10,7 +10,7 @@ export const publicRoute = new Hono<{ Bindings: Env }>();
 
 type Db = ReturnType<typeof createDb>;
 
-async function loadPublicUser(db: Db, username: string) {
+export async function loadPublicUser(db: Db, username: string) {
   const u = await db
     .select({
       id: schema.user.id,

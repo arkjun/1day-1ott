@@ -1,10 +1,13 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createAuth } from "./auth";
+import { createDb } from "./db";
 import type { Env } from "./env";
+import { avatarMediaType, avatarUrl } from "./lib/avatar";
+import { renderProfileHtml } from "./lib/profile-html";
 import { entriesRoute } from "./routes/entries";
 import { meRoute } from "./routes/me";
-import { publicRoute } from "./routes/public";
+import { loadPublicUser, publicRoute } from "./routes/public";
 import { searchRoute } from "./routes/search";
 import {
   handleFederationRequest,
@@ -27,10 +30,68 @@ app.use("/api/*", (c, next) =>
   })(c, next),
 );
 
-app.use("*", (c, next) => {
+app.use("*", async (c, next) => {
   if (!c.req.path.startsWith("/@")) return next();
-  return c.env.ASSETS.fetch(new Request(new URL("/", c.req.url), c.req.raw));
+  const shellRequest = new Request(new URL("/", c.req.url), c.req.raw);
+  shellRequest.headers.delete("if-modified-since");
+  shellRequest.headers.delete("if-none-match");
+  const username = profileUsername(c.req.path);
+  if (!username) return c.env.ASSETS.fetch(shellRequest);
+
+  const [shell, user] = await Promise.all([
+    c.env.ASSETS.fetch(shellRequest),
+    loadPublicUser(createDb(c.env.DB), username),
+  ]);
+  if (
+    !user ||
+    !shell.headers.get("content-type")?.includes("text/html")
+  ) {
+    return shell;
+  }
+
+  const hasCustomAvatar = user.avatarKey != null;
+  const imageUrl = hasCustomAvatar
+    ? avatarUrl(c.env.MEDIA_ORIGIN, user.avatarKey)
+    : new URL("/og-image.png", c.env.WEB_ORIGIN).toString();
+  const html = renderProfileHtml(await shell.text(), {
+    name: user.name,
+    username: user.username,
+    bio: user.bio,
+    canonicalUrl: new URL(
+      `/@${encodeURIComponent(user.username)}`,
+      c.env.WEB_ORIGIN,
+    ).toString(),
+    imageUrl,
+    imageType: hasCustomAvatar
+      ? avatarMediaType(user.avatarKey)
+      : "image/png",
+    largeImage: !hasCustomAvatar,
+    imageWidth: hasCustomAvatar ? undefined : 1200,
+    imageHeight: hasCustomAvatar ? undefined : 630,
+  });
+  const headers = new Headers(shell.headers);
+  headers.delete("content-encoding");
+  headers.delete("content-length");
+  headers.delete("etag");
+  headers.delete("last-modified");
+  headers.set("cache-control", "public, max-age=300");
+  return new Response(html, {
+    status: shell.status,
+    statusText: shell.statusText,
+    headers,
+  });
 });
+
+function profileUsername(pathname: string): string | null {
+  const match = /^\/@([^/]+)\/?$/.exec(pathname);
+  if (!match?.[1]) return null;
+  try {
+    const username = decodeURIComponent(match[1]);
+    return /^[a-z0-9_]{3,20}$/.test(username) ? username : null;
+  } catch {
+    return null;
+  }
+}
 
 app.get("/u/:username", (c) => {
   const target = new URL(c.req.url);
