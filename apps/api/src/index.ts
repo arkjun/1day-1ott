@@ -6,10 +6,16 @@ import { entriesRoute } from "./routes/entries";
 import { meRoute } from "./routes/me";
 import { publicRoute } from "./routes/public";
 import { searchRoute } from "./routes/search";
+import {
+  handleFederationRequest,
+  isFederationPath,
+  processFederationQueue,
+  retryFailedPublications,
+} from "./federation";
 
 type Vars = { userId: string };
 
-const app = new Hono<{ Bindings: Env; Variables: Vars }>();
+export const app = new Hono<{ Bindings: Env; Variables: Vars }>();
 
 // CORS: 웹 origin 허용 + 쿠키 세션. (미래 확장 origin 은 여기에 추가 → C 준비)
 app.use("/api/*", (c, next) =>
@@ -48,4 +54,23 @@ app.route("/api", entriesRoute);
 app.route("/api", searchRoute);
 app.route("/api", meRoute);
 
-export default app;
+export default {
+  async fetch(
+    request: Request,
+    env: Env,
+    executionCtx: ExecutionContext,
+  ): Promise<Response> {
+    if (isFederationPath(new URL(request.url))) {
+      return handleFederationRequest(request, env);
+    }
+    return app.fetch(request, env, executionCtx);
+  },
+  queue: processFederationQueue,
+  async scheduled(
+    _controller: ScheduledController,
+    env: Env,
+    executionCtx: ExecutionContext,
+  ): Promise<void> {
+    executionCtx.waitUntil(retryFailedPublications(env));
+  },
+} satisfies ExportedHandler<Env>;

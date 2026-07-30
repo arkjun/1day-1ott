@@ -1,6 +1,6 @@
 import { env } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
-import app from "../src/index";
+import { app } from "../src/index";
 
 /**
  * 통합 테스트: 실제 workerd + 실제 D1(격리 스토리지) 위에서 HTTP 전 구간을 검증.
@@ -397,6 +397,72 @@ describe("프로필/공개 (PATCH /api/me, GET /api/u/:username)", () => {
 
     const b = await signUp();
     expect((await setProfile(b, { username: "taken_name" })).status).toBe(409);
+  });
+
+  it("연합우주는 명시적으로 활성화하며 공개 프로필과 username이 필요하다", async () => {
+    const cookie = await signUp();
+
+    const missingProfile = await setProfile(cookie, {
+      federationEnabled: true,
+    });
+    expect(missingProfile.status).toBe(400);
+    expect(await missingProfile.json()).toEqual({
+      error: "federation_requires_public_profile",
+    });
+
+    const enabled = await setProfile(cookie, {
+      username: "fediverse_user",
+      isPublic: true,
+      federationEnabled: true,
+    });
+    expect(enabled.status).toBe(200);
+    expect(await enabled.json()).toMatchObject({
+      federationEnabled: true,
+      federationHandle: "fediverse_user",
+    });
+
+    const row = await env.DB.prepare(
+      `SELECT federation_enabled, federation_handle
+         FROM user
+        WHERE username = ?`,
+    )
+      .bind("fediverse_user")
+      .first<{ federation_enabled: number; federation_handle: string }>();
+    expect(row).toEqual({
+      federation_enabled: 1,
+      federation_handle: "fediverse_user",
+    });
+
+    const keyCount = await env.DB.prepare(
+      `SELECT count(*) AS count
+         FROM federation_actor_keys
+        WHERE user_id = (SELECT id FROM user WHERE username = ?)`,
+    )
+      .bind("fediverse_user")
+      .first<{ count: number }>();
+    expect(keyCount?.count).toBe(2);
+  });
+
+  it("한 번 연합우주 핸들로 사용한 username은 비활성화 후에도 변경할 수 없다", async () => {
+    const cookie = await signUp();
+    expect(
+      (
+        await setProfile(cookie, {
+          username: "locked_handle",
+          isPublic: true,
+          federationEnabled: true,
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (await setProfile(cookie, { federationEnabled: false })).status,
+    ).toBe(200);
+
+    const renamed = await setProfile(cookie, { username: "new_handle" });
+    expect(renamed.status).toBe(409);
+    expect(await renamed.json()).toEqual({
+      error: "federation_handle_locked",
+    });
   });
 
   it("비공개면 404, 공개로 바꾸면 잔디/포스터 집계와 함께 200", async () => {

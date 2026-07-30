@@ -168,6 +168,14 @@ export default {
     error: "失敗: username が重複、または形式(小文字/数字/_ 3〜20文字)エラー",
     linkCopied: "リンクをコピーしました！",
   },
+  federation: {
+    title: "Fediverseを有効にする",
+    description:
+      "Mastodonなどからプロフィールをフォローし、新しいひとこと感想を受け取れるようにします。",
+    handle: "Fediverseアドレス: {{handle}}",
+    warning:
+      "有効化後はusernameを変更できません。外部サーバーに複製された感想は完全に回収できない場合があります。",
+  },
   note: { placeholder: "ひとことメモ", placeholderOptional: "ひとことメモ (任意)" },
   modal: {
     title: "今日は何を観ましたか？",

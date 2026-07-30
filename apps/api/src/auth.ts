@@ -30,6 +30,8 @@ export function createAuth(env: Env) {
       additionalFields: {
         username: { type: "string", required: false, input: true },
         isPublic: { type: "boolean", required: false, input: false },
+        federationEnabled: { type: "boolean", required: false, input: false },
+        federationHandle: { type: "string", required: false, input: false },
         lang: { type: "string", required: false, input: true },
       },
     },

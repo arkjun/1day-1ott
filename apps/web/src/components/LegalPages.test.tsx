@@ -46,8 +46,8 @@ describe("법적 고지", () => {
   });
 
   it.each([
-    ["en", "Privacy Policy", "Effective date: July 29, 2026", "Personal Information Protection Act"],
-    ["ja", "プライバシーポリシー", "施行日：2026年7月29日", "個人情報保護法"],
+    ["en", "Privacy Policy", "Effective date: July 30, 2026", "Personal Information Protection Act"],
+    ["ja", "プライバシーポリシー", "施行日：2026年7月30日", "個人情報保護法"],
   ])(
     "개인정보 처리방침을 %s로 표시한다",
     async (lng, title, effectiveDate, privacyAct) => {
@@ -74,6 +74,7 @@ describe("법적 고지", () => {
     expect(html).toContain("Safety Measures");
     expect(html).toContain("Personal Information Infringement Report Center");
     expect(html).toContain("Korean National Police Agency");
+    expect(html).toContain("independent ActivityPub servers");
   });
 
   it("일문 개인정보 처리방침에 자연스러운 법률 용어를 사용한다", async () => {
@@ -85,6 +86,7 @@ describe("법적 고지", () => {
     expect(html).toContain("安全管理措置");
     expect(html).toContain("個人情報侵害申告センター");
     expect(html).toContain("大韓民国警察庁");
+    expect(html).toContain("独立したActivityPubサーバー");
   });
 
   // JSX 는 텍스트 중간의 줄바꿈을 공백으로 바꾼다. 일본어는 공백을 단어 구분에

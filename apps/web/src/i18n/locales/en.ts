@@ -176,6 +176,14 @@ export default {
     error: "Failed: username taken or invalid (lowercase/digits/_ , 3–20 chars)",
     linkCopied: "Link copied!",
   },
+  federation: {
+    title: "Enable federation",
+    description:
+      "Let people follow your profile from Mastodon and receive your new one-line notes.",
+    handle: "Fediverse address: {{handle}}",
+    warning:
+      "Your username cannot change after activation. Notes copied to remote servers may not be fully recoverable.",
+  },
   note: { placeholder: "One-line note", placeholderOptional: "One-line note (optional)" },
   modal: {
     title: "What did you watch?",

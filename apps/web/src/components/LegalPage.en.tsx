@@ -46,9 +46,11 @@ export function EnglishPrivacyPolicy() {
               <tr>
                 <td>Providing the Service</td>
                 <td>
-                  Username, public-profile setting, language, viewing date,
-                  content title, content type, external content ID, reaction,
-                  note, and viewing platform
+                  Username, public-profile setting, federation setting and
+                  handle, public key, remote follower Actor and inbox URL,
+                  publication status, language, viewing date, content title,
+                  content type, external content ID, reaction, note, and
+                  viewing platform
                 </td>
               </tr>
               <tr>
@@ -168,6 +170,21 @@ export function EnglishPrivacyPolicy() {
           profile private again.
         </p>
         <p>
+          Federation is a separate optional feature and is disabled by default.
+          When enabled from My Page, the federation handle, name, Actor data,
+          and public keys become public. Content titles, viewing dates,
+          reactions, notes, and public-page URLs may be sent to independent
+          ActivityPub servers that follow the account. Those servers may
+          process the information across borders and cache or redistribute it
+          under their own policies.
+        </p>
+        <p>
+          Disabling federation stops future publication and Actor exposure.
+          Deleting an entry sends a deletion activity, but the Operator cannot
+          guarantee deletion from independent servers&apos; caches, backups,
+          screenshots, or redistributed copies.
+        </p>
+        <p>
           A public page for a title may show aggregated viewer counts and
           reactions that do not identify a particular individual.
         </p>
@@ -250,8 +267,8 @@ export function EnglishPrivacyPolicy() {
           Data subjects may request access to, correction or erasure of,
           suspension of processing of, or withdrawal of consent regarding their
           personal information. Viewing records can be edited, deleted, or
-          exported as Markdown directly in the Service, and public profiles can
-          be disabled at any time from My Page.
+          exported as Markdown directly in the Service, and public profiles and
+          federation can be disabled at any time from My Page.
         </p>
         <p>
           Analytics consent can be withdrawn at any time through “Analytics
@@ -364,6 +381,10 @@ export function EnglishTerms() {
             and similar views
           </li>
           <li>Share a public profile when the user chooses to do so</li>
+          <li>
+            When separately enabled by the user, accept fediverse follows and
+            publish notes to ActivityPub servers
+          </li>
           <li>Import and export records in Markdown format</li>
           <li>
             Retrieve content information from external services such as TMDB
@@ -413,6 +434,14 @@ export function EnglishTerms() {
           not infringe another person&apos;s copyright, trademark, privacy, or
           other rights.
         </p>
+        <p>
+          When a user enables federation, the license above includes permission
+          to transmit and display selected User Content to independent
+          ActivityPub servers and their users. Disabling federation stops future
+          publication. Deleting an entry sends a deletion activity, but removal
+          from remote caches, backups, screenshots, or redistributed copies is
+          not guaranteed.
+        </p>
       </section>
 
       <section>
@@ -455,10 +484,11 @@ export function EnglishTerms() {
         <h2>Article 6. External Services</h2>
         <p>
           The Service uses third-party services and infrastructure, including
-          TMDB, YouTube, Cloudflare, and Google Analytics. Those providers
-          control the accuracy and availability of their information and their
-          own policies. An outage of an external service or a change to its
-          policies may limit certain features.
+          TMDB, YouTube, Cloudflare, Google Analytics, and, when federation is
+          enabled, independent ActivityPub servers. Those providers control the
+          accuracy and availability of their information and their own policies.
+          An outage of an external service or a change to its policies may
+          limit certain features.
         </p>
         <p>
           This service uses TMDB and the TMDB APIs but is not endorsed,
@@ -470,8 +500,8 @@ export function EnglishTerms() {
         <h2>Article 7. Privacy</h2>
         <p>
           The <a href="/privacy">Privacy Policy</a> governs the processing of
-          personal information. A public profile is enabled only when the user
-          turns on the public option.
+          personal information. Public profiles and federation are enabled only
+          when the user turns on each respective option.
         </p>
       </section>
 

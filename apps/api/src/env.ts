@@ -1,6 +1,10 @@
 export interface Env {
   DB: D1Database;
+  FEDIFY_KV: KVNamespace;
+  FEDIFY_ORDERING_KV: KVNamespace;
+  FEDIFY_QUEUE: Queue;
   BETTER_AUTH_SECRET: string;
+  FEDERATION_KEY_SECRET: string;
   BETTER_AUTH_URL: string;
   WEB_ORIGIN: string;
   // GitHub 소셜(M0에선 미사용, 배선만): 값은 나중에 .dev.vars / secret 으로.
