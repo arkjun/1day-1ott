@@ -21,6 +21,11 @@ app.use("/api/*", (c, next) =>
   })(c, next),
 );
 
+app.use("*", (c, next) => {
+  if (!c.req.path.startsWith("/@")) return next();
+  return c.env.ASSETS.fetch(new Request(new URL("/", c.req.url), c.req.raw));
+});
+
 app.get("/u/:username", (c) => {
   const target = new URL(c.req.url);
   target.pathname = `/@${encodeURIComponent(c.req.param("username"))}`;

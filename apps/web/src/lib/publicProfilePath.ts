@@ -5,12 +5,14 @@ export function publicProfilePath(username: string): string {
 export function usernameFromPublicProfilePath(
   pathname: string,
 ): string | null {
-  if (!pathname.startsWith("/@")) return null;
-  const segment = pathname.slice(2).split("/")[0] ?? "";
+  const segment = pathname.slice(1).split("/")[0] ?? "";
   if (!segment) return null;
 
   try {
-    return decodeURIComponent(segment);
+    const decoded = decodeURIComponent(segment);
+    return decoded.startsWith("@") && decoded.length > 1
+      ? decoded.slice(1)
+      : null;
   } catch {
     return null;
   }

@@ -69,6 +69,28 @@ async function listEntries(cookie: string) {
 }
 
 describe("인증 게이트", () => {
+  it("@ 공개 프로필 URL은 주소를 바꾸지 않고 SPA shell을 제공한다", async () => {
+    const requestedUrls: string[] = [];
+    const assets = {
+      fetch: async (input: RequestInfo | URL) => {
+        requestedUrls.push(input instanceof Request ? input.url : input.toString());
+        return new Response("<html>profile</html>", {
+          headers: { "content-type": "text/html" },
+        });
+      },
+    } as Fetcher;
+
+    const res = await app.request(
+      "https://1day1ott.com/@arkjun",
+      undefined,
+      { ...env, ASSETS: assets },
+    );
+
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("<html>profile</html>");
+    expect(requestedUrls).toEqual(["https://1day1ott.com/"]);
+  });
+
   it("기존 공개 프로필 URL을 @ URL로 영구 리다이렉트한다", async () => {
     const res = await app.request(
       "https://1day1ott.com/u/arkjun?ref=legacy",

@@ -11,6 +11,7 @@ describe("공개 프로필 경로", () => {
 
   it("@ 경로에서 username을 읽는다", () => {
     expect(usernameFromPublicProfilePath("/@arkjun")).toBe("arkjun");
+    expect(usernameFromPublicProfilePath("/%40arkjun")).toBe("arkjun");
   });
 
   it("기존 /u 경로와 빈 username은 공개 프로필 경로로 처리하지 않는다", () => {
