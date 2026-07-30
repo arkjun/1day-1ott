@@ -286,7 +286,7 @@ entriesRoute.post("/entries/import", async (c) => {
             watchedOn: r.watchedOn,
             reaction: r.reaction ?? undefined,
             note: r.note ?? undefined,
-            isNotePublic: true,
+            isNotePublic: r.isNotePublic,
             platform: r.platform ?? undefined,
           },
           c.req.query("lang"),
@@ -300,7 +300,7 @@ entriesRoute.post("/entries/import", async (c) => {
         watchedOn: r.watchedOn,
         reaction: r.reaction ?? null,
         note: r.note ?? null,
-        isNotePublic: true,
+        isNotePublic: r.isNotePublic,
         platform: r.platform ?? null,
       });
       inserted++;
@@ -327,6 +327,7 @@ entriesRoute.get("/entries/export", async (c) => {
       type: content.type,
       reaction: entries.reaction,
       note: entries.note,
+      isNotePublic: entries.isNotePublic,
       platform: entries.platform,
       tmdbId: content.tmdbId,
     })
@@ -342,6 +343,7 @@ entriesRoute.get("/entries/export", async (c) => {
     type: r.type as EntryRowData["type"],
     reaction: (r.reaction ?? null) as EntryRowData["reaction"],
     note: r.note ?? null,
+    isNotePublic: r.isNotePublic,
     platform: r.platform ?? null,
     tmdbId: r.tmdbId,
   }));

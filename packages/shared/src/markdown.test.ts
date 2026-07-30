@@ -28,6 +28,7 @@ describe("parseEntriesMarkdown", () => {
     expect(ok[0]).toEqual({
       row: 1, watchedOn: "2026-07-15", title: "무빙",
       type: "tv", reaction: "up", note: "재밌었다", platform: "디즈니+",
+      isNotePublic: false,
     });
   });
 
@@ -36,6 +37,7 @@ describe("parseEntriesMarkdown", () => {
     expect(ok[2]).toEqual({
       row: 3, watchedOn: "2026-07-14", title: "어떤영화",
       type: "other", reaction: "down", note: null, platform: "넷플릭스",
+      isNotePublic: false,
     });
   });
 
@@ -119,6 +121,37 @@ describe("parseEntriesMarkdown", () => {
     expect(ok[0]).toMatchObject({ title: "무빙", type: "tv", tmdbId: 95557 });
   });
 
+  it("감상평 공개 열이 없거나 비어 있으면 비공개가 기본값이다", () => {
+    const withoutColumn = parseEntriesMarkdown(TABLE);
+    const blankValue = parseEntriesMarkdown(`| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID | 감상평 공개 |
+|--|--|--|--|--|--|--|--|
+| 2026-07-15 | 무빙 | 드라마 | 좋아요 | 재밌었다 | 디즈니+ | 95557 | |`);
+
+    expect(withoutColumn.ok.every((row) => row.isNotePublic === false)).toBe(true);
+    expect(blankValue.ok[0]?.isNotePublic).toBe(false);
+  });
+
+  it("감상평 공개 열의 공개/비공개 값을 파싱한다", () => {
+    const md = `| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID | 감상평 공개 |
+|--|--|--|--|--|--|--|--|
+| 2026-07-15 | 공개 기록 | 드라마 | 좋아요 | 재밌었다 | 디즈니+ | 95557 | 공개 |
+| 2026-07-14 | 비공개 기록 | 영화 |  | 메모 |  |  | 비공개 |`;
+    const { ok, errors } = parseEntriesMarkdown(md);
+
+    expect(errors).toEqual([]);
+    expect(ok.map((row) => row.isNotePublic)).toEqual([true, false]);
+  });
+
+  it("알 수 없는 감상평 공개 값은 행 오류다", () => {
+    const md = `| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID | 감상평 공개 |
+|--|--|--|--|--|--|--|--|
+| 2026-07-15 | 무빙 | 드라마 | 좋아요 | 재밌었다 | 디즈니+ | 95557 | 일부공개 |`;
+    const { ok, errors } = parseEntriesMarkdown(md);
+
+    expect(ok).toEqual([]);
+    expect(errors[0]?.message).toContain("감상평 공개");
+  });
+
   it("TMDB ID는 양의 정수만 허용한다", () => {
     const md = `| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID |
 |--|--|--|--|--|--|--|
@@ -135,16 +168,16 @@ describe("formatEntriesMarkdown", () => {
       { watchedOn: "2026-07-15", title: "무빙", type: "tv", reaction: "up", note: "재밌었다", platform: "디즈니+" },
     ]);
     const lines = md.trim().split("\n");
-    expect(lines[0]).toBe("| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID |");
+    expect(lines[0]).toBe("| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID | 감상평 공개 |");
     expect(lines[1]).toMatch(/^\|[\s|:-]+\|$/);
-    expect(lines[2]).toBe("| 2026-07-15 | 무빙 | 드라마 | 좋아요 | 재밌었다 | 디즈니+ |  |");
+    expect(lines[2]).toBe("| 2026-07-15 | 무빙 | 드라마 | 좋아요 | 재밌었다 | 디즈니+ |  | 비공개 |");
   });
 
   it("null/빈 필드는 빈 셀", () => {
     const md = formatEntriesMarkdown([
       { watchedOn: "2026-07-14", title: "어떤영화", type: "other", reaction: null, note: null, platform: null },
     ]);
-    expect(md.trim().split("\n")[2]).toBe("| 2026-07-14 | 어떤영화 | 기타 |  |  |  |  |");
+    expect(md.trim().split("\n")[2]).toBe("| 2026-07-14 | 어떤영화 | 기타 |  |  |  |  | 비공개 |");
   });
 
   it("셀 안 개행/파이프는 공백으로 치환해 표를 지킨다", () => {
@@ -153,7 +186,7 @@ describe("formatEntriesMarkdown", () => {
     ]);
     const dataLine = md.trim().split("\n")[2];
     expect(dataLine).not.toContain("\n두 줄");
-    expect(dataLine).toBe("| 2026-07-14 | 제목 | 기타 |  | 한 줄 두 줄 끝 |  |  |");
+    expect(dataLine).toBe("| 2026-07-14 | 제목 | 기타 |  | 한 줄 두 줄 끝 |  |  | 비공개 |");
   });
 
   it("TMDB ID를 내보내기에 보존한다", () => {
@@ -168,7 +201,33 @@ describe("formatEntriesMarkdown", () => {
         tmdbId: 95557,
       },
     ]);
-    expect(md).toContain("| 2026-07-15 | 무빙 | 드라마 | 좋아요 |  | 디즈니+ | 95557 |");
+    expect(md).toContain("| 2026-07-15 | 무빙 | 드라마 | 좋아요 |  | 디즈니+ | 95557 | 비공개 |");
+  });
+
+  it("감상평 공개 여부를 공개/비공개로 내보낸다", () => {
+    const md = formatEntriesMarkdown([
+      {
+        watchedOn: "2026-07-15",
+        title: "공개 기록",
+        type: "tv",
+        reaction: "up",
+        note: "재밌었다",
+        platform: null,
+        isNotePublic: true,
+      },
+      {
+        watchedOn: "2026-07-14",
+        title: "비공개 기록",
+        type: "movie",
+        reaction: null,
+        note: "메모",
+        platform: null,
+        isNotePublic: false,
+      },
+    ]);
+
+    expect(md).toContain("| 공개 기록 | 드라마 | 좋아요 | 재밌었다 |  |  | 공개 |");
+    expect(md).toContain("| 비공개 기록 | 영화 |  | 메모 |  |  | 비공개 |");
   });
 
   it("format → parse 왕복이 동일하다", () => {
@@ -178,7 +237,9 @@ describe("formatEntriesMarkdown", () => {
     ];
     const { ok, errors } = parseEntriesMarkdown(formatEntriesMarkdown(rows));
     expect(errors).toEqual([]);
-    expect(ok.map(({ row, ...r }) => r)).toEqual(rows);
+    expect(ok.map(({ row, ...r }) => r)).toEqual(
+      rows.map((row) => ({ ...row, isNotePublic: false })),
+    );
   });
 
   it("모든 유형 × 모든 반응이 format → parse 왕복에서 보존되고, 라벨이 출력에 그대로 나온다", () => {
@@ -199,6 +260,8 @@ describe("formatEntriesMarkdown", () => {
 
     const { ok, errors } = parseEntriesMarkdown(md);
     expect(errors).toEqual([]);
-    expect(ok.map(({ row, ...r }) => r)).toEqual(rows);
+    expect(ok.map(({ row, ...r }) => r)).toEqual(
+      rows.map((row) => ({ ...row, isNotePublic: false })),
+    );
   });
 });

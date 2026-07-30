@@ -253,10 +253,10 @@ export default {
   },
   impexport: {
     title: "가져오기 / 내보내기",
-    desc: "기록을 markdown 표로 올리거나 내려받아요.",
+    desc: "기록을 markdown 표로 올리거나 내려받아요. 감상평 공개 값이 없으면 비공개로 등록됩니다.",
     download: "markdown 다운로드",
     fileLabel: "markdown 파일 선택",
-    placeholder: "| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 |\n| 2026-07-15 | 무빙 | 드라마 | 좋아요 | 재밌었다 | 디즈니+ |",
+    placeholder: "| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID | 감상평 공개 |\n| 2026-07-15 | 무빙 | 드라마 | 좋아요 | 재밌었다 | 디즈니+ | 95557 | 비공개 |",
     preview: "미리보기",
     summary: "등록 {{ok}}건 · 오류 {{err}}건 · 중복 의심 {{dup}}건",
     errorsHead: "오류 행",

@@ -261,10 +261,10 @@ export default {
   },
   impexport: {
     title: "Import / Export",
-    desc: "Upload or download your log as a markdown table.",
+    desc: "Upload or download your log as a markdown table. Notes default to private when visibility is blank.",
     download: "Download markdown",
     fileLabel: "Choose markdown file",
-    placeholder: "| Date | Title | Type | Reaction | Note | Platform |\n| 2026-07-15 | Moving | 드라마 | 좋아요 | Great | Disney+ |",
+    placeholder: "| Date | Title | Type | Reaction | Note | Platform | TMDB ID | Note visibility |\n| 2026-07-15 | Moving | tv | 좋아요 | Great | Disney+ | 95557 | private |",
     preview: "Preview",
     summary: "{{ok}} to add · {{err}} errors · {{dup}} possible dups",
     errorsHead: "Error rows",

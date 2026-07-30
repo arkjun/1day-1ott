@@ -1000,9 +1000,36 @@ describe("POST /api/entries/import", () => {
     expect(body.inserted).toBe(2);
 
     const list = await app.request("/api/entries", authed(cookie), env);
-    const entries = ((await list.json()) as { entries: { title: string }[] }).entries;
+    const entries = ((await list.json()) as {
+      entries: { title: string; isNotePublic: boolean }[];
+    }).entries;
     expect(entries).toHaveLength(2);
     expect(entries.map((e) => e.title).sort()).toEqual(["무빙", "폭싹 속았수다"].sort());
+    expect(entries.every((entry) => entry.isNotePublic === false)).toBe(true);
+  });
+
+  it("감상평 공개 열의 값을 기록별로 저장한다", async () => {
+    const cookie = await signUp();
+    const md = `| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID | 감상평 공개 |
+|--|--|--|--|--|--|--|--|
+| 2026-07-15 | 공개 기록 | 드라마 | 좋아요 | 공개 감상 |  |  | 공개 |
+| 2026-07-14 | 비공개 기록 | 영화 |  | 비공개 감상 |  |  | 비공개 |`;
+
+    const res = await importMd(cookie, md, true);
+    expect(res.status).toBe(200);
+
+    const entries = await listEntries(cookie);
+    expect(
+      entries
+        .map((entry) => ({
+          title: entry.title,
+          isNotePublic: entry.isNotePublic,
+        }))
+        .sort((a, b) => String(a.title).localeCompare(String(b.title))),
+    ).toEqual([
+      { title: "공개 기록", isNotePublic: true },
+      { title: "비공개 기록", isNotePublic: false },
+    ]);
   });
 
   it("이미 있는 (날짜+제목)은 두 행 모두 dupWarnings로 표시한다", async () => {
@@ -1106,14 +1133,41 @@ describe("POST /api/entries/import", () => {
 describe("GET /api/entries/export", () => {
   it("내 기록을 markdown 표로 내려준다", async () => {
     const cookie = await signUp();
-    await createEntry(cookie, { title: "듄", type: "movie", watchedOn: "2026-07-11", reaction: "love" });
+    await createEntry(cookie, {
+      title: "듄",
+      type: "movie",
+      watchedOn: "2026-07-11",
+      reaction: "love",
+      isNotePublic: false,
+    });
     const res = await app.request("/api/entries/export", authed(cookie), env);
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/markdown");
     expect(res.headers.get("content-disposition")).toContain("attachment");
     const text = await res.text();
-    expect(text).toContain("| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID |");
-    expect(text).toContain("| 2026-07-11 | 듄 | 영화 | 매우 좋아요 |  |  |  |");
+    expect(text).toContain("| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID | 감상평 공개 |");
+    expect(text).toContain("| 2026-07-11 | 듄 | 영화 | 매우 좋아요 |  |  |  | 비공개 |");
+  });
+
+  it("감상평 공개 여부를 markdown에 보존한다", async () => {
+    const cookie = await signUp();
+    await createEntry(cookie, {
+      title: "공개 기록",
+      watchedOn: "2026-07-11",
+      note: "공개 감상",
+      isNotePublic: true,
+    });
+    await createEntry(cookie, {
+      title: "비공개 기록",
+      watchedOn: "2026-07-12",
+      note: "비공개 감상",
+      isNotePublic: false,
+    });
+
+    const res = await app.request("/api/entries/export", authed(cookie), env);
+    const text = await res.text();
+    expect(text).toContain("| 공개 기록 | 영화 |  | 공개 감상 |  |  | 공개 |");
+    expect(text).toContain("| 비공개 기록 | 영화 |  | 비공개 감상 |  |  | 비공개 |");
   });
 
   it("남의 기록은 export에 포함되지 않는다 (사용자 격리)", async () => {

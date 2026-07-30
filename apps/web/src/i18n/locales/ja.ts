@@ -253,10 +253,10 @@ export default {
   },
   impexport: {
     title: "インポート / エクスポート",
-    desc: "記録を markdown 表でアップロード・ダウンロードできます。",
+    desc: "記録を markdown 表でアップロード・ダウンロードできます。公開設定が空欄の場合、感想は非公開になります。",
     download: "markdown をダウンロード",
     fileLabel: "markdown ファイルを選択",
-    placeholder: "| 日付 | タイトル | 種類 | 反応 | 感想 | プラットフォーム |\n| 2026-07-15 | ムービング | 드라마 | 좋아요 | 面白い | Disney+ |",
+    placeholder: "| 日付 | タイトル | 種類 | 反応 | 感想 | プラットフォーム | TMDB ID | 感想の公開設定 |\n| 2026-07-15 | ムービング | tv | 좋아요 | 面白い | Disney+ | 95557 | private |",
     preview: "プレビュー",
     summary: "登録 {{ok}}件 · エラー {{err}}件 · 重複疑い {{dup}}件",
     errorsHead: "エラー行",

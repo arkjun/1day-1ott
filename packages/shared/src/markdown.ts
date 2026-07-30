@@ -8,9 +8,11 @@ export interface EntryRowData {
   note: string | null;
   platform: string | null;
   tmdbId?: number | null;
+  isNotePublic?: boolean;
 }
 export interface ParsedEntryRow extends EntryRowData {
   row: number; // 1-based 데이터 행 번호
+  isNotePublic: boolean;
 }
 export interface ParseError {
   row: number;
@@ -57,6 +59,16 @@ const REACTION_LOOKUP: Map<string, Reaction> = new Map([
   ["매우 좋아요", "love"], ["👍👍", "love"], ["최고", "love"],
 ] as [string, Reaction][]);
 
+/** 감상평 공개 여부: 빈 값은 비공개, 명시된 값만 공개. */
+const NOTE_VISIBILITY_LOOKUP = new Map<string, boolean>([
+  ["공개", true],
+  ["public", true],
+  ["true", true],
+  ["비공개", false],
+  ["private", false],
+  ["false", false],
+]);
+
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** 파이프 표에서 셀 배열 추출. 앞뒤 파이프 제거 후 `|` 분리 + trim. */
@@ -98,6 +110,7 @@ export function parseEntriesMarkdown(md: string): ParseResult {
       note = "",
       platform = "",
       tmdbIdRaw = "",
+      isNotePublicRaw = "",
     ] = cells;
 
     if (!DATE_RE.test(watchedOn)) {
@@ -146,6 +159,19 @@ export function parseEntriesMarkdown(md: string): ParseResult {
       continue;
     }
 
+    let isNotePublic = false;
+    if (isNotePublicRaw !== "") {
+      const found = NOTE_VISIBILITY_LOOKUP.get(isNotePublicRaw.toLowerCase());
+      if (found === undefined) {
+        errors.push({
+          row: dataRow,
+          message: `감상평 공개는 공개 또는 비공개여야 합니다: "${isNotePublicRaw}"`,
+        });
+        continue;
+      }
+      isNotePublic = found;
+    }
+
     const parsed: ParsedEntryRow = {
       row: dataRow,
       watchedOn,
@@ -154,6 +180,7 @@ export function parseEntriesMarkdown(md: string): ParseResult {
       reaction,
       note: note === "" ? null : note,
       platform: platform === "" ? null : platform,
+      isNotePublic,
     };
     if (tmdbIdRaw !== "") parsed.tmdbId = tmdbId;
     ok.push(parsed);
@@ -167,12 +194,12 @@ function cell(v: string | null): string {
   return (v ?? "").replace(/[\r\n|]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
-const HEADER = "| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID |";
-const SEPARATOR = "| --- | --- | --- | --- | --- | --- | --- |";
+const HEADER = "| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID | 감상평 공개 |";
+const SEPARATOR = "| --- | --- | --- | --- | --- | --- | --- | --- |";
 
 export function formatEntriesMarkdown(rows: EntryRowData[]): string {
   const body = rows.map((r) =>
-    `| ${cell(r.watchedOn)} | ${cell(r.title)} | ${TYPE_LABEL[r.type]} | ${r.reaction ? REACTION_LABEL[r.reaction] : ""} | ${cell(r.note)} | ${cell(r.platform)} | ${r.tmdbId ?? ""} |`,
+    `| ${cell(r.watchedOn)} | ${cell(r.title)} | ${TYPE_LABEL[r.type]} | ${r.reaction ? REACTION_LABEL[r.reaction] : ""} | ${cell(r.note)} | ${cell(r.platform)} | ${r.tmdbId ?? ""} | ${r.isNotePublic ? "공개" : "비공개"} |`,
   );
   return [HEADER, SEPARATOR, ...body].join("\n") + "\n";
 }
