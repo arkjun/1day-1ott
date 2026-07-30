@@ -6,6 +6,7 @@ export interface Env {
   FEDIFY_ORDERING_KV: KVNamespace;
   FEDIFY_QUEUE: Queue;
   BETTER_AUTH_SECRET: string;
+  RESEND_API_KEY: string;
   FEDERATION_KEY_SECRET: string;
   BETTER_AUTH_URL: string;
   WEB_ORIGIN: string;

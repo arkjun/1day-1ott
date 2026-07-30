@@ -13,6 +13,7 @@ import { AllEntries } from "./components/AllEntries";
 import { AnalyticsConsentBanner } from "./components/AnalyticsConsent";
 import { CalendarView } from "./components/CalendarView";
 import { ContentPage } from "./components/ContentPage";
+import { AuthVerificationNotice } from "./components/AuthVerificationNotice";
 import { MyPage } from "./components/MyPage";
 import { PublicProfile } from "./components/PublicProfile";
 import { RecentItem } from "./components/RecentItem";
@@ -22,7 +23,13 @@ import { activityLabels } from "./i18n/format";
 import { LanguageSelect } from "./components/LanguageSelect";
 import { LandingPreview } from "./components/LandingPreview";
 import { api, type EntryRow } from "./lib/api";
-import { signIn, signOut, signUp, useSession } from "./lib/authClient";
+import {
+  sendVerificationEmail,
+  signIn,
+  signOut,
+  signUp,
+  useSession,
+} from "./lib/authClient";
 import { buildTypeBreakdown } from "./lib/breakdown";
 import { GREEN, buildYear, currentStreak, isoDaysAgo } from "./lib/heatmap";
 import { useTheme } from "./lib/theme";
@@ -250,15 +257,69 @@ function Auth() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [err, setErr] = useState<string | null>(null);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [verificationResent, setVerificationResent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   async function submit(ev: React.FormEvent) {
     ev.preventDefault();
     setErr(null);
-    const res =
-      mode === "up"
-        ? await signUp.email({ email, password, name: name || email })
-        : await signIn.email({ email, password });
-    if (res.error) setErr(res.error.message ?? t("auth.failed"));
+    setVerificationSent(false);
+    setVerificationResent(false);
+    setIsSubmitting(true);
+    try {
+      const res =
+        mode === "up"
+          ? await signUp.email({
+              email,
+              password,
+              name: name || email,
+              callbackURL: "/",
+            })
+          : await signIn.email({ email, password, callbackURL: "/" });
+      if (!res.error) {
+        if (mode === "up") setVerificationSent(true);
+        return;
+      }
+      if (res.error.code === "EMAIL_NOT_VERIFIED") {
+        setVerificationSent(true);
+        setErr(t("auth.emailNotVerified"));
+        return;
+      }
+      setErr(res.error.message ?? t("auth.failed"));
+    } catch {
+      setErr(t("auth.failed"));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function resendVerification() {
+    setErr(null);
+    setIsResending(true);
+    try {
+      const res = await sendVerificationEmail({
+        email,
+        callbackURL: "/",
+      });
+      if (res.error) {
+        setErr(res.error.message ?? t("auth.resendFailed"));
+        return;
+      }
+      setVerificationResent(true);
+    } catch {
+      setErr(t("auth.resendFailed"));
+    } finally {
+      setIsResending(false);
+    }
+  }
+
+  function toggleMode() {
+    setMode((current) => (current === "in" ? "up" : "in"));
+    setErr(null);
+    setVerificationSent(false);
+    setVerificationResent(false);
   }
 
   async function passkeyLogin() {
@@ -315,15 +376,34 @@ function Auth() {
                 {t("auth.agreementSuffix")}
               </p>
             ) : null}
-            <button style={st.primary} type="submit">
-              {mode === "up" ? t("auth.signup") : t("auth.signin")}
+            <button style={st.primary} type="submit" disabled={isSubmitting}>
+              {isSubmitting
+                ? t("auth.processing")
+                : mode === "up"
+                  ? t("auth.signup")
+                  : t("auth.signin")}
             </button>
           </form>
           <button style={{ ...st.ghost, width: "100%", marginTop: 8 }} onClick={passkeyLogin}>
             🔑 {t("passkey.signin")}
           </button>
-          {err && <p style={{ color: "crimson" }}>{err}</p>}
-          <button style={{ ...st.ghost, marginTop: 12, width: "100%" }} onClick={() => setMode((m) => (m === "in" ? "up" : "in"))}>
+          {err ? (
+            <p role="alert" style={{ color: "crimson" }}>
+              {err}
+            </p>
+          ) : null}
+          {verificationSent ? (
+            <AuthVerificationNotice
+              email={email}
+              resent={verificationResent}
+              isResending={isResending}
+              onResend={resendVerification}
+            />
+          ) : null}
+          <button
+            style={{ ...st.ghost, marginTop: 12, width: "100%" }}
+            onClick={toggleMode}
+          >
             {mode === "in" ? t("auth.toSignup") : t("auth.toSignin")}
           </button>
         </div>

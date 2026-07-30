@@ -1,10 +1,11 @@
 import { env } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
+import { createAuth } from "../src/auth";
 import { app } from "../src/index";
 
 /**
  * 통합 테스트: 실제 workerd + 실제 D1(격리 스토리지) 위에서 HTTP 전 구간을 검증.
- * 목 없음 — better-auth 가입/세션, drizzle 쿼리 모두 프로덕션과 동일 경로.
+ * 메일 발송기만 테스트 대역 — better-auth 가입/세션, drizzle 쿼리는 프로덕션과 동일 경로.
  * 각 테스트는 스토리지가 격리되므로 자기 데이터를 스스로 만든다.
  */
 
@@ -13,21 +14,46 @@ let seq = 0;
 
 /** 가입하고 세션 쿠키를 돌려준다. */
 async function signUp(name = `user${++seq}`) {
-  const res = await app.request(
-    "/api/auth/sign-up/email",
+  const email = `${name}@example.com`;
+  let verificationUrl: string | undefined;
+  const auth = createAuth(env, {
+    sendVerificationEmail: async (message) => {
+      verificationUrl = message.verificationUrl;
+    },
+  });
+  const signup = await auth.api.signUpEmail({
+    headers: new Headers(JSON_HEADERS),
+    body: {
+      email,
+      password: "test-password-123",
+      name,
+      callbackURL: "/",
+    },
+  });
+  expect(signup.token).toBeNull();
+  expect(verificationUrl).toBeTruthy();
+
+  const token = new URL(verificationUrl!).searchParams.get("token");
+  expect(token).toBeTruthy();
+  const verification = await auth.api.verifyEmail({
+    query: { token: token! },
+  });
+  expect(verification).toMatchObject({ status: true });
+
+  const login = await app.request(
+    "/api/auth/sign-in/email",
     {
       method: "POST",
       headers: JSON_HEADERS,
       body: JSON.stringify({
-        email: `${name}@example.com`,
+        email,
         password: "test-password-123",
-        name,
       }),
     },
     env,
   );
-  expect(res.status).toBe(200);
-  const cookie = res.headers
+  expect(login.status).toBe(200);
+  const cookie = login.headers
     .getSetCookie()
     .map((c: string) => c.split(";")[0])
     .join("; ");

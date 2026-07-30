@@ -103,7 +103,9 @@ app.get("/health", (c) => c.json({ ok: true }));
 
 // Better Auth 핸들러 마운트.
 app.on(["GET", "POST"], "/api/auth/*", (c) => {
-  const auth = createAuth(c.env);
+  const auth = createAuth(c.env, {
+    backgroundTaskHandler: (promise) => c.executionCtx.waitUntil(promise),
+  });
   return auth.handler(c.req.raw);
 });
 

@@ -1,5 +1,6 @@
 # 복사해서 .dev.vars 로 쓰기. .dev.vars 는 커밋 금지(.gitignore).
 BETTER_AUTH_SECRET=generate-a-long-random-string
+RESEND_API_KEY=re_replace-with-your-resend-api-key
 BETTER_AUTH_URL=http://localhost:8787
 WEB_ORIGIN=http://localhost:5173
 MEDIA_ORIGIN=https://media.1day1ott.com

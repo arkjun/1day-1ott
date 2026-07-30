@@ -20,7 +20,7 @@
       "/ap/*"
     ]
   },
-  // 프로덕션 공개 값. 시크릿(BETTER_AUTH_SECRET, TMDB_API_TOKEN)은 `wrangler secret put` 으로.
+  // 프로덕션 공개 값. 시크릿(BETTER_AUTH_SECRET, RESEND_API_KEY, TMDB_API_TOKEN)은 `wrangler secret put` 으로.
   "vars": {
     "BETTER_AUTH_URL": "https://1day1ott.com",
     "WEB_ORIGIN": "https://1day1ott.com",

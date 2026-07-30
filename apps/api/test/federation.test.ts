@@ -1,6 +1,7 @@
 import { env } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
 import { Endpoints, Follow, Person, Undo } from "@fedify/fedify/vocab";
+import { createAuth } from "../src/auth";
 import { app } from "../src/index";
 import {
   handleFederationRequest,
@@ -14,21 +15,45 @@ let seq = 0;
 async function enableFederation(): Promise<{ cookie: string; userId: string; username: string }> {
   const username = `actor_user_${++seq}`;
   const email = `${username}@example.com`;
-  const signup = await app.request(
-    "/api/auth/sign-up/email",
+  let verificationUrl: string | undefined;
+  const auth = createAuth(env, {
+    sendVerificationEmail: async (message) => {
+      verificationUrl = message.verificationUrl;
+    },
+  });
+  const signup = await auth.api.signUpEmail({
+    headers: new Headers(JSON_HEADERS),
+    body: {
+      email,
+      password: "test-password-123",
+      name: "Actor User",
+      callbackURL: "/",
+    },
+  });
+  expect(signup.token).toBeNull();
+  expect(verificationUrl).toBeTruthy();
+
+  const token = new URL(verificationUrl!).searchParams.get("token");
+  expect(token).toBeTruthy();
+  const verification = await auth.api.verifyEmail({
+    query: { token: token! },
+  });
+  expect(verification).toMatchObject({ status: true });
+
+  const login = await app.request(
+    "/api/auth/sign-in/email",
     {
       method: "POST",
       headers: JSON_HEADERS,
       body: JSON.stringify({
         email,
         password: "test-password-123",
-        name: "Actor User",
       }),
     },
     env,
   );
-  expect(signup.status).toBe(200);
-  const cookie = signup.headers
+  expect(login.status).toBe(200);
+  const cookie = login.headers
     .getSetCookie()
     .map((value: string) => value.split(";")[0])
     .join("; ");

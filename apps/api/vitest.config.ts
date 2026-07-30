@@ -27,6 +27,7 @@ export default defineConfig(async () => {
           bindings: {
             TEST_MIGRATIONS: migrations,
             BETTER_AUTH_SECRET: "test-only-secret-not-used-in-prod",
+            RESEND_API_KEY: "re_test-only-key-not-used-for-requests",
             BETTER_AUTH_URL: "http://localhost",
             WEB_ORIGIN: "http://localhost",
             MEDIA_ORIGIN: "https://media.test",
