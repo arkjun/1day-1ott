@@ -6,6 +6,11 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { createDb, schema } from "../db";
 import type { Env } from "../env";
+import {
+  deletePublishedEntry,
+  publishEntry,
+  updatePublishedEntry,
+} from "../federation";
 import { parseTitles, pickLang, resolveLocalized, withTitles } from "../lib/titles";
 
 const entryPatchSchema = z.object({
@@ -135,7 +140,24 @@ entriesRoute.post("/entries", async (c) => {
     platform: input.platform ?? null,
   });
 
-  return c.json({ id, contentId }, 201);
+  let federationStatus: "published" | "failed" | undefined;
+  if (input.note?.trim()) {
+    const actor = await db
+      .select({ enabled: schema.user.federationEnabled })
+      .from(schema.user)
+      .where(eq(schema.user.id, userId))
+      .get();
+    if (actor?.enabled) {
+      await db.insert(schema.federationPublications).values({
+        entryId: id,
+        userId,
+        status: "pending",
+      });
+      federationStatus = await publishEntry(c.req.raw, c.env, id);
+    }
+  }
+
+  return c.json({ id, contentId, federationStatus }, 201);
 });
 
 /** 대량 업로드 — dry-run(commit:false)은 파싱만, commit:true는 실제 등록. */
@@ -260,7 +282,24 @@ entriesRoute.patch("/entries/:id", async (c) => {
   if (Object.keys(patch).length > 0) {
     await db.update(schema.entries).set(patch).where(eq(schema.entries.id, id));
   }
-  return c.json({ ok: true });
+  let federationStatus: "published" | "failed" | "deleted" | undefined;
+  const publication = await db
+    .select({ status: schema.federationPublications.status })
+    .from(schema.federationPublications)
+    .where(eq(schema.federationPublications.entryId, id))
+    .get();
+  if (publication?.status === "published") {
+    if (parsed.data.note === null || parsed.data.note?.trim() === "") {
+      federationStatus = await deletePublishedEntry(c.req.raw, c.env, id);
+    } else if (
+      parsed.data.note !== undefined ||
+      parsed.data.reaction !== undefined ||
+      parsed.data.watchedOn !== undefined
+    ) {
+      federationStatus = await updatePublishedEntry(c.req.raw, c.env, id);
+    }
+  }
+  return c.json({ ok: true, federationStatus });
 });
 
 /** 기록 삭제(본인 것만). */
@@ -276,8 +315,9 @@ entriesRoute.delete("/entries/:id", async (c) => {
     .get();
   if (!owned) return c.json({ error: "not_found" }, 404);
 
+  const federationStatus = await deletePublishedEntry(c.req.raw, c.env, id);
   await db.delete(schema.entries).where(eq(schema.entries.id, id));
-  return c.json({ ok: true });
+  return c.json({ ok: true, federationStatus });
 });
 
 /** 내 기록 목록(최신순, 콘텐츠 조인). */

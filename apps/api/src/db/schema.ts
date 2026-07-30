@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   index,
   integer,
+  primaryKey,
   sqliteTable,
   text,
   uniqueIndex,
@@ -23,6 +24,10 @@ export const user = sqliteTable("user", {
   image: text("image"),
   username: text("username").unique(),
   isPublic: integer("is_public", { mode: "boolean" }).notNull().default(false),
+  federationEnabled: integer("federation_enabled", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  federationHandle: text("federation_handle").unique(),
   lang: text("lang"), // UI 언어(ko|en|ja). null 이면 클라이언트가 감지.
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
@@ -139,6 +144,85 @@ export const entries = sqliteTable(
   ],
 );
 
+/** 로컬 ActivityPub Actor의 서명 키. privateKey는 애플리케이션 키로 암호화한다. */
+export const federationActorKeys = sqliteTable(
+  "federation_actor_keys",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    type: text("type", { enum: ["RSASSA-PKCS1-v1_5", "Ed25519"] })
+      .notNull(),
+    publicKey: text("public_key").notNull(),
+    encryptedPrivateKey: text("encrypted_private_key").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.type] })],
+);
+
+/** 외부 Actor가 로컬 Actor를 팔로우한 상태. */
+export const federationFollowers = sqliteTable(
+  "federation_followers",
+  {
+    id: text("id").primaryKey(),
+    localUserId: text("local_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    remoteActorUri: text("remote_actor_uri").notNull(),
+    remoteInboxUri: text("remote_inbox_uri").notNull(),
+    remoteSharedInboxUri: text("remote_shared_inbox_uri"),
+    followActivityUri: text("follow_activity_uri").notNull(),
+    handle: text("handle"),
+    status: text("status", { enum: ["active", "removed"] })
+      .notNull()
+      .default("active"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("federation_follower_actor_uq").on(
+      t.localUserId,
+      t.remoteActorUri,
+    ),
+    index("federation_follower_local_status_idx").on(
+      t.localUserId,
+      t.status,
+    ),
+  ],
+);
+
+/**
+ * 로컬 기록과 연합우주 객체의 발행 상태.
+ * 기록 삭제 뒤에도 Tombstone을 제공해야 하므로 entries FK를 의도적으로 두지 않는다.
+ */
+export const federationPublications = sqliteTable(
+  "federation_publications",
+  {
+    entryId: text("entry_id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    status: text("status", {
+      enum: ["pending", "published", "failed", "deleted"],
+    })
+      .notNull()
+      .default("pending"),
+    publishedAt: integer("published_at", { mode: "timestamp" }),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    deletedAt: integer("deleted_at", { mode: "timestamp" }),
+    lastError: text("last_error"),
+  },
+  (t) => [index("federation_publication_status_idx").on(t.status)],
+);
+
 export const schema = {
   user,
   session,
@@ -147,4 +231,7 @@ export const schema = {
   passkey,
   content,
   entries,
+  federationActorKeys,
+  federationFollowers,
+  federationPublications,
 };

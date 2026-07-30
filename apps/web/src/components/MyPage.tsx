@@ -13,6 +13,8 @@ export interface MyPageUser {
   email: string;
   username?: string | null;
   isPublic?: boolean | null;
+  federationEnabled?: boolean | null;
+  federationHandle?: string | null;
   lang?: string | null;
 }
 
@@ -41,6 +43,9 @@ function ShareSettings({ user }: { user: MyPageUser }) {
   const { t } = useTranslation();
   const [username, setUsername] = useState(user.username ?? "");
   const [isPublic, setIsPublic] = useState(!!user.isPublic);
+  const [federationEnabled, setFederationEnabled] = useState(
+    !!user.federationEnabled,
+  );
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -52,7 +57,11 @@ function ShareSettings({ user }: { user: MyPageUser }) {
     setBusy(true);
     setMsg(null);
     try {
-      await api.updateMe({ username: username || undefined, isPublic });
+      await api.updateMe({
+        username: username || undefined,
+        isPublic,
+        federationEnabled,
+      });
       setMsg(t("share.saved"));
       setTimeout(() => window.location.reload(), 600);
     } catch {
@@ -82,10 +91,18 @@ function ShareSettings({ user }: { user: MyPageUser }) {
           style={{ ...st.input, width: 160 }}
           placeholder={t("share.usernamePlaceholder")}
           value={username}
+          disabled={user.federationHandle != null}
           onChange={(e) => setUsername(e.target.value.toLowerCase())}
         />
         <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 14 }}>
-          <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => {
+              setIsPublic(e.target.checked);
+              if (!e.target.checked) setFederationEnabled(false);
+            }}
+          />
           {t("share.public")}
         </label>
         <button style={st.ghost} disabled={busy} onClick={save}>
@@ -101,6 +118,32 @@ function ShareSettings({ user }: { user: MyPageUser }) {
             </a>
           </>
         )}
+      </div>
+      <div style={st.federationBox}>
+        <label style={st.federationToggle}>
+          <input
+            type="checkbox"
+            checked={federationEnabled}
+            disabled={!username || !isPublic}
+            onChange={(e) => setFederationEnabled(e.target.checked)}
+          />
+          <span>
+            <b>{t("federation.title")}</b>
+            <span style={{ ...st.muted, display: "block", marginTop: 3 }}>
+              {t("federation.description")}
+            </span>
+          </span>
+        </label>
+        {user.federationHandle && (
+          <div style={{ ...st.muted, marginTop: 8 }}>
+            {t("federation.handle", {
+              handle: `@${user.federationHandle}@${window.location.hostname}`,
+            })}
+          </div>
+        )}
+        <div style={{ ...st.muted, marginTop: 8 }}>
+          {t("federation.warning")}
+        </div>
       </div>
       {msg && <div style={{ ...st.muted, marginTop: 8 }}>{msg}</div>}
     </div>
@@ -589,6 +632,8 @@ const st: Record<string, React.CSSProperties> = {
   field: { display: "grid", gap: 5, fontSize: 13 },
   row: { display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid var(--border)", fontSize: 14 },
   settingRow: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14 },
+  federationBox: { marginTop: 14, padding: 12, border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface-2)" },
+  federationToggle: { display: "flex", gap: 9, alignItems: "flex-start", fontSize: 14 },
   primary: { border: 0, borderRadius: 10, padding: "9px 16px", background: "linear-gradient(135deg,var(--accent),var(--accent-ink))", color: "#fff", fontWeight: 700, boxShadow: "0 4px 14px var(--accent-weak)" },
   ghost: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 14px", background: "var(--surface)", color: "inherit" },
   // display:none이면 탭 순서에서 완전히 빠져 키보드로 파일 선택 다이얼로그에 갈 방법이 없다.

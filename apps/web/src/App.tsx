@@ -51,6 +51,8 @@ interface SessionUser {
   email: string;
   username?: string | null;
   isPublic?: boolean | null;
+  federationEnabled?: boolean | null;
+  federationHandle?: string | null;
   lang?: string | null;
 }
 

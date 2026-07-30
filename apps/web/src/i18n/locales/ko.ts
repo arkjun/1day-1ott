@@ -168,6 +168,14 @@ export default {
     error: "실패: username 중복이거나 형식(소문자/숫자/_ 3~20자) 오류",
     linkCopied: "링크 복사됨!",
   },
+  federation: {
+    title: "연합우주 활성화",
+    description:
+      "Mastodon 등에서 내 프로필을 팔로우하고, 새 한 줄 감상을 받아볼 수 있게 합니다.",
+    handle: "연합우주 주소: {{handle}}",
+    warning:
+      "활성화 후 username은 변경할 수 없습니다. 전송된 감상은 외부 서버에 복제되어 완전히 회수되지 않을 수 있습니다.",
+  },
   note: { placeholder: "한 줄 감상", placeholderOptional: "한 줄 감상 (선택)" },
   modal: {
     title: "오늘 뭐 봤어요?",
