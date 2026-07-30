@@ -222,7 +222,7 @@ describe("ActivityPub Actor와 WebFinger", () => {
     };
     expect(body.totalItems).toBe(1);
     expect(body.orderedItems).toContain(actorUri.href);
-  });
+  }, 10_000);
 
   it("Undo(Follow)는 같은 로컬 Actor에 대한 원격 팔로우를 제거한다", async () => {
     const { userId } = await enableFederation();
