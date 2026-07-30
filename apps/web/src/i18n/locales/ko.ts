@@ -19,9 +19,9 @@ export default {
     analyticsSettings: "분석 설정",
   },
   analytics: {
-    title: "서비스 개선을 위한 방문 분석",
+    title: "서비스 개선을 위한 방문 통계",
     description:
-      "동의한 경우에만 Google Analytics로 가명 이용 통계를 수집합니다.",
+      "동의하면 Google Analytics를 사용해 가명 방문 통계를 수집합니다. 동의 전에는 분석 정보가 전송되지 않습니다.",
     learnMore: "자세히 보기",
     reject: "거부",
     accept: "동의",
