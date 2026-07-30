@@ -182,7 +182,7 @@ export default {
       "Let people follow your profile from Mastodon and receive your new one-line notes.",
     handle: "Fediverse address: {{handle}}",
     warning:
-      "Your username cannot change after activation. Notes copied to remote servers may not be fully recoverable.",
+      "Once you enable federation for the first time, your @username cannot be changed even if you disable it later. Posts already delivered to other servers may remain after disabling federation.",
   },
   note: { placeholder: "One-line note", placeholderOptional: "One-line note (optional)" },
   modal: {

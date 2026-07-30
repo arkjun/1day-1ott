@@ -174,7 +174,7 @@ export default {
       "Mastodonなどからプロフィールをフォローし、新しいひとこと感想を受け取れるようにします。",
     handle: "Fediverseアドレス: {{handle}}",
     warning:
-      "有効化後はusernameを変更できません。外部サーバーに複製された感想は完全に回収できない場合があります。",
+      "Fediverseを初めて有効にすると、後で無効にしても@ユーザー名は変更できません。無効にしても、すでに他のサーバーへ配信された投稿は残る場合があります。",
   },
   note: { placeholder: "ひとことメモ", placeholderOptional: "ひとことメモ (任意)" },
   modal: {
