@@ -26,8 +26,25 @@ export interface EntryRow {
 
 export interface ImportError { row: number; message: string }
 export interface ImportDup { row: number; watchedOn: string; title: string }
+export interface ImportContentMatch {
+  type: ContentType;
+  title: string;
+  rows: number[];
+}
+export interface ImportContentMapping {
+  type: ContentType;
+  title: string;
+  tmdbId: number;
+  posterUrl?: string;
+}
 export type ImportResult =
-  | { committed: false; okCount: number; errors: ImportError[]; dupWarnings: ImportDup[] }
+  | {
+      committed: false;
+      okCount: number;
+      errors: ImportError[];
+      dupWarnings: ImportDup[];
+      contentMatches: ImportContentMatch[];
+    }
   | { committed: true; inserted: number; errors: ImportError[] };
 
 export const api = {
@@ -55,10 +72,14 @@ export const api = {
   deleteEntry: (id: string) =>
     req<{ ok: boolean }>(`/api/entries/${id}`, { method: "DELETE" }),
   heatmap: () => req<{ cells: HeatmapCell[] }>("/api/heatmap"),
-  importEntries: (markdown: string, commit: boolean) =>
+  importEntries: (
+    markdown: string,
+    commit: boolean,
+    contentMappings?: ImportContentMapping[],
+  ) =>
     req<ImportResult>(`/api/entries/import?lang=${i18n.language}`, {
       method: "POST",
-      body: JSON.stringify({ markdown, commit }),
+      body: JSON.stringify({ markdown, commit, contentMappings }),
     }),
   exportEntries: async () => {
     const res = await fetch("/api/entries/export", { credentials: "include" });

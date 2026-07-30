@@ -835,10 +835,23 @@ describe("POST /api/entries/import", () => {
 | 2026-07-15 | 폭싹 속았수다 | 드라마 | 매우 좋아요 |  |  |
 | 나쁜날짜 | 오류행 |  |  |  |  |`;
 
-  async function importMd(cookie: string, markdown: string, commit: boolean) {
+  async function importMd(
+    cookie: string,
+    markdown: string,
+    commit: boolean,
+    contentMappings?: {
+      type: string;
+      title: string;
+      tmdbId: number;
+      posterUrl?: string;
+    }[],
+  ) {
     return app.request(
       "/api/entries/import",
-      authed(cookie, { method: "POST", body: JSON.stringify({ markdown, commit }) }),
+      authed(cookie, {
+        method: "POST",
+        body: JSON.stringify({ markdown, commit, contentMappings }),
+      }),
       env,
     );
   }
@@ -921,6 +934,58 @@ describe("POST /api/entries/import", () => {
     const body = (await res.json()) as { dupWarnings: unknown[] };
     expect(body.dupWarnings).toEqual([]);
   });
+
+  it("미리보기는 TMDB 매칭이 필요한 고유 작품을 묶어서 반환한다", async () => {
+    const cookie = await signUp();
+    const md = `| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 |
+|--|--|--|--|--|--|
+| 2026-07-06 | 가스인간 | 드라마 | 좋아요 | 2-5화 |  |
+| 2026-07-07 | 가스인간 | 드라마 | 좋아요 | 6-8화 |  |
+| 2026-07-08 | 직접입력 | 기타 | 좋아요 |  |  |`;
+    const res = await importMd(cookie, md, false);
+    const body = (await res.json()) as {
+      contentMatches: { type: string; title: string; rows: number[] }[];
+    };
+    expect(body.contentMatches).toEqual([
+      { type: "tv", title: "가스인간", rows: [1, 2] },
+    ]);
+  });
+
+  it("확정 시 선택한 TMDB 작품에 여러 기록을 연결한다", async () => {
+    const cookie = await signUp();
+    const md = `| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 |
+|--|--|--|--|--|--|
+| 2026-07-06 | 가스인간 | 드라마 | 좋아요 | 2-5화 |  |
+| 2026-07-07 | 가스인간 | 드라마 | 좋아요 | 6-8화 |  |`;
+    const res = await importMd(cookie, md, true, [
+      {
+        type: "tv",
+        title: "가스인간",
+        tmdbId: 123456,
+        posterUrl: "https://image.tmdb.org/t/p/w342/gas.jpg",
+      },
+    ]);
+    expect(res.status).toBe(200);
+
+    const list = await app.request("/api/entries", authed(cookie), env);
+    const entries = ((await list.json()) as {
+      entries: { contentId: string; posterUrl: string | null }[];
+    }).entries;
+    expect(entries).toHaveLength(2);
+    expect(new Set(entries.map((entry) => entry.contentId)).size).toBe(1);
+    expect(entries[0]?.posterUrl).toBe("https://image.tmdb.org/t/p/w342/gas.jpg");
+  });
+
+  it("마크다운의 TMDB ID로도 작품을 연결한다", async () => {
+    const cookie = await signUp();
+    const md = `| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID |
+|--|--|--|--|--|--|--|
+| 2026-07-15 | 무빙 | 드라마 | 좋아요 |  | 디즈니+ | 95557 |`;
+    await importMd(cookie, md, true);
+
+    const exported = await app.request("/api/entries/export", authed(cookie), env);
+    expect(await exported.text()).toContain("| 95557 |");
+  });
 });
 
 describe("GET /api/entries/export", () => {
@@ -932,8 +997,8 @@ describe("GET /api/entries/export", () => {
     expect(res.headers.get("content-type")).toContain("text/markdown");
     expect(res.headers.get("content-disposition")).toContain("attachment");
     const text = await res.text();
-    expect(text).toContain("| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 |");
-    expect(text).toContain("| 2026-07-11 | 듄 | 영화 | 매우 좋아요 |  |  |");
+    expect(text).toContain("| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID |");
+    expect(text).toContain("| 2026-07-11 | 듄 | 영화 | 매우 좋아요 |  |  |  |");
   });
 
   it("남의 기록은 export에 포함되지 않는다 (사용자 격리)", async () => {

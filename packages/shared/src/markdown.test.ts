@@ -109,6 +109,24 @@ describe("parseEntriesMarkdown", () => {
     expect(ok[0]!.row).toBe(1);
     expect(ok[0]!.title).toBe("무빙");
   });
+
+  it("선택적인 TMDB ID를 파싱한다", () => {
+    const md = `| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID |
+|--|--|--|--|--|--|--|
+| 2026-07-15 | 무빙 | 드라마 | 좋아요 |  | 디즈니+ | 95557 |`;
+    const { ok, errors } = parseEntriesMarkdown(md);
+    expect(errors).toEqual([]);
+    expect(ok[0]).toMatchObject({ title: "무빙", type: "tv", tmdbId: 95557 });
+  });
+
+  it("TMDB ID는 양의 정수만 허용한다", () => {
+    const md = `| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID |
+|--|--|--|--|--|--|--|
+| 2026-07-15 | 무빙 | 드라마 | 좋아요 |  | 디즈니+ | abc |`;
+    const { ok, errors } = parseEntriesMarkdown(md);
+    expect(ok).toEqual([]);
+    expect(errors[0]?.message).toContain("TMDB ID");
+  });
 });
 
 describe("formatEntriesMarkdown", () => {
@@ -117,16 +135,16 @@ describe("formatEntriesMarkdown", () => {
       { watchedOn: "2026-07-15", title: "무빙", type: "tv", reaction: "up", note: "재밌었다", platform: "디즈니+" },
     ]);
     const lines = md.trim().split("\n");
-    expect(lines[0]).toBe("| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 |");
+    expect(lines[0]).toBe("| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID |");
     expect(lines[1]).toMatch(/^\|[\s|:-]+\|$/);
-    expect(lines[2]).toBe("| 2026-07-15 | 무빙 | 드라마 | 좋아요 | 재밌었다 | 디즈니+ |");
+    expect(lines[2]).toBe("| 2026-07-15 | 무빙 | 드라마 | 좋아요 | 재밌었다 | 디즈니+ |  |");
   });
 
   it("null/빈 필드는 빈 셀", () => {
     const md = formatEntriesMarkdown([
       { watchedOn: "2026-07-14", title: "어떤영화", type: "other", reaction: null, note: null, platform: null },
     ]);
-    expect(md.trim().split("\n")[2]).toBe("| 2026-07-14 | 어떤영화 | 기타 |  |  |  |");
+    expect(md.trim().split("\n")[2]).toBe("| 2026-07-14 | 어떤영화 | 기타 |  |  |  |  |");
   });
 
   it("셀 안 개행/파이프는 공백으로 치환해 표를 지킨다", () => {
@@ -135,7 +153,22 @@ describe("formatEntriesMarkdown", () => {
     ]);
     const dataLine = md.trim().split("\n")[2];
     expect(dataLine).not.toContain("\n두 줄");
-    expect(dataLine).toBe("| 2026-07-14 | 제목 | 기타 |  | 한 줄 두 줄 끝 |  |");
+    expect(dataLine).toBe("| 2026-07-14 | 제목 | 기타 |  | 한 줄 두 줄 끝 |  |  |");
+  });
+
+  it("TMDB ID를 내보내기에 보존한다", () => {
+    const md = formatEntriesMarkdown([
+      {
+        watchedOn: "2026-07-15",
+        title: "무빙",
+        type: "tv",
+        reaction: "up",
+        note: null,
+        platform: "디즈니+",
+        tmdbId: 95557,
+      },
+    ]);
+    expect(md).toContain("| 2026-07-15 | 무빙 | 드라마 | 좋아요 |  | 디즈니+ | 95557 |");
   });
 
   it("format → parse 왕복이 동일하다", () => {

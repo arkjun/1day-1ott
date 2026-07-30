@@ -1,6 +1,13 @@
+import type { SearchResult } from "@1ott/shared";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, type ImportResult, type PasskeyRow } from "../lib/api";
+import {
+  api,
+  type ImportContentMapping,
+  type ImportContentMatch,
+  type ImportResult,
+  type PasskeyRow,
+} from "../lib/api";
 import { authClient, signIn } from "../lib/authClient";
 import { validatePasswordChange } from "../lib/password";
 import { publicProfilePath } from "../lib/publicProfilePath";
@@ -577,6 +584,12 @@ function ImportExport() {
   // previewedText === text 일 때만(패널 렌더/확정 버튼 활성화) 신뢰한다 —
   // 파일 재선택이든 타이핑이든, text를 바꾸는 경로가 늘어나도 이 한 곳만 지키면 된다.
   const [previewedText, setPreviewedText] = useState<string | null>(null);
+  const [matchOptions, setMatchOptions] = useState<
+    Record<string, { candidates: SearchResult[]; failed: boolean }>
+  >({});
+  const [matchSelections, setMatchSelections] = useState<Record<string, string>>(
+    {},
+  );
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   // runPreview 호출마다 증가. 응답이 도착했을 때 더 최신 요청이 시작된 상태라면
@@ -584,6 +597,12 @@ function ImportExport() {
   const genRef = useRef(0);
 
   const isPreviewCurrent = preview !== null && previewedText === text;
+  const unresolvedMatches =
+    isPreviewCurrent && preview
+      ? preview.contentMatches.filter(
+          (match) => !matchSelections[importMatchKey(match)],
+        ).length
+      : 0;
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -605,6 +624,25 @@ function ImportExport() {
       const res = await api.importEntries(requestText, false);
       if (res.committed) return; // dry-run이라 도달 안 함
       if (gen !== genRef.current) return; // 그 사이 새 미리보기가 시작됨 → 이 응답은 버린다
+      const loaded = await Promise.all(
+        res.contentMatches.map(async (match) => {
+          try {
+            const found = await api.search(match.title, match.type);
+            return [
+              importMatchKey(match),
+              { candidates: found.results, failed: false },
+            ] as const;
+          } catch {
+            return [
+              importMatchKey(match),
+              { candidates: [], failed: true },
+            ] as const;
+          }
+        }),
+      );
+      if (gen !== genRef.current) return;
+      setMatchOptions(Object.fromEntries(loaded));
+      setMatchSelections({});
       setPreview(res);
       setPreviewedText(requestText);
     } catch (err) {
@@ -619,10 +657,31 @@ function ImportExport() {
   async function commit() {
     if (!isPreviewCurrent || previewedText === null || preview === null) return; // 확정은 항상 미리 본 그 텍스트로만
     const okCount = preview.okCount; // 커밋 응답이 오기 전 미리보기가 약속한 건수를 미리 캡처
+    const contentMappings: ImportContentMapping[] = [];
+    for (const match of preview.contentMatches) {
+      const key = importMatchKey(match);
+      const selected = matchSelections[key];
+      if (!selected || selected === "manual") continue;
+      const candidate = matchOptions[key]?.candidates.find(
+        (item) => item.tmdbId === Number(selected),
+      );
+      if (candidate?.tmdbId != null) {
+        contentMappings.push({
+          type: match.type,
+          title: match.title,
+          tmdbId: candidate.tmdbId,
+          posterUrl: candidate.posterUrl,
+        });
+      }
+    }
     setBusy(true);
     setMsg(null);
     try {
-      const res = await api.importEntries(previewedText, true);
+      const res = await api.importEntries(
+        previewedText,
+        true,
+        contentMappings,
+      );
       if (res.committed) {
         if (res.inserted < okCount) {
           // 유효한 행 중 일부가 D1 insert 단계에서 실패 — 조용히 넘어가면 사용자가
@@ -631,10 +690,14 @@ function ImportExport() {
           setMsg(t("impexport.partialFail", { inserted: res.inserted, ok: okCount }));
           setPreview(null);
           setPreviewedText(null);
+          setMatchOptions({});
+          setMatchSelections({});
         } else {
           setMsg(t("impexport.done", { n: res.inserted }));
           setPreview(null);
           setPreviewedText(null);
+          setMatchOptions({});
+          setMatchSelections({});
           setText("");
           setTimeout(() => window.location.reload(), 800);
         }
@@ -644,6 +707,8 @@ function ImportExport() {
       // 전 새 미리보기(중복 경고 포함)를 강제하고, text는 남겨 재시도를 돕는다.
       setPreview(null);
       setPreviewedText(null);
+      setMatchOptions({});
+      setMatchSelections({});
       setMsg(t("impexport.retryWarn"));
     } finally {
       setBusy(false);
@@ -728,11 +793,61 @@ function ImportExport() {
             </div>
           )}
 
+          {preview.contentMatches.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ ...st.muted, marginBottom: 8 }}>
+                {t("impexport.matchesHead")}
+              </div>
+              <div style={{ display: "grid", gap: 10 }}>
+                {preview.contentMatches.map((match) => {
+                  const key = importMatchKey(match);
+                  return (
+                    <ImportContentMatcher
+                      key={key}
+                      match={match}
+                      candidates={matchOptions[key]?.candidates ?? []}
+                      failed={matchOptions[key]?.failed ?? false}
+                      selected={matchSelections[key] ?? ""}
+                      onSelect={(value) =>
+                        setMatchSelections((current) => ({
+                          ...current,
+                          [key]: value,
+                        }))
+                      }
+                    />
+                  );
+                })}
+              </div>
+              {unresolvedMatches > 0 && (
+                <div style={{ ...st.muted, color: "crimson", marginTop: 8 }}>
+                  {t("impexport.matchesRequired", {
+                    count: unresolvedMatches,
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <button style={st.primary} disabled={busy || preview.okCount === 0} onClick={commit}>
+            <button
+              style={st.primary}
+              disabled={
+                busy || preview.okCount === 0 || unresolvedMatches > 0
+              }
+              onClick={commit}
+            >
               {preview.okCount === 0 ? t("impexport.empty") : t("impexport.confirm", { ok: preview.okCount })}
             </button>
-            <button style={st.ghost} disabled={busy} onClick={() => { setPreview(null); setPreviewedText(null); }}>
+            <button
+              style={st.ghost}
+              disabled={busy}
+              onClick={() => {
+                setPreview(null);
+                setPreviewedText(null);
+                setMatchOptions({});
+                setMatchSelections({});
+              }}
+            >
               {t("impexport.cancel")}
             </button>
           </div>
@@ -741,6 +856,119 @@ function ImportExport() {
 
       {msg && <div style={{ ...st.muted, marginTop: 8 }}>{msg}</div>}
     </div>
+  );
+}
+
+function importMatchKey(match: Pick<ImportContentMatch, "type" | "title">) {
+  return `${match.type}\n${match.title}`;
+}
+
+function ImportContentMatcher({
+  match,
+  candidates,
+  failed,
+  selected,
+  onSelect,
+}: {
+  match: ImportContentMatch;
+  candidates: SearchResult[];
+  failed: boolean;
+  selected: string;
+  onSelect: (value: string) => void;
+}) {
+  const { t } = useTranslation();
+  const name = `import-match-${match.type}-${match.rows[0]}`;
+  return (
+    <fieldset
+      style={{
+        margin: 0,
+        padding: 10,
+        border: "1px solid var(--border)",
+        borderRadius: 10,
+      }}
+    >
+      <legend style={{ padding: "0 4px", fontSize: 13, fontWeight: 700 }}>
+        {match.title} · {t(`type.${match.type}`)} ·{" "}
+        {t("impexport.matchRows", { rows: match.rows.join(", ") })}
+      </legend>
+      {failed ? (
+        <div style={{ ...st.muted, color: "crimson", marginBottom: 6 }}>
+          {t("impexport.matchFailed")}
+        </div>
+      ) : candidates.length === 0 ? (
+        <div style={{ ...st.muted, marginBottom: 6 }}>
+          {t("impexport.matchNone")}
+        </div>
+      ) : null}
+      <div style={{ display: "grid", gap: 6 }}>
+        {candidates.map((candidate) => {
+          const value = String(candidate.tmdbId);
+          return (
+            <label
+              key={`${candidate.type}-${value}`}
+              style={{
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+                cursor: "pointer",
+                fontSize: 13,
+              }}
+            >
+              <input
+                type="radio"
+                name={name}
+                value={value}
+                checked={selected === value}
+                onChange={() => onSelect(value)}
+              />
+              {candidate.posterUrl ? (
+                <img
+                  src={candidate.posterUrl}
+                  alt=""
+                  width={32}
+                  height={48}
+                  loading="lazy"
+                  style={{ objectFit: "cover", borderRadius: 4 }}
+                />
+              ) : null}
+              <span>
+                <b>{candidate.title}</b>
+                {candidate.year ? ` (${candidate.year})` : ""}
+                {candidate.overview ? (
+                  <span
+                    style={{
+                      ...st.muted,
+                      display: "block",
+                      marginTop: 2,
+                    }}
+                  >
+                    {candidate.overview}
+                  </span>
+                ) : null}
+              </span>
+            </label>
+          );
+        })}
+        <label
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            cursor: "pointer",
+            fontSize: 13,
+          }}
+        >
+          <input
+            type="radio"
+            name={name}
+            value="manual"
+            checked={selected === "manual"}
+            onChange={() => onSelect("manual")}
+          />
+          {t("impexport.matchManual")}
+        </label>
+      </div>
+    </fieldset>
   );
 }
 

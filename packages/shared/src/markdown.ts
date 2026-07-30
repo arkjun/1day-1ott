@@ -7,6 +7,7 @@ export interface EntryRowData {
   reaction: Reaction | null;
   note: string | null;
   platform: string | null;
+  tmdbId?: number | null;
 }
 export interface ParsedEntryRow extends EntryRowData {
   row: number; // 1-based 데이터 행 번호
@@ -89,7 +90,15 @@ export function parseEntriesMarkdown(md: string): ParseResult {
     if (isSeparator(cells)) continue;
 
     dataRow++;
-    const [watchedOn = "", title = "", typeRaw = "", reactionRaw = "", note = "", platform = ""] = cells;
+    const [
+      watchedOn = "",
+      title = "",
+      typeRaw = "",
+      reactionRaw = "",
+      note = "",
+      platform = "",
+      tmdbIdRaw = "",
+    ] = cells;
 
     if (!DATE_RE.test(watchedOn)) {
       errors.push({ row: dataRow, message: `날짜 형식 오류 (YYYY-MM-DD): "${watchedOn}"` });
@@ -128,8 +137,16 @@ export function parseEntriesMarkdown(md: string): ParseResult {
       errors.push({ row: dataRow, message: `플랫폼은 60자 이하여야 합니다` });
       continue;
     }
+    const tmdbId = Number(tmdbIdRaw);
+    if (
+      tmdbIdRaw !== "" &&
+      (!/^[1-9]\d*$/.test(tmdbIdRaw) || !Number.isSafeInteger(tmdbId))
+    ) {
+      errors.push({ row: dataRow, message: `TMDB ID는 양의 정수여야 합니다: "${tmdbIdRaw}"` });
+      continue;
+    }
 
-    ok.push({
+    const parsed: ParsedEntryRow = {
       row: dataRow,
       watchedOn,
       title,
@@ -137,7 +154,9 @@ export function parseEntriesMarkdown(md: string): ParseResult {
       reaction,
       note: note === "" ? null : note,
       platform: platform === "" ? null : platform,
-    });
+    };
+    if (tmdbIdRaw !== "") parsed.tmdbId = tmdbId;
+    ok.push(parsed);
   }
 
   return { ok, errors };
@@ -148,12 +167,12 @@ function cell(v: string | null): string {
   return (v ?? "").replace(/[\r\n|]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
-const HEADER = "| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 |";
-const SEPARATOR = "| --- | --- | --- | --- | --- | --- |";
+const HEADER = "| 날짜 | 제목 | 유형 | 반응 | 감상 | 플랫폼 | TMDB ID |";
+const SEPARATOR = "| --- | --- | --- | --- | --- | --- | --- |";
 
 export function formatEntriesMarkdown(rows: EntryRowData[]): string {
   const body = rows.map((r) =>
-    `| ${cell(r.watchedOn)} | ${cell(r.title)} | ${TYPE_LABEL[r.type]} | ${r.reaction ? REACTION_LABEL[r.reaction] : ""} | ${cell(r.note)} | ${cell(r.platform)} |`,
+    `| ${cell(r.watchedOn)} | ${cell(r.title)} | ${TYPE_LABEL[r.type]} | ${r.reaction ? REACTION_LABEL[r.reaction] : ""} | ${cell(r.note)} | ${cell(r.platform)} | ${r.tmdbId ?? ""} |`,
   );
   return [HEADER, SEPARATOR, ...body].join("\n") + "\n";
 }

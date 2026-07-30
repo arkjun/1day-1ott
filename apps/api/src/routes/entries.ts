@@ -1,5 +1,17 @@
-import { entryInputSchema, countToLevel, reactionSchema, formatEntriesMarkdown, parseEntriesMarkdown } from "@1ott/shared";
-import type { EntryRowData, HeatmapCell } from "@1ott/shared";
+import {
+  contentTypeSchema,
+  entryInputSchema,
+  countToLevel,
+  reactionSchema,
+  formatEntriesMarkdown,
+  parseEntriesMarkdown,
+} from "@1ott/shared";
+import type {
+  ContentType,
+  EntryRowData,
+  HeatmapCell,
+  ParsedEntryRow,
+} from "@1ott/shared";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { nanoid } from "nanoid";
@@ -21,9 +33,17 @@ const entryPatchSchema = z.object({
   platform: z.string().max(60).nullable().optional(),
 });
 
+const importContentMappingSchema = z.object({
+  type: contentTypeSchema,
+  title: z.string().min(1).max(300),
+  tmdbId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+  posterUrl: z.string().url().max(1000).optional(),
+});
+
 const importBodySchema = z.object({
   markdown: z.string().max(500_000),
   commit: z.boolean(),
+  contentMappings: z.array(importContentMappingSchema).max(500).optional(),
 });
 
 type Vars = { userId: string };
@@ -110,6 +130,44 @@ async function computeDupWarnings(
     .map((r) => ({ row: r.row, watchedOn: r.watchedOn, title: r.title }));
 }
 
+const TMDB_TYPES = new Set<ContentType>([
+  "movie",
+  "tv",
+  "variety",
+  "documentary",
+  "anime",
+]);
+
+function contentMatchKey(type: ContentType, title: string): string {
+  return `${type}\n${title}`;
+}
+
+/** 미리보기에서 한 번만 선택하도록 같은 유형+제목의 행을 묶는다. */
+function buildContentMatches(
+  rows: ParsedEntryRow[],
+): { type: ContentType; title: string; rows: number[] }[] {
+  const identified = new Set(
+    rows
+      .filter((row) => row.tmdbId != null)
+      .map((row) => contentMatchKey(row.type, row.title)),
+  );
+  const grouped = new Map<
+    string,
+    { type: ContentType; title: string; rows: number[] }
+  >();
+  for (const row of rows) {
+    const key = contentMatchKey(row.type, row.title);
+    if (!TMDB_TYPES.has(row.type) || identified.has(key)) continue;
+    const found = grouped.get(key);
+    if (found) {
+      found.rows.push(row.row);
+    } else {
+      grouped.set(key, { type: row.type, title: row.title, rows: [row.row] });
+    }
+  }
+  return [...grouped.values()];
+}
+
 /** 기록 생성 — 웹/북마클릿/확장이 공유하는 단일 엔드포인트. */
 entriesRoute.post("/entries", async (c) => {
   const parsed = entryInputSchema.safeParse(await c.req.json().catch(() => null));
@@ -168,7 +226,7 @@ entriesRoute.post("/entries/import", async (c) => {
   if (!parsed.success) {
     return c.json({ error: "invalid_input", issues: parsed.error.issues }, 400);
   }
-  const { markdown, commit } = parsed.data;
+  const { markdown, commit, contentMappings = [] } = parsed.data;
   const { ok, errors } = parseEntriesMarkdown(markdown);
   if (ok.length + errors.length > 500) {
     return c.json({ error: "too_many_rows" }, 400);
@@ -179,29 +237,62 @@ entriesRoute.post("/entries/import", async (c) => {
 
   if (!commit) {
     const dupWarnings = await computeDupWarnings(db, userId, ok);
-    return c.json({ committed: false, okCount: ok.length, errors, dupWarnings });
+    return c.json({
+      committed: false,
+      okCount: ok.length,
+      errors,
+      dupWarnings,
+      contentMatches: buildContentMatches(ok),
+    });
+  }
+
+  const mappings = new Map(
+    contentMappings.map((mapping) => [
+      contentMatchKey(mapping.type, mapping.title),
+      mapping,
+    ]),
+  );
+  for (const row of ok) {
+    if (row.tmdbId != null) {
+      mappings.set(contentMatchKey(row.type, row.title), {
+        type: row.type,
+        title: row.title,
+        tmdbId: row.tmdbId,
+      });
+    }
   }
 
   let inserted = 0;
   const commitErrors = [...errors];
+  const importedContents = new Map<string, string>();
   for (const r of ok) {
     // 행 하나가 실패해도(D1 순간 장애 등) 나머지 행은 계속 진행 — 하나만 배치/트랜잭션이
     // 아니므로 여기서 멈추면 이미 커밋된 행을 응답에서 숨기는 셈이 되어 재업로드 시 중복
     // insert를 유발한다. 실패 행은 errors에 합류시켜 inserted가 실제 커밋 수와 맞도록 한다.
     try {
-      const contentId = await upsertContent(
-        db,
-        {
-          type: r.type,
-          title: r.title,
-          watchedOn: r.watchedOn,
-          reaction: r.reaction ?? undefined,
-          note: r.note ?? undefined,
-          isNotePublic: true,
-          platform: r.platform ?? undefined,
-        },
-        c.req.query("lang"),
-      );
+      const mapping = mappings.get(contentMatchKey(r.type, r.title));
+      const importedKey = mapping
+        ? `${r.type}:tmdb:${mapping.tmdbId}`
+        : contentMatchKey(r.type, r.title);
+      let contentId = importedContents.get(importedKey);
+      if (!contentId) {
+        contentId = await upsertContent(
+          db,
+          {
+            type: r.type,
+            title: r.title,
+            tmdbId: mapping?.tmdbId,
+            posterUrl: mapping?.posterUrl,
+            watchedOn: r.watchedOn,
+            reaction: r.reaction ?? undefined,
+            note: r.note ?? undefined,
+            isNotePublic: true,
+            platform: r.platform ?? undefined,
+          },
+          c.req.query("lang"),
+        );
+        importedContents.set(importedKey, contentId);
+      }
       await db.insert(schema.entries).values({
         id: nanoid(),
         userId,
@@ -237,6 +328,7 @@ entriesRoute.get("/entries/export", async (c) => {
       reaction: entries.reaction,
       note: entries.note,
       platform: entries.platform,
+      tmdbId: content.tmdbId,
     })
     .from(entries)
     .innerJoin(content, eq(entries.contentId, content.id))
@@ -251,6 +343,7 @@ entriesRoute.get("/entries/export", async (c) => {
     reaction: (r.reaction ?? null) as EntryRowData["reaction"],
     note: r.note ?? null,
     platform: r.platform ?? null,
+    tmdbId: r.tmdbId,
   }));
 
   const today = new Date().toISOString().slice(0, 10);
