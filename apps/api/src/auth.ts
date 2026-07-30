@@ -3,13 +3,25 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createDb, schema } from "./db";
 import type { Env } from "./env";
+import {
+  createResendVerificationEmailSender,
+  type VerificationEmailSender,
+} from "./lib/email";
+
+interface CreateAuthOptions {
+  sendVerificationEmail?: VerificationEmailSender;
+  backgroundTaskHandler?: (promise: Promise<unknown>) => void;
+}
 
 /**
  * Better Auth 인스턴스는 요청당 1회 생성한다.
  * D1 write-lock 경합을 피하기 위한 Cloudflare 권장 패턴.
  */
-export function createAuth(env: Env) {
+export function createAuth(env: Env, options: CreateAuthOptions = {}) {
   const db = createDb(env.DB);
+  const sendVerificationEmail =
+    options.sendVerificationEmail ??
+    createResendVerificationEmailSender(env.RESEND_API_KEY);
   // WebAuthn rpID 는 스킴/포트 없는 호스트명. origin 은 웹 앱이 뜨는 곳.
   const rpID = new URL(env.WEB_ORIGIN).hostname;
   return betterAuth({
@@ -23,8 +35,19 @@ export function createAuth(env: Env) {
     // M0: 자체 완결 검증을 위해 이메일+비밀번호.
     emailAndPassword: {
       enabled: true,
-      // M0 로컬 검증용. 실제 서비스 전 이메일 인증 켜기.
-      requireEmailVerification: false,
+      requireEmailVerification: true,
+      autoSignIn: false,
+    },
+    emailVerification: {
+      sendVerificationEmail: ({ user, url }) =>
+        sendVerificationEmail({
+          to: user.email,
+          verificationUrl: url,
+        }),
+      sendOnSignUp: true,
+      sendOnSignIn: true,
+      autoSignInAfterVerification: true,
+      expiresIn: 60 * 60,
     },
     user: {
       additionalFields: {
@@ -48,6 +71,13 @@ export function createAuth(env: Env) {
           }
         : undefined,
     trustedOrigins: [env.WEB_ORIGIN, env.BETTER_AUTH_URL],
+    advanced: options.backgroundTaskHandler
+      ? {
+          backgroundTasks: {
+            handler: options.backgroundTaskHandler,
+          },
+        }
+      : undefined,
   });
 }
 

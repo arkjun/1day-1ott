@@ -18,6 +18,8 @@
     "@better-auth/passkey": "^1.6.23",
     "@fedify/cfworkers": "^2.3.4",
     "@fedify/fedify": "^2.3.4",
+    "@upyo/core": "^0.5.1",
+    "@upyo/resend": "^0.5.1",
     "better-auth": "^1.6.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.6.14",
