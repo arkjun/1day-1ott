@@ -120,7 +120,7 @@ GitHub Actionsからデプロイする場合は、次のリポジトリsecretを
 
 - コンテンツ検索・詳細情報: [TMDB](https://www.themoviedb.org/)
 - YouTube URL情報: [YouTube oEmbed](https://oembed.com/)
-- 実行環境・データベース: [Cloudflare Workers](https://workers.cloudflare.com/) · [D1](https://developers.cloudflare.com/d1/)
+- 実行環境・データベース・メディア: [Cloudflare Workers](https://workers.cloudflare.com/) · [D1](https://developers.cloudflare.com/d1/) · [R2](https://developers.cloudflare.com/r2/)
 
 本サービスはTMDBおよびTMDB APIを使用していますが、TMDBによる保証、認証、承認を受けたサービスではありません。
 

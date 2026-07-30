@@ -46,7 +46,8 @@ export function EnglishPrivacyPolicy() {
               <tr>
                 <td>Providing the Service</td>
                 <td>
-                  Username, public-profile setting, federation setting and
+                  Username, bio, profile image and its file type and size,
+                  public-profile setting, federation setting and
                   handle, public key, remote follower Actor and inbox URL,
                   publication status, language, viewing date, content title,
                   content type, external content ID, reaction, note, and
@@ -165,14 +166,16 @@ export function EnglishPrivacyPolicy() {
         <p>
           Public profiles are disabled by default. Only when a data subject sets
           a username and personally enables the public option will the username,
-          name, number of entries by viewing date, total number of entries, and
-          recent content posters become public. Disabling the option makes the
-          profile private again.
+          name, bio, profile image, number of entries by viewing date, total
+          number of entries, and recent content posters become public. Disabling
+          the option makes the profile private again. Profile image files are
+          served through a public R2 URL, so a third party that knows or has
+          cached the URL may still access it after the public option is disabled.
         </p>
         <p>
           Federation is a separate optional feature and is disabled by default.
-          When enabled from My Page, the federation handle, name, Actor data,
-          and public keys become public. Content titles, viewing dates,
+          When enabled from My Page, the federation handle, name, bio, profile
+          image, Actor data, and public keys become public. Content titles, viewing dates,
           reactions, notes, and public-page URLs may be sent to independent
           ActivityPub servers that follow the account. Those servers may
           process the information across borders and cache or redistribute it
@@ -208,7 +211,7 @@ export function EnglishPrivacyPolicy() {
               <tr>
                 <td>Cloudflare, Inc.</td>
                 <td>
-                  Web hosting, API execution, D1 database, and security and
+                  Web hosting, API execution, D1 database, R2 image storage, and security and
                   troubleshooting logs
                 </td>
                 <td>

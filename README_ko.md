@@ -120,7 +120,7 @@ GitHub Actions 배포를 사용하려면 저장소 secret에 다음 값을 설�
 
 - 콘텐츠 검색·상세 정보: [TMDB](https://www.themoviedb.org/)
 - YouTube URL 정보: [YouTube oEmbed](https://oembed.com/)
-- 실행 환경·데이터베이스: [Cloudflare Workers](https://workers.cloudflare.com/) · [D1](https://developers.cloudflare.com/d1/)
+- 실행 환경·데이터베이스·미디어: [Cloudflare Workers](https://workers.cloudflare.com/) · [D1](https://developers.cloudflare.com/d1/) · [R2](https://developers.cloudflare.com/r2/)
 
 이 서비스는 TMDB와 TMDB API를 사용하지만 TMDB의 보증, 인증 또는 승인을 받은 서비스가 아닙니다.
 

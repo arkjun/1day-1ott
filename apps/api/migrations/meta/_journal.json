@@ -43,6 +43,13 @@
       "when": 1785390492238,
       "tag": "0005_add_note_visibility",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1785394689829,
+      "tag": "0006_add_user_profile",
+      "breakpoints": true
     }
   ]
 }

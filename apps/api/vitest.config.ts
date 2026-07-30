@@ -19,6 +19,7 @@ export default defineConfig(async () => {
           compatibilityDate: "2025-05-31",
           compatibilityFlags: ["nodejs_compat"],
           d1Databases: ["DB"],
+          r2Buckets: ["MEDIA"],
           kvNamespaces: ["FEDIFY_KV", "FEDIFY_ORDERING_KV"],
           queueProducers: {
             FEDIFY_QUEUE: { queueName: "fedify-test" },
@@ -28,6 +29,7 @@ export default defineConfig(async () => {
             BETTER_AUTH_SECRET: "test-only-secret-not-used-in-prod",
             BETTER_AUTH_URL: "http://localhost",
             WEB_ORIGIN: "http://localhost",
+            MEDIA_ORIGIN: "https://media.test",
             FEDERATION_KEY_SECRET: "test-only-federation-key-secret",
           },
         },

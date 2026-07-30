@@ -458,6 +458,16 @@ describe("프로필/공개 (PATCH /api/me, GET /api/u/:username)", () => {
     );
   }
 
+  async function uploadAvatar(cookie: string, file: File) {
+    const body = new FormData();
+    body.set("avatar", file);
+    return app.request(
+      "/api/me/avatar",
+      { method: "POST", headers: { cookie }, body },
+      env,
+    );
+  }
+
   it("username 형식 검증 (소문자/숫자/_ 3~20자)", async () => {
     const cookie = await signUp();
     for (const bad of ["AB", "UpperCase", "한글이름", "a".repeat(21)]) {
@@ -473,6 +483,122 @@ describe("프로필/공개 (PATCH /api/me, GET /api/u/:username)", () => {
 
     const b = await signUp();
     expect((await setProfile(b, { username: "taken_name" })).status).toBe(409);
+  });
+
+  it("소개를 정규화하고 공개 프로필에 기본 이미지와 함께 노출한다", async () => {
+    const cookie = await signUp();
+    const updated = await setProfile(cookie, {
+      username: "bio_user",
+      isPublic: true,
+      bio: "  첫 줄\n둘째 줄  ",
+    });
+    expect(updated.status).toBe(200);
+
+    const profile = await app.request("/api/u/bio_user", undefined, env);
+    expect(profile.status).toBe(200);
+    expect(await profile.json()).toMatchObject({
+      bio: "첫 줄\n둘째 줄",
+      avatarUrl: "https://media.test/avatars/default.svg",
+    });
+
+    expect((await setProfile(cookie, { bio: "x".repeat(501) })).status).toBe(400);
+    expect((await setProfile(cookie, { bio: "   " })).status).toBe(200);
+    const cleared = await app.request("/api/u/bio_user", undefined, env);
+    expect(await cleared.json()).toMatchObject({ bio: null });
+  });
+
+  it("아바타를 R2에 UUID 키로 등록·교체·삭제한다", async () => {
+    const cookie = await signUp();
+    await setProfile(cookie, { username: "avatar_user", isPublic: true });
+    const first = await uploadAvatar(
+      cookie,
+      new File([new Uint8Array([0xff, 0xd8, 0xff])], "profile.JPG", {
+        type: "image/jpeg",
+      }),
+    );
+    expect(first.status).toBe(200);
+    const firstBody = (await first.json()) as { avatarUrl: string };
+    expect(firstBody.avatarUrl).toMatch(
+      /^https:\/\/media\.test\/avatars\/[0-9a-f-]+\.jpg$/,
+    );
+    const firstKey = new URL(firstBody.avatarUrl).pathname.slice(1);
+    const firstObject = await env.MEDIA.head(firstKey);
+    expect(firstObject?.httpMetadata).toMatchObject({
+      contentType: "image/jpeg",
+      cacheControl: "public, max-age=31536000, immutable",
+    });
+
+    const second = await uploadAvatar(
+      cookie,
+      new File(
+        [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])],
+        "profile.png",
+        { type: "image/png" },
+      ),
+    );
+    const secondBody = (await second.json()) as { avatarUrl: string };
+    const secondKey = new URL(secondBody.avatarUrl).pathname.slice(1);
+    expect(secondKey).toMatch(/^avatars\/[0-9a-f-]+\.png$/);
+    expect(await env.MEDIA.head(firstKey)).toBeNull();
+    expect(await env.MEDIA.head(secondKey)).not.toBeNull();
+
+    await setProfile(cookie, { bio: "세션에도 표시되는 소개" });
+    const session = await app.request(
+      "/api/auth/get-session",
+      { headers: { cookie } },
+      env,
+    );
+    expect(await session.json()).toMatchObject({
+      user: {
+        bio: "세션에도 표시되는 소개",
+        avatarKey: secondKey,
+      },
+    });
+
+    const profile = await app.request("/api/u/avatar_user", undefined, env);
+    expect(await profile.json()).toMatchObject({ avatarUrl: secondBody.avatarUrl });
+
+    const removed = await app.request(
+      "/api/me/avatar",
+      { method: "DELETE", headers: { cookie } },
+      env,
+    );
+    expect(removed.status).toBe(200);
+    expect(await removed.json()).toMatchObject({
+      avatarUrl: "https://media.test/avatars/default.svg",
+    });
+    expect(await env.MEDIA.head(secondKey)).toBeNull();
+  });
+
+  it("지원하지 않는 이미지와 비인증 업로드를 거부한다", async () => {
+    const svg = new File(["<svg/>"] , "profile.svg", { type: "image/svg+xml" });
+    const unauthorized = await uploadAvatar("", svg);
+    expect(unauthorized.status).toBe(401);
+
+    const cookie = await signUp();
+    const invalid = await uploadAvatar(cookie, svg);
+    expect(invalid.status).toBe(400);
+    expect(await invalid.json()).toEqual({ error: "invalid_image_type" });
+
+    const duplicateBody = new FormData();
+    duplicateBody.append(
+      "avatar",
+      new File([new Uint8Array([0xff, 0xd8, 0xff])], "one.jpg", {
+        type: "image/jpeg",
+      }),
+    );
+    duplicateBody.append(
+      "avatar",
+      new File([new Uint8Array([0xff, 0xd8, 0xff])], "two.jpg", {
+        type: "image/jpeg",
+      }),
+    );
+    const duplicate = await app.request(
+      "/api/me/avatar",
+      { method: "POST", headers: { cookie }, body: duplicateBody },
+      env,
+    );
+    expect(duplicate.status).toBe(400);
   });
 
   it("연합우주는 명시적으로 활성화하며 공개 프로필과 username이 필요하다", async () => {

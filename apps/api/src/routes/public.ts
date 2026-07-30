@@ -3,6 +3,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { createDb, schema } from "../db";
 import type { Env } from "../env";
+import { avatarUrl } from "../lib/avatar";
 import { pickLang, resolveLocalized } from "../lib/titles";
 
 export const publicRoute = new Hono<{ Bindings: Env }>();
@@ -16,12 +17,14 @@ async function loadPublicUser(db: Db, username: string) {
       name: schema.user.name,
       username: schema.user.username,
       isPublic: schema.user.isPublic,
+      bio: schema.user.bio,
+      avatarKey: schema.user.avatarKey,
     })
     .from(schema.user)
     .where(eq(schema.user.username, username))
     .get();
   if (!u || !u.isPublic || !u.username) return null;
-  return u as { id: string; name: string; username: string; isPublic: boolean };
+  return u as typeof u & { username: string };
 }
 
 async function dayCounts(db: Db, userId: string): Promise<Map<string, number>> {
@@ -124,6 +127,8 @@ publicRoute.get("/u/:username", async (c) => {
   return c.json({
     username: u.username,
     name: u.name,
+    bio: u.bio,
+    avatarUrl: avatarUrl(c.env.MEDIA_ORIGIN, u.avatarKey),
     total,
     cells,
     posters,

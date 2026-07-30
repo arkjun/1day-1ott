@@ -9,6 +9,7 @@ import {
 import { and, eq, inArray } from "drizzle-orm";
 import { createDb, schema } from "../db";
 import type { Env } from "../env";
+import { escapeHtml } from "../lib/html";
 
 export interface PublishedEntry {
   entryId: string;
@@ -20,15 +21,6 @@ export interface PublishedEntry {
   reaction: string | null;
   note: string;
   posterUrl: string | null;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
 }
 
 function reactionEmoji(reaction: string | null): string {

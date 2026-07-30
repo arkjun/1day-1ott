@@ -3,7 +3,40 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { I18nextProvider } from "react-i18next";
 import { describe, expect, it, vi } from "vitest";
 import { resources } from "../i18n/locales";
-import { PublicNotes, PublicProfileActions } from "./PublicProfile";
+import { ProfileHeader, PublicNotes, PublicProfileActions } from "./PublicProfile";
+
+describe("ProfileHeader", () => {
+  it("공개 아바타, 이름, 사용자명, 소개를 표시한다", async () => {
+    const i18n = createInstance();
+    await i18n.init({
+      lng: "ko",
+      fallbackLng: "ko",
+      resources,
+      interpolation: { escapeValue: false },
+    });
+    const html = renderToStaticMarkup(
+      <I18nextProvider i18n={i18n}>
+        <ProfileHeader
+          profile={{
+            username: "tester",
+            name: "테스터",
+            bio: "첫 줄\n둘째 줄",
+            avatarUrl: "https://media.1day1ott.com/avatars/test.webp",
+            total: 0,
+            cells: [],
+            posters: [],
+            notes: [],
+          }}
+        />
+      </I18nextProvider>,
+    );
+
+    expect(html).toContain("테스터");
+    expect(html).toContain("@tester");
+    expect(html).toContain("첫 줄\n둘째 줄");
+    expect(html).toContain("https://media.1day1ott.com/avatars/test.webp");
+  });
+});
 
 describe("PublicProfileActions", () => {
   it("링크 복사와 테마 전환만 제공하고 잔디 이미지 다운로드는 제공하지 않는다", async () => {

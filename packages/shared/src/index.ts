@@ -35,6 +35,8 @@ export const entryInputSchema = z.object({
 );
 export type EntryInput = z.input<typeof entryInputSchema>;
 
+export const PROFILE_BIO_MAX_LENGTH = 500;
+
 /** 잔디 한 칸: 날짜 + 그날 소비량. level 은 색 농도 버킷(0~4). */
 export interface HeatmapCell {
   date: string; // YYYY-MM-DD
@@ -70,6 +72,8 @@ export interface PublicNote {
 export interface PublicProfile {
   username: string;
   name: string;
+  bio: string | null;
+  avatarUrl: string;
   total: number;
   cells: HeatmapCell[];
   posters: { id: string; contentId: string; title: string; posterUrl: string | null }[];

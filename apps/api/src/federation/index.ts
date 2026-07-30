@@ -1,6 +1,7 @@
 import { WorkersKvStore, WorkersMessageQueue } from "@fedify/cfworkers";
 import {
   createFederationBuilder,
+  type Context,
   type Federation,
   type Message,
 } from "@fedify/fedify";
@@ -8,6 +9,7 @@ import {
   Endpoints,
   Delete,
   Follow,
+  Image,
   Note,
   Person,
   PUBLIC_COLLECTION,
@@ -18,6 +20,8 @@ import {
 import { and, count, eq } from "drizzle-orm";
 import { createDb, schema } from "../db";
 import type { Env } from "../env";
+import { avatarMediaType, avatarUrl } from "../lib/avatar";
+import { escapeHtml } from "../lib/html";
 import { loadActorKeyPairs } from "./keys";
 import { handleFollow, handleUndoFollow } from "./followers";
 import {
@@ -30,48 +34,59 @@ export { handleFollow, handleUndoFollow } from "./followers";
 
 const builder = createFederationBuilder<Env>();
 
+async function buildActor(ctx: Context<Env>, identifier: string) {
+  const db = createDb(ctx.data.DB);
+  const actor = await db
+    .select({
+      id: schema.user.id,
+      name: schema.user.name,
+      handle: schema.user.federationHandle,
+      bio: schema.user.bio,
+      avatarKey: schema.user.avatarKey,
+    })
+    .from(schema.user)
+    .where(
+      and(
+        eq(schema.user.id, identifier),
+        eq(schema.user.isPublic, true),
+        eq(schema.user.federationEnabled, true),
+      ),
+    )
+    .get();
+  if (!actor?.handle) return null;
+
+  const keys = await ctx.getActorKeyPairs(identifier);
+  const primaryKey = keys[0];
+  if (!primaryKey) return null;
+
+  return new Person({
+    id: ctx.getActorUri(identifier),
+    preferredUsername: actor.handle,
+    name: actor.name,
+    summary: actor.bio
+      ? escapeHtml(actor.bio).replaceAll("\n", "<br>")
+      : null,
+    icon: new Image({
+      url: new URL(avatarUrl(ctx.data.MEDIA_ORIGIN, actor.avatarKey)),
+      mediaType: avatarMediaType(actor.avatarKey),
+    }),
+    url: new URL(`/u/${encodeURIComponent(actor.handle)}`, ctx.origin),
+    inbox: ctx.getInboxUri(identifier),
+    outbox: ctx.getOutboxUri(identifier),
+    following: ctx.getFollowingUri(identifier),
+    followers: ctx.getFollowersUri(identifier),
+    endpoints: new Endpoints({ sharedInbox: ctx.getInboxUri() }),
+    publicKey: primaryKey.cryptographicKey,
+    assertionMethods: keys.map((key) => key.multikey),
+    manuallyApprovesFollowers: false,
+    discoverable: true,
+    indexable: true,
+  });
+}
+
 const actorSetters = builder.setActorDispatcher(
   "/ap/users/{identifier}",
-  async (ctx, identifier) => {
-    const db = createDb(ctx.data.DB);
-    const actor = await db
-      .select({
-        id: schema.user.id,
-        name: schema.user.name,
-        handle: schema.user.federationHandle,
-      })
-      .from(schema.user)
-      .where(
-        and(
-          eq(schema.user.id, identifier),
-          eq(schema.user.isPublic, true),
-          eq(schema.user.federationEnabled, true),
-        ),
-      )
-      .get();
-    if (!actor?.handle) return null;
-
-    const keys = await ctx.getActorKeyPairs(identifier);
-    const primaryKey = keys[0];
-    if (!primaryKey) return null;
-
-    return new Person({
-      id: ctx.getActorUri(identifier),
-      preferredUsername: actor.handle,
-      name: actor.name,
-      url: new URL(`/u/${encodeURIComponent(actor.handle)}`, ctx.origin),
-      inbox: ctx.getInboxUri(identifier),
-      outbox: ctx.getOutboxUri(identifier),
-      following: ctx.getFollowingUri(identifier),
-      followers: ctx.getFollowersUri(identifier),
-      endpoints: new Endpoints({ sharedInbox: ctx.getInboxUri() }),
-      publicKey: primaryKey.cryptographicKey,
-      assertionMethods: keys.map((key) => key.multikey),
-      manuallyApprovesFollowers: false,
-      discoverable: true,
-      indexable: true,
-    });
-  },
+  buildActor,
 );
 
 actorSetters.setKeyPairsDispatcher(async (ctx, identifier) => {
@@ -292,6 +307,38 @@ export async function publishEntry(
         lastError: error instanceof Error ? error.message : String(error),
       })
       .where(eq(schema.federationPublications.entryId, entryId));
+    return "failed";
+  }
+}
+
+export async function publishActorUpdate(
+  request: Request,
+  env: Env,
+  userId: string,
+): Promise<"published" | "failed"> {
+  try {
+    const { federation } = await buildFederation(env);
+    const ctx = federation.createContext(request, env);
+    const actor = await buildActor(ctx, userId);
+    if (!actor) throw new Error("actor_not_found");
+    await ctx.sendActivity(
+      { identifier: userId },
+      "followers",
+      new Update({
+        id: new URL(
+          `#updates/${crypto.randomUUID()}`,
+          ctx.getActorUri(userId),
+        ),
+        actor: ctx.getActorUri(userId),
+        to: PUBLIC_COLLECTION,
+        cc: ctx.getFollowersUri(userId),
+        object: actor,
+      }),
+      { preferSharedInbox: true },
+    );
+    return "published";
+  } catch (error) {
+    console.error("Failed to publish Actor update", { userId, error });
     return "failed";
   }
 }

@@ -54,6 +54,8 @@ interface SessionUser {
   federationEnabled?: boolean | null;
   federationHandle?: string | null;
   lang?: string | null;
+  bio?: string | null;
+  avatarKey?: string | null;
 }
 
 function Stat({ k, v, unit, accent }: { k: string; v: number; unit: string; accent?: boolean }) {

@@ -128,7 +128,7 @@ Update the custom domain, `BETTER_AUTH_URL`, `WEB_ORIGIN`, and D1 binding in `ap
 
 - Content search and details: [TMDB](https://www.themoviedb.org/)
 - YouTube URL metadata: [YouTube oEmbed](https://oembed.com/)
-- Runtime and database: [Cloudflare Workers](https://workers.cloudflare.com/) · [D1](https://developers.cloudflare.com/d1/)
+- Runtime, database, and media: [Cloudflare Workers](https://workers.cloudflare.com/) · [D1](https://developers.cloudflare.com/d1/) · [R2](https://developers.cloudflare.com/r2/)
 
 This service uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.
 

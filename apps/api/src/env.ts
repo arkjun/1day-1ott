@@ -1,6 +1,7 @@
 export interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
+  MEDIA: R2Bucket;
   FEDIFY_KV: KVNamespace;
   FEDIFY_ORDERING_KV: KVNamespace;
   FEDIFY_QUEUE: Queue;
@@ -8,6 +9,7 @@ export interface Env {
   FEDERATION_KEY_SECRET: string;
   BETTER_AUTH_URL: string;
   WEB_ORIGIN: string;
+  MEDIA_ORIGIN: string;
   // GitHub 소셜(M0에선 미사용, 배선만): 값은 나중에 .dev.vars / secret 으로.
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;

@@ -87,11 +87,25 @@ export const api = {
     isPublic?: boolean;
     federationEnabled?: boolean;
     lang?: string;
+    bio?: string | null;
   }) =>
     req<{ ok: boolean }>("/api/me", {
       method: "PATCH",
       body: JSON.stringify(patch),
     }),
+  uploadAvatar: async (file: File) => {
+    const body = new FormData();
+    body.set("avatar", file);
+    const res = await fetch("/api/me/avatar", {
+      method: "POST",
+      credentials: "include",
+      body,
+    });
+    if (!res.ok) throw new Error(`avatar upload → ${res.status}`);
+    return res.json() as Promise<{ avatarUrl: string }>;
+  },
+  deleteAvatar: () =>
+    req<{ avatarUrl: string }>("/api/me/avatar", { method: "DELETE" }),
   publicProfile: (username: string) =>
     req<import("@1ott/shared").PublicProfile>(
       `/api/u/${encodeURIComponent(username)}?lang=${i18n.language}`,

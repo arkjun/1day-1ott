@@ -4,8 +4,15 @@ import { api, type ImportResult, type PasskeyRow } from "../lib/api";
 import { authClient, signIn } from "../lib/authClient";
 import { validatePasswordChange } from "../lib/password";
 import { publicProfilePath } from "../lib/publicProfilePath";
+import {
+  AVATAR_ACCEPT,
+  avatarUrl,
+  PROFILE_BIO_MAX_LENGTH,
+  validateAvatarFile,
+} from "../lib/avatar";
 import { useTheme } from "../lib/theme";
 import { LanguageSelect } from "./LanguageSelect";
+import { Avatar } from "./Avatar";
 
 export interface MyPageUser {
   id: string;
@@ -16,6 +23,8 @@ export interface MyPageUser {
   federationEnabled?: boolean | null;
   federationHandle?: string | null;
   lang?: string | null;
+  bio?: string | null;
+  avatarKey?: string | null;
 }
 
 /** 마이페이지: 공개 프로필 · Passkey · 환경설정. `/me` 경로에서 렌더. */
@@ -29,11 +38,123 @@ export function MyPage({ user }: { user: MyPageUser }) {
           {t("myPage.back")}
         </a>
       </div>
+      <ProfileSettings user={user} />
       <ShareSettings user={user} />
       <PasswordManager />
       <PasskeyManager user={user} />
       <Settings user={user} />
       <ImportExport />
+    </div>
+  );
+}
+
+function ProfileSettings({ user }: { user: MyPageUser }) {
+  const { t } = useTranslation();
+  const [bio, setBio] = useState(user.bio ?? "");
+  const [image, setImage] = useState(avatarUrl(user.avatarKey));
+  const [hasCustomAvatar, setHasCustomAvatar] = useState(!!user.avatarKey);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function saveBio() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      await api.updateMe({ bio });
+      setMsg(t("profileSettings.saved"));
+    } catch {
+      setMsg(t("profileSettings.saveFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function upload(file: File) {
+    const error = validateAvatarFile(file);
+    if (error) {
+      setMsg(t(`profileSettings.${error}`));
+      return;
+    }
+    setBusy(true);
+    setMsg(null);
+    try {
+      const result = await api.uploadAvatar(file);
+      setImage(result.avatarUrl);
+      setHasCustomAvatar(true);
+      setMsg(t("profileSettings.avatarSaved"));
+    } catch {
+      setMsg(t("profileSettings.uploadFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeAvatar() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const result = await api.deleteAvatar();
+      setImage(result.avatarUrl);
+      setHasCustomAvatar(false);
+      setMsg(t("profileSettings.avatarRemoved"));
+    } catch {
+      setMsg(t("profileSettings.removeFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={st.card}>
+      <div style={st.cardHead}>
+        <b>{t("profileSettings.title")}</b>
+        <span style={st.muted}>{t("profileSettings.publicNotice")}</span>
+      </div>
+      <div style={st.profileGrid}>
+        <div style={st.avatarColumn}>
+          <Avatar src={image} alt={t("profileSettings.avatarAlt", { name: user.name })} size={88} />
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+            <label style={st.ghost}>
+              {t("profileSettings.chooseImage")}
+              <input
+                type="file"
+                accept={AVATAR_ACCEPT}
+                disabled={busy}
+                style={st.visuallyHidden}
+                onChange={(event) => {
+                  const selected = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  if (selected) void upload(selected);
+                }}
+              />
+            </label>
+            {hasCustomAvatar ? (
+              <button style={st.ghost} disabled={busy} onClick={removeAvatar}>
+                {t("profileSettings.useDefault")}
+              </button>
+            ) : null}
+          </div>
+          <span style={st.muted}>{t("profileSettings.imageHint")}</span>
+        </div>
+        <label style={{ ...st.field, flex: "2 1 240px" }}>
+          {t("profileSettings.bio")}
+          <textarea
+            value={bio}
+            maxLength={PROFILE_BIO_MAX_LENGTH}
+            rows={5}
+            placeholder={t("profileSettings.bioPlaceholder")}
+            onChange={(event) => setBio(event.target.value)}
+            style={{ ...st.input, resize: "vertical", lineHeight: 1.6 }}
+          />
+          <span style={{ ...st.muted, textAlign: "right" }}>
+            {bio.length}/{PROFILE_BIO_MAX_LENGTH}
+          </span>
+          <button style={st.primary} disabled={busy} onClick={saveBio}>
+            {t("common.save")}
+          </button>
+        </label>
+      </div>
+      {msg ? <div role="status" style={{ ...st.muted, marginTop: 10 }}>{msg}</div> : null}
     </div>
   );
 }
@@ -640,5 +761,7 @@ const st: Record<string, React.CSSProperties> = {
   // 시각적으로만 숨기고(클립) 포커스는 가능하게 둔다 — label 텍스트가 접근성 이름이 된다.
   visuallyHidden: { position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 },
   input: { padding: "10px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface-2)", color: "inherit", fontSize: 14 },
+  profileGrid: { display: "flex", flexWrap: "wrap", gap: 20, alignItems: "start" },
+  avatarColumn: { display: "flex", flex: "1 1 150px", flexDirection: "column", alignItems: "center", gap: 10 },
   smallBtn: { border: "1px solid var(--border)", borderRadius: 8, padding: "4px 10px", background: "var(--surface)", color: "var(--muted)", fontSize: 12 },
 };

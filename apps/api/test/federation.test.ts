@@ -74,7 +74,7 @@ describe("ActivityPub Actor와 WebFinger", () => {
     expect(response.status).toBe(200);
     const body = (await response.json()) as {
       subject: string;
-      links: { rel: string; href: string }[];
+      links: { rel: string; href: string; type?: string }[];
     };
     expect(body.subject).toBe(`acct:${username}@localhost`);
     expect(body.links).toContainEqual(
@@ -83,10 +83,47 @@ describe("ActivityPub Actor와 WebFinger", () => {
         href: `http://localhost/ap/users/${userId}`,
       }),
     );
+    expect(body.links).toContainEqual({
+      rel: "http://webfinger.net/rel/avatar",
+      href: "https://media.test/avatars/default.svg",
+      type: "image/svg+xml",
+    });
   });
 
   it("Actor endpoint는 공개 Person과 서명 공개키를 반환한다", async () => {
-    const { userId, username } = await enableFederation();
+    const { cookie, userId, username } = await enableFederation();
+    const updated = await app.request(
+      "/api/me",
+      {
+        method: "PATCH",
+        headers: { ...JSON_HEADERS, cookie },
+        body: JSON.stringify({ bio: "<첫 줄>&\n둘째 줄" }),
+      },
+      env,
+    );
+    expect(await updated.json()).toMatchObject({
+      federationStatus: "published",
+    });
+
+    const form = new FormData();
+    form.set(
+      "avatar",
+      new File(
+        [
+          new Uint8Array([
+            0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50,
+          ]),
+        ],
+        "avatar.webp",
+        { type: "image/webp" },
+      ),
+    );
+    const uploaded = await app.request(
+      "/api/me/avatar",
+      { method: "POST", headers: { cookie }, body: form },
+      env,
+    );
+    const { avatarUrl } = (await uploaded.json()) as { avatarUrl: string };
     const response = await handleFederationRequest(
       new Request(`http://localhost/ap/users/${userId}`, {
         headers: { accept: "application/activity+json" },
@@ -100,6 +137,12 @@ describe("ActivityPub Actor와 WebFinger", () => {
       id: `http://localhost/ap/users/${userId}`,
       type: "Person",
       preferredUsername: username,
+      summary: "&lt;첫 줄&gt;&amp;<br>둘째 줄",
+      icon: {
+        type: "Image",
+        mediaType: "image/webp",
+        url: avatarUrl,
+      },
       inbox: `http://localhost/ap/users/${userId}/inbox`,
       followers: `http://localhost/ap/users/${userId}/followers`,
     });

@@ -12,7 +12,7 @@ import {
  * Better Auth 코어 테이블 (모델명과 property key 를 그대로 맞춘다)
  * drizzle 어댑터는 JS property key(camelCase)로 필드를 매핑하므로
  * 컬럼명은 snake_case, key 는 camelCase 로 둔다.
- * username / isPublic 은 공개 프로필(M3)용 커스텀 필드.
+ * username / isPublic / bio / avatarKey 는 공개 프로필용 커스텀 필드.
  * ------------------------------------------------------------------ */
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
@@ -22,6 +22,8 @@ export const user = sqliteTable("user", {
     .notNull()
     .default(false),
   image: text("image"),
+  bio: text("bio"),
+  avatarKey: text("avatar_key"),
   username: text("username").unique(),
   isPublic: integer("is_public", { mode: "boolean" }).notNull().default(false),
   federationEnabled: integer("federation_enabled", { mode: "boolean" })

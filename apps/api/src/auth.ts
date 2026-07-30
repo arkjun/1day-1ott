@@ -33,6 +33,8 @@ export function createAuth(env: Env) {
         federationEnabled: { type: "boolean", required: false, input: false },
         federationHandle: { type: "string", required: false, input: false },
         lang: { type: "string", required: false, input: true },
+        bio: { type: "string", required: false, input: false },
+        avatarKey: { type: "string", required: false, input: false },
       },
     },
     // GitHub 소셜은 키가 있을 때만 활성화(M0에선 보통 undefined).

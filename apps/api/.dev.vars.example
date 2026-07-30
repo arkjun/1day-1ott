@@ -2,6 +2,8 @@
 BETTER_AUTH_SECRET=generate-a-long-random-string
 BETTER_AUTH_URL=http://localhost:8787
 WEB_ORIGIN=http://localhost:5173
+MEDIA_ORIGIN=https://media.1day1ott.com
+FEDERATION_KEY_SECRET=generate-another-long-random-string
 # GitHub 소셜을 켤 때만:
 # GITHUB_CLIENT_ID=
 # GITHUB_CLIENT_SECRET=

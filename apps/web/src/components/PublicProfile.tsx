@@ -12,6 +12,7 @@ import { GREEN, buildYear, currentStreak, isoDaysAgo } from "../lib/heatmap";
 import { useTheme } from "../lib/theme";
 import { updatePageMetadata } from "../lib/seo";
 import { REACTION_META } from "../lib/reactions";
+import { Avatar } from "./Avatar";
 
 interface PublicProfileActionsProps {
   scheme: "light" | "dark";
@@ -42,6 +43,24 @@ export function PublicProfileActions({
       <button style={st.ghost} onClick={onCopyLink}>
         {copied ? t("common.copied") : t("share.copyLink")}
       </button>
+    </div>
+  );
+}
+
+export function ProfileHeader({ profile }: { profile: Profile }) {
+  const { t } = useTranslation();
+  return (
+    <div style={st.profileHeader}>
+      <Avatar
+        src={profile.avatarUrl}
+        alt={t("profile.avatarAlt", { name: profile.name })}
+        size={76}
+      />
+      <div style={{ minWidth: 0 }}>
+        <h1 style={{ margin: 0, overflowWrap: "anywhere" }}>{profile.name}</h1>
+        <div style={{ color: "var(--muted)", marginTop: 2 }}>@{profile.username}</div>
+        {profile.bio ? <p style={st.bio}>{profile.bio}</p> : null}
+      </div>
     </div>
   );
 }
@@ -82,7 +101,7 @@ export function PublicProfile({ username }: { username: string }) {
       i18n.resolvedLanguage ?? i18n.language,
       {
         title: `${t("seo.profileTitle", { username: profile.username })} | ${t("common.serviceName")}`,
-        description: t("seo.profileDescription", {
+        description: profile.bio ?? t("seo.profileDescription", {
           username: profile.username,
           count: profile.total,
         }),
@@ -120,7 +139,7 @@ export function PublicProfile({ username }: { username: string }) {
           <div style={{ fontSize: 12, color: "#8890a0" }}>
             🌱 {t("common.serviceName")}
           </div>
-          <h1 style={{ margin: "2px 0 0" }}>@{profile.username}</h1>
+          <ProfileHeader profile={profile} />
         </div>
         <PublicProfileActions
           scheme={scheme}
@@ -232,7 +251,9 @@ function Stat({ k, v, unit, accent }: { k: string; v: number; unit: string; acce
 
 const st: Record<string, React.CSSProperties> = {
   wrap: { maxWidth: 920, margin: "0 auto", padding: "28px 20px 60px" },
-  top: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
+  top: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap", marginBottom: 20 },
+  profileHeader: { display: "flex", alignItems: "flex-start", gap: 14, marginTop: 8, maxWidth: 620 },
+  bio: { margin: "10px 0 0", lineHeight: 1.55, whiteSpace: "pre-wrap", overflowWrap: "anywhere" },
   stats: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 16 },
   tile: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "14px 16px", boxShadow: "var(--shadow)" },
   tileK: { fontSize: 12, color: "var(--muted)" },

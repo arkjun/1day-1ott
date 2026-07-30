@@ -23,7 +23,8 @@
   // 프로덕션 공개 값. 시크릿(BETTER_AUTH_SECRET, TMDB_API_TOKEN)은 `wrangler secret put` 으로.
   "vars": {
     "BETTER_AUTH_URL": "https://1day1ott.com",
-    "WEB_ORIGIN": "https://1day1ott.com"
+    "WEB_ORIGIN": "https://1day1ott.com",
+    "MEDIA_ORIGIN": "https://media.1day1ott.com"
   },
   "routes": [
     {
@@ -38,6 +39,12 @@
       // 로컬(miniflare)은 이 id를 무시함.
       "database_id": "06a84b42-939e-4a0b-81b4-14a70f3a0d1c",
       "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "1ott-media"
     }
   ],
   "kv_namespaces": [
