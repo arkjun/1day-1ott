@@ -9,6 +9,16 @@ import type { Env } from "../env";
 
 type KeyType = "RSASSA-PKCS1-v1_5" | "Ed25519";
 
+const KEY_TYPES = [
+  "RSASSA-PKCS1-v1_5",
+  "Ed25519",
+] as const satisfies readonly KeyType[];
+
+const KEY_TYPE_ORDER: Record<KeyType, number> = {
+  "RSASSA-PKCS1-v1_5": 0,
+  Ed25519: 1,
+};
+
 interface EncryptedJwk {
   iv: string;
   data: string;
@@ -80,10 +90,7 @@ export async function ensureActorKeys(
     .all();
   const existing = new Set(stored.map((row) => row.type));
 
-  for (const type of [
-    "RSASSA-PKCS1-v1_5",
-    "Ed25519",
-  ] as const satisfies readonly KeyType[]) {
+  for (const type of KEY_TYPES) {
     if (existing.has(type)) continue;
     const pair = await generateCryptoKeyPair(type);
     await db
@@ -111,6 +118,10 @@ export async function loadActorKeyPairs(
     .from(schema.federationActorKeys)
     .where(eq(schema.federationActorKeys.userId, userId))
     .all();
+  rows.sort(
+    (left, right) =>
+      KEY_TYPE_ORDER[left.type] - KEY_TYPE_ORDER[right.type],
+  );
 
   return Promise.all(
     rows.map(async (row) => ({

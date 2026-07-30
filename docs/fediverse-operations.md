@@ -41,14 +41,33 @@ Fedify CLI의 `fedify lookup`, `fedify inbox`, `fedify tunnel`도 상호운용�
 Bot/Managed Challenge가 ActivityPub 서버 요청을 차단하지 않도록 다음 요청은
 Challenge를 건너뛰게 설정한다.
 
-- `Accept`에 `application/activity+json` 또는 `application/ld+json` 포함
-- `Content-Type`에 `application/activity+json` 또는 `application/ld+json` 포함
+- `/.well-known/webfinger` GET 요청의 `Accept`에
+  `application/jrd+json` 또는 `application/json` 포함
+- `/ap/` 요청의 `Accept` 또는 `Content-Type`에
+  `application/activity+json` 또는 `application/ld+json` 포함
 
 프로덕션에는 `Allow ActivityPub federation` 사용자 지정 규칙을 사용한다.
 예외 범위를 연합 엔드포인트로 제한하기 위한 표현식은 다음과 같다.
 
 ```text
-(starts_with(http.request.uri.path, "/ap/") or starts_with(http.request.uri.path, "/.well-known/")) and (any(http.request.headers["accept"][*] contains "application/activity+json") or any(http.request.headers["accept"][*] contains "application/ld+json") or any(http.request.headers["content-type"][*] contains "application/activity+json") or any(http.request.headers["content-type"][*] contains "application/ld+json"))
+(
+  http.request.method eq "GET"
+  and http.request.uri.path eq "/.well-known/webfinger"
+  and (
+    any(http.request.headers["accept"][*] contains "application/jrd+json")
+    or any(http.request.headers["accept"][*] contains "application/json")
+  )
+)
+or
+(
+  starts_with(http.request.uri.path, "/ap/")
+  and (
+    any(http.request.headers["accept"][*] contains "application/activity+json")
+    or any(http.request.headers["accept"][*] contains "application/ld+json")
+    or any(http.request.headers["content-type"][*] contains "application/activity+json")
+    or any(http.request.headers["content-type"][*] contains "application/ld+json")
+  )
+)
 ```
 
 동작은 `Skip`으로 설정하고 나머지 사용자 지정 규칙, 속도 제한 규칙, 관리

@@ -147,6 +147,24 @@ describe("ActivityPub Actor와 WebFinger", () => {
       followers: `http://localhost/ap/users/${userId}/followers`,
     });
     expect(body.publicKey).toBeTruthy();
+    const publicKey = body.publicKey as { publicKeyPem: string };
+    const der = Uint8Array.from(
+      atob(
+        publicKey.publicKeyPem
+          .replace("-----BEGIN PUBLIC KEY-----", "")
+          .replace("-----END PUBLIC KEY-----", "")
+          .replaceAll(/\s/g, ""),
+      ),
+      (char) => char.charCodeAt(0),
+    );
+    const imported = await crypto.subtle.importKey(
+      "spki",
+      der,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      false,
+      ["verify"],
+    );
+    expect(imported.algorithm.name).toBe("RSASSA-PKCS1-v1_5");
   });
 
   it("Follow를 저장하고 Accept한 뒤 followers collection에 노출한다", async () => {
