@@ -24,6 +24,10 @@ import {
   updatePublishedEntry,
 } from "../federation";
 import { parseTitles, pickLang, resolveLocalized, withTitles } from "../lib/titles";
+import {
+  parseYouTubeChannelName,
+  withYouTubeChannelName,
+} from "../lib/youtube";
 
 const entryPatchSchema = z.object({
   watchedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -74,22 +78,36 @@ async function upsertContent(
       .where(key)
       .get();
     if (found) {
+      let nextMeta = found.meta;
+      let metaChanged = false;
       // 저장 언어의 제목을 아직 캐시 안했으면 이번 입력으로 채운다(TMDB 호출 절약).
       if (cache) {
-        const titles = parseTitles(found.meta);
+        const titles = parseTitles(nextMeta);
         if (!titles[cache]) {
           titles[cache] = input.title;
-          await db
-            .update(content)
-            .set({ meta: withTitles(found.meta, titles) })
-            .where(eq(content.id, found.id));
+          nextMeta = withTitles(nextMeta, titles);
+          metaChanged = true;
         }
+      }
+      if (input.channelName && !parseYouTubeChannelName(nextMeta)) {
+        nextMeta = withYouTubeChannelName(nextMeta, input.channelName);
+        metaChanged = true;
+      }
+      if (metaChanged) {
+        await db
+          .update(content)
+          .set({ meta: nextMeta })
+          .where(eq(content.id, found.id));
       }
       return found.id;
     }
   }
 
   const id = nanoid();
+  let meta = cache ? JSON.stringify({ titles: { [cache]: input.title } }) : null;
+  if (input.channelName) {
+    meta = withYouTubeChannelName(meta, input.channelName);
+  }
   await db.insert(content).values({
     id,
     type: input.type,
@@ -97,7 +115,7 @@ async function upsertContent(
     ytId: input.ytId ?? null,
     title: input.title,
     posterUrl: input.posterUrl ?? null,
-    meta: cache ? JSON.stringify({ titles: { [cache]: input.title } }) : null,
+    meta,
   });
   return id;
 }

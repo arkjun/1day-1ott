@@ -291,6 +291,8 @@ export default {
     myRecords: "自分の記録",
     myEmpty: "まだこの作品の記録がありません",
     overview: "あらすじ",
+    channel: "チャンネル",
+    watchOnYouTube: "YouTubeで見る",
     runtime: "{{count}}分",
     seasons: "シーズン{{count}}",
     episodes: "全{{count}}話",

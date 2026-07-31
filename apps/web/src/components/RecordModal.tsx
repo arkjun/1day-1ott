@@ -161,6 +161,7 @@ export function RecordModal({
         tmdbId: picked.tmdbId,
         ytId: picked.ytId,
         posterUrl: picked.posterUrl,
+        channelName: picked.type === "youtube" ? picked.subtitle : undefined,
         watchedOn,
         reaction: reaction ?? undefined,
         note: note.trim() || undefined,

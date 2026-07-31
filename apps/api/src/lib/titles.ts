@@ -22,6 +22,9 @@ interface MetaCache {
   posters: Record<string, string>;
   facts: Record<string, ContentFacts>;
   fetchedAt: Record<string, number>;
+  youtube?: {
+    channelName?: string;
+  };
 }
 
 /**
@@ -43,6 +46,7 @@ export function parseMeta(meta: string | null): MetaCache {
       posters: m?.posters ?? {},
       facts: m?.facts ?? {},
       fetchedAt: m?.fetchedAt ?? {},
+      ...(m?.youtube ? { youtube: m.youtube } : {}),
     };
   } catch {
     return empty;

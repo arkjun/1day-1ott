@@ -27,6 +27,7 @@ export const entryInputSchema = z.object({
   tmdbId: z.number().int().positive().optional(),
   ytId: z.string().min(1).max(64).optional(),
   posterUrl: z.string().url().max(1000).optional(),
+  channelName: z.string().trim().min(1).max(200).optional(),
   watchedOn: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "watchedOn must be YYYY-MM-DD"),
@@ -37,6 +38,9 @@ export const entryInputSchema = z.object({
 }).refine(
   (input) => !(input.contentId && (input.tmdbId != null || input.ytId != null)),
   { message: "contentId cannot be combined with tmdbId or ytId" },
+).refine(
+  (input) => input.channelName == null || input.type === "youtube",
+  { message: "channelName is only valid for YouTube content" },
 );
 export type EntryInput = z.input<typeof entryInputSchema>;
 
@@ -144,6 +148,10 @@ export interface ContentDetail {
   type: ContentType;
   title: string;
   posterUrl: string | null;
+  source?: {
+    name?: string;
+    url: string;
+  };
   viewerCount: number;
   reactions: { down: number; up: number; love: number };
   facts: ContentFacts;

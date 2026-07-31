@@ -13,6 +13,7 @@ import {
 } from "../lib/follows";
 import { listEntryReactionSummaries } from "../lib/entry-reactions";
 import { pickLang, resolveLocalized } from "../lib/titles";
+import { resolveYouTubeSource } from "../lib/youtube";
 
 export const publicRoute = new Hono<{ Bindings: Env }>();
 
@@ -239,6 +240,7 @@ publicRoute.get("/content/:id", async (c) => {
       title: schema.content.title,
       posterUrl: schema.content.posterUrl,
       tmdbId: schema.content.tmdbId,
+      ytId: schema.content.ytId,
       meta: schema.content.meta,
     })
     .from(schema.content)
@@ -265,12 +267,15 @@ publicRoute.get("/content/:id", async (c) => {
     }
   }
 
-  const locMap = await resolveLocalized(
-    db,
-    c.env,
-    [{ contentId: row.id, type: row.type, title: row.title, tmdbId: row.tmdbId, meta: row.meta }],
-    pickLang(c.req.query("lang")),
-  );
+  const [locMap, source] = await Promise.all([
+    resolveLocalized(
+      db,
+      c.env,
+      [{ contentId: row.id, type: row.type, title: row.title, tmdbId: row.tmdbId, meta: row.meta }],
+      pickLang(c.req.query("lang")),
+    ),
+    resolveYouTubeSource(db, row),
+  ]);
   const loc = locMap.get(row.id);
 
   c.header("cache-control", "public, max-age=300");
@@ -279,6 +284,7 @@ publicRoute.get("/content/:id", async (c) => {
     type: row.type,
     title: loc?.title ?? row.title,
     posterUrl: loc?.posterUrl ?? row.posterUrl,
+    source,
     facts: loc?.facts ?? {},
     viewerCount: Number(vc?.n ?? 0),
     reactions,

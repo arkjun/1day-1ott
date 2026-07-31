@@ -290,6 +290,8 @@ export default {
     myRecords: "내 기록",
     myEmpty: "아직 이 작품 기록이 없어요",
     overview: "줄거리",
+    channel: "채널",
+    watchOnYouTube: "YouTube에서 보기",
     runtime: "{{count}}분",
     seasons: "시즌 {{count}}",
     episodes: "{{count}}화",

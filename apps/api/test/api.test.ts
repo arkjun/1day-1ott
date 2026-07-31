@@ -1389,6 +1389,27 @@ describe("GET /api/content/:id (공개 집계)", () => {
     expect(body.type).toBe("movie");
   });
 
+  it("YouTube 작품은 채널명과 원본 영상 URL을 제공한다", async () => {
+    const cookie = await signUp();
+    const created = await createEntry(cookie, {
+      type: "youtube",
+      title: "YouTube 영상",
+      ytId: "dQw4w9WgXcQ",
+      channelName: "Rick Astley",
+    });
+    const { contentId } = (await created.json()) as { contentId: string };
+
+    const res = await app.request(`/api/content/${contentId}`, {}, env);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      source?: { name?: string; url: string };
+    };
+    expect(body.source).toEqual({
+      name: "Rick Astley",
+      url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    });
+  });
+
   it("없는 작품은 404", async () => {
     const res = await app.request("/api/content/nope", {}, env);
     expect(res.status).toBe(404);

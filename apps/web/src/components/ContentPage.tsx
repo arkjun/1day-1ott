@@ -114,6 +114,7 @@ export function ContentPage({ contentId }: { contentId: string }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={st.muted}>{metaLine.join(" · ")}</div>
             <h1 style={{ margin: "4px 0 8px", letterSpacing: "-0.02em" }}>{detail.title}</h1>
+            {detail.source && <ContentSourceLink source={detail.source} />}
             {f.tagline && <div style={st.tagline}>{f.tagline}</div>}
             {f.genres && f.genres.length > 0 && (
               <div style={st.chips}>
@@ -181,6 +182,31 @@ export function ContentPage({ contentId }: { contentId: string }) {
   );
 }
 
+export function ContentSourceLink({
+  source,
+}: {
+  source: NonNullable<ContentDetail["source"]>;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div style={st.source}>
+      {source.name && (
+        <span>
+          {t("content.channel")} <b>{source.name}</b>
+        </span>
+      )}
+      <a
+        href={source.url}
+        target="_blank"
+        rel="noreferrer noopener"
+        style={st.sourceLink}
+      >
+        {t("content.watchOnYouTube")} ↗
+      </a>
+    </div>
+  );
+}
+
 // TMDB status 원문 → 번역 키. 매핑에 없으면 표시하지 않는다(영문 노출 방지).
 const STATUS_KEY: Record<string, string> = {
   "Returning Series": "content.statusReturning",
@@ -218,6 +244,16 @@ const st: Record<string, React.CSSProperties> = {
   heroBox: { position: "relative", overflow: "hidden", borderRadius: "var(--radius)", marginBottom: 20 },
   hero: { position: "relative", display: "flex", gap: 16, padding: 16 },
   tagline: { fontStyle: "italic", color: "var(--muted)", marginBottom: 10 },
+  source: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    flexWrap: "wrap",
+    marginBottom: 10,
+    color: "var(--muted)",
+    fontSize: 13,
+  },
+  sourceLink: { fontWeight: 700, textUnderlineOffset: 3 },
   chips: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 },
   chip: {
     fontSize: 12,

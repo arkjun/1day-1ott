@@ -298,6 +298,8 @@ export default {
     myRecords: "My records",
     myEmpty: "No records for this yet",
     overview: "Overview",
+    channel: "Channel",
+    watchOnYouTube: "Watch on YouTube",
     runtime: "{{count}} min",
     seasons: "{{count}} seasons",
     episodes: "{{count}} episodes",

@@ -55,4 +55,21 @@ describe("entryInputSchema", () => {
   it("posterUrl은 URL 형식만", () => {
     expect(entryInputSchema.safeParse({ ...minimal, posterUrl: "not-a-url" }).success).toBe(false);
   });
+
+  it("YouTube 기록은 채널명을 함께 받을 수 있다", () => {
+    expect(
+      entryInputSchema.safeParse({
+        ...minimal,
+        type: "youtube",
+        ytId: "dQw4w9WgXcQ",
+        channelName: "Rick Astley",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("YouTube 외 유형에는 채널명을 허용하지 않는다", () => {
+    expect(
+      entryInputSchema.safeParse({ ...minimal, channelName: "잘못된 채널" }).success,
+    ).toBe(false);
+  });
 });
