@@ -20,6 +20,7 @@ import { RecentItem } from "./components/RecentItem";
 import { RecordModal } from "./components/RecordModal";
 import { SiteFooter } from "./components/SiteFooter";
 import { activityLabels } from "./i18n/format";
+import { DEFAULT_LANG, normalizeLang } from "./i18n/locales";
 import { LanguageSelect } from "./components/LanguageSelect";
 import { LandingPreview } from "./components/LandingPreview";
 import { api, type EntryRow } from "./lib/api";
@@ -256,7 +257,7 @@ function Dashboard({ user }: { user: SessionUser }) {
 }
 
 function Auth() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -283,6 +284,9 @@ function Auth() {
               password,
               name: name || email,
               callbackURL: "/",
+              lang:
+                normalizeLang(i18n.resolvedLanguage ?? i18n.language) ??
+                DEFAULT_LANG,
             })
           : await signIn.email({ email, password, callbackURL: "/" });
       if (!res.error) {

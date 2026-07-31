@@ -1,10 +1,12 @@
 import { passkey } from "@better-auth/passkey";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { createEmailVerificationToken } from "better-auth/api";
 import { createDb, schema } from "./db";
 import type { Env } from "./env";
 import {
   createResendVerificationEmailSender,
+  normalizeVerificationEmailLang,
   type VerificationEmailSender,
 } from "./lib/email";
 
@@ -37,12 +39,39 @@ export function createAuth(env: Env, options: CreateAuthOptions = {}) {
       enabled: true,
       requireEmailVerification: true,
       autoSignIn: false,
+      onExistingUserSignUp: async ({ user }, request) => {
+        if (user.emailVerified) return;
+        const body = await readSignUpBody(request);
+        const token = await createEmailVerificationToken(
+          env.BETTER_AUTH_SECRET,
+          user.email,
+          undefined,
+          60 * 60,
+        );
+        const verificationUrl = new URL(
+          "/api/auth/verify-email",
+          env.BETTER_AUTH_URL,
+        );
+        verificationUrl.searchParams.set("token", token);
+        verificationUrl.searchParams.set(
+          "callbackURL",
+          body.callbackURL ?? "/",
+        );
+        await sendVerificationEmail({
+          to: user.email,
+          verificationUrl: verificationUrl.toString(),
+          lang:
+            normalizeVerificationEmailLang(body.lang) ??
+            verificationEmailLangFromUser(user),
+        });
+      },
     },
     emailVerification: {
       sendVerificationEmail: ({ user, url }) =>
         sendVerificationEmail({
           to: user.email,
           verificationUrl: url,
+          lang: verificationEmailLangFromUser(user),
         }),
       sendOnSignUp: true,
       sendOnSignIn: true,
@@ -82,3 +111,24 @@ export function createAuth(env: Env, options: CreateAuthOptions = {}) {
 }
 
 export type Auth = ReturnType<typeof createAuth>;
+
+interface SignUpBody {
+  callbackURL?: string;
+  lang?: string;
+}
+
+function verificationEmailLangFromUser(user: object) {
+  const { lang } = user as { lang?: unknown };
+  return normalizeVerificationEmailLang(lang);
+}
+
+async function readSignUpBody(request: Request | undefined): Promise<SignUpBody> {
+  if (!request) return {};
+  const body: unknown = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") return {};
+  const { callbackURL, lang } = body as Record<string, unknown>;
+  return {
+    callbackURL: typeof callbackURL === "string" ? callbackURL : undefined,
+    lang: typeof lang === "string" ? lang : undefined,
+  };
+}

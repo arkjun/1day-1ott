@@ -33,7 +33,7 @@ Vitest is used throughout. Name tests `*.test.ts` and colocate pure-unit tests b
 
 ## Commit & Pull Request Guidelines
 
-Recent commits use Conventional Commit-style prefixes (`feat:`, `fix:`, `refactor:`, `perf:`, `docs:`, `style:`) followed by concise, often Korean, imperative summaries. Keep each commit focused. Pull requests should explain the problem and solution, identify affected packages, link relevant issues or design documents, and report test results. Include screenshots for visible UI changes and call out migrations, configuration changes, or deployment steps explicitly.
+Use Conventional Commit-style prefixes (`feat:`, `fix:`, `refactor:`, `perf:`, `docs:`, `style:`) followed by concise, imperative English summaries. Commit messages must be written in English. Keep each commit focused. Pull requests should explain the problem and solution, identify affected packages, link relevant issues or design documents, and report test results. Include screenshots for visible UI changes and call out migrations, configuration changes, or deployment steps explicitly.
 
 ## Security & Configuration
 
