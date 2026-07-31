@@ -98,6 +98,7 @@ export interface PublicProfile {
   followerCount: number;
   followingCount: number;
   canReact: boolean;
+  federationEnabled: boolean;
   total: number;
   cells: HeatmapCell[];
   posters: { id: string; contentId: string; title: string; posterUrl: string | null }[];

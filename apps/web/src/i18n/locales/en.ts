@@ -238,6 +238,8 @@ export default {
   },
   noteReaction: {
     group: "Note reactions",
+    add: "Add reaction",
+    picker: "Choose a reaction",
     react: "React with {{emoji}}",
     federatedCount_other: "{{count}} from the fediverse",
     loginToReact: "Sign in to react",
@@ -271,6 +273,7 @@ export default {
   },
   profile: {
     avatarAlt: "{{name}}'s profile image",
+    federationEnabled: "Fediverse account",
     notFoundTitle: "Profile not found",
     notFoundBody: "This user is private or doesn’t exist.",
     toHome: "Go home",

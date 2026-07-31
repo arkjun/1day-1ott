@@ -957,6 +957,16 @@ describe("프로필/공개 (PATCH /api/me, GET /api/u/:username)", () => {
       .bind("fediverse_user")
       .first<{ count: number }>();
     expect(keyCount?.count).toBe(2);
+
+    const publicProfile = await app.request(
+      "/api/u/fediverse_user",
+      undefined,
+      env,
+    );
+    expect(publicProfile.status).toBe(200);
+    expect(await publicProfile.json()).toMatchObject({
+      federationEnabled: true,
+    });
   });
 
   it("한 번 연합우주 핸들로 사용한 username은 비활성화 후에도 변경할 수 없다", async () => {

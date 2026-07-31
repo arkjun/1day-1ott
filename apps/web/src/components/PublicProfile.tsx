@@ -5,7 +5,7 @@ import type {
   PublicProfile as Profile,
 } from "@1ott/shared";
 import { noteReactionEmojis } from "@1ott/shared";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ActivityCalendar from "react-activity-calendar";
 import { api } from "../lib/api";
@@ -62,7 +62,14 @@ export function ProfileHeader({ profile }: { profile: Profile }) {
       />
       <div style={{ minWidth: 0 }}>
         <h1 style={{ margin: 0, overflowWrap: "anywhere" }}>{profile.name}</h1>
-        <div style={{ color: "var(--muted)", marginTop: 2 }}>@{profile.username}</div>
+        <div style={st.profileMeta}>
+          <span>@{profile.username}</span>
+          {profile.federationEnabled ? (
+            <span style={st.federationBadge}>
+              🌐 {t("profile.federationEnabled")}
+            </span>
+          ) : null}
+        </div>
         {profile.bio ? <p style={st.bio}>{profile.bio}</p> : null}
       </div>
     </div>
@@ -266,6 +273,26 @@ function ReactionGlyph({
   );
 }
 
+function ReactionPickerIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="10" cy="12" r="7" />
+      <path d="M7.5 10h.01M12.5 10h.01M7.5 14.5c1.4 1.1 3.6 1.1 5 0" />
+      <path d="M19 3v6M16 6h6" />
+    </svg>
+  );
+}
+
 export function PublicNotes({
   notes,
   canReact,
@@ -280,6 +307,27 @@ export function PublicNotes({
   onReact: (entryId: string, emoji: NoteReactionEmoji | null) => void;
 }) {
   const { t } = useTranslation();
+  const [reactionPickerEntryId, setReactionPickerEntryId] = useState<
+    string | null
+  >(null);
+  const reactionPickerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!reactionPickerEntryId) return;
+
+    function closeOnOutsidePress(event: PointerEvent) {
+      if (
+        event.target instanceof Node &&
+        !reactionPickerRef.current?.contains(event.target)
+      ) {
+        setReactionPickerEntryId(null);
+      }
+    }
+
+    document.addEventListener("pointerdown", closeOnOutsidePress);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePress);
+  }, [reactionPickerEntryId]);
+
   if (notes.length === 0) return null;
 
   return (
@@ -288,96 +336,100 @@ export function PublicNotes({
         <b>{t("note.publicTitle")}</b>
       </div>
       <div>
-        {notes.map((entry) => (
-          <article key={entry.id} style={st.noteRow}>
-            {entry.posterUrl ? (
-              <a href={`/c/${entry.contentId}`} style={st.notePosterLink}>
-                <img
-                  src={entry.posterUrl}
-                  alt=""
-                  loading="lazy"
-                  style={st.notePoster}
-                />
-              </a>
-            ) : null}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={st.noteMeta}>
-                <a href={`/c/${entry.contentId}`} style={st.noteTitle}>
-                  {entry.title}
+        {notes.map((entry) => {
+          const standardReactions = entry.reactions.filter(
+            (reaction) =>
+              noteReactionEmojiSet.has(reaction.emoji) &&
+              reaction.imageUrl == null,
+          );
+          const remoteReactions = entry.reactions.filter(
+            (reaction) =>
+              !noteReactionEmojiSet.has(reaction.emoji) ||
+              reaction.imageUrl != null,
+          );
+          const pickerOpen = reactionPickerEntryId === entry.id;
+
+          return (
+            <article key={entry.id} style={st.noteRow}>
+              {entry.posterUrl ? (
+                <a href={`/c/${entry.contentId}`} style={st.notePosterLink}>
+                  <img
+                    src={entry.posterUrl}
+                    alt=""
+                    loading="lazy"
+                    style={st.notePoster}
+                  />
                 </a>
-                {entry.channelName ? <span>{entry.channelName}</span> : null}
-                <span>{entry.watchedOn}</span>
-                {entry.reaction ? (
-                  <span title={t(`reaction.${entry.reaction}`)}>
-                    {REACTION_META[entry.reaction].emoji}
-                  </span>
-                ) : null}
-              </div>
-              <p style={st.noteBody}>{entry.note}</p>
-              <div
-                role="group"
-                aria-label={t("noteReaction.group")}
-                style={st.noteReactions}
-              >
-                {noteReactionEmojis.map((emoji) => {
-                  const summary = entry.reactions.find(
-                    (reaction) =>
-                      reaction.emoji === emoji && reaction.imageUrl == null,
-                  );
-                  const remoteTitle =
-                    summary && summary.remoteCount > 0
-                      ? t("noteReaction.federatedCount", {
-                          count: summary.remoteCount,
-                        })
-                      : undefined;
-                  return (
-                    <button
-                      key={emoji}
-                      type="button"
-                      style={{
-                        ...st.reactionButton,
-                        ...(summary?.reactedByMe
-                          ? st.reactionButtonActive
-                          : {}),
-                      }}
-                      aria-label={t("noteReaction.react", { emoji })}
-                      aria-pressed={summary?.reactedByMe ?? false}
-                      title={
-                        remoteTitle ??
-                        (canReact
-                          ? t("noteReaction.react", { emoji })
-                          : t("noteReaction.loginToReact"))
-                      }
-                      disabled={!canReact || pendingEntryId != null}
-                      onClick={() =>
-                        onReact(
-                          entry.id,
-                          summary?.reactedByMe ? null : emoji,
-                        )
-                      }
-                    >
-                      <span>{emoji}</span>
-                      {summary ? <span>{summary.count}</span> : null}
-                      {summary && summary.remoteCount > 0 ? (
-                        <span
-                          aria-label={t("noteReaction.federatedCount", {
+              ) : null}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={st.noteMeta}>
+                  <a href={`/c/${entry.contentId}`} style={st.noteTitle}>
+                    {entry.title}
+                  </a>
+                  {entry.channelName ? <span>{entry.channelName}</span> : null}
+                  <span>{entry.watchedOn}</span>
+                  {entry.reaction ? (
+                    <span title={t(`reaction.${entry.reaction}`)}>
+                      {REACTION_META[entry.reaction].emoji}
+                    </span>
+                  ) : null}
+                </div>
+                <p style={st.noteBody}>{entry.note}</p>
+                <div
+                  role="group"
+                  aria-label={t("noteReaction.group")}
+                  style={st.noteReactions}
+                >
+                  {standardReactions.map((summary) => {
+                    const emoji = summary.emoji as NoteReactionEmoji;
+                    const remoteTitle =
+                      summary.remoteCount > 0
+                        ? t("noteReaction.federatedCount", {
                             count: summary.remoteCount,
-                          })}
-                          style={st.remoteCount}
-                        >
-                          🌐{summary.remoteCount}
-                        </span>
-                      ) : null}
-                    </button>
-                  );
-                })}
-                {entry.reactions
-                  .filter(
-                    (reaction) =>
-                      !noteReactionEmojiSet.has(reaction.emoji) ||
-                      reaction.imageUrl != null,
-                  )
-                  .map((summary) => (
+                          })
+                        : undefined;
+                    return (
+                      <button
+                        key={emoji}
+                        type="button"
+                        style={{
+                          ...st.reactionButton,
+                          ...(summary.reactedByMe
+                            ? st.reactionButtonActive
+                            : {}),
+                        }}
+                        aria-label={t("noteReaction.react", { emoji })}
+                        aria-pressed={summary.reactedByMe}
+                        title={
+                          remoteTitle ??
+                          (canReact
+                            ? t("noteReaction.react", { emoji })
+                            : t("noteReaction.loginToReact"))
+                        }
+                        disabled={!canReact || pendingEntryId != null}
+                        onClick={() =>
+                          onReact(
+                            entry.id,
+                            summary.reactedByMe ? null : emoji,
+                          )
+                        }
+                      >
+                        <span>{emoji}</span>
+                        <span>{summary.count}</span>
+                        {summary.remoteCount > 0 ? (
+                          <span
+                            aria-label={t("noteReaction.federatedCount", {
+                              count: summary.remoteCount,
+                            })}
+                            style={st.remoteCount}
+                          >
+                            🌐{summary.remoteCount}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                  {remoteReactions.map((summary) => (
                     <span
                       key={`${summary.emoji}\n${summary.imageUrl ?? ""}`}
                       style={st.remoteReaction}
@@ -397,10 +449,79 @@ export function PublicNotes({
                       </span>
                     </span>
                   ))}
+                  <div
+                    ref={pickerOpen ? reactionPickerRef : undefined}
+                    style={st.reactionPickerWrap}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        setReactionPickerEntryId(null);
+                        event.currentTarget.querySelector("button")?.focus();
+                      }
+                    }}
+                  >
+                    <button
+                      type="button"
+                      style={st.reactionAddButton}
+                      aria-label={t("noteReaction.add")}
+                      aria-expanded={pickerOpen}
+                      aria-haspopup="true"
+                      title={
+                        canReact
+                          ? t("noteReaction.add")
+                          : t("noteReaction.loginToReact")
+                      }
+                      disabled={!canReact || pendingEntryId != null}
+                      onClick={() =>
+                        setReactionPickerEntryId((current) =>
+                          current === entry.id ? null : entry.id,
+                        )
+                      }
+                    >
+                      <ReactionPickerIcon />
+                    </button>
+                    {pickerOpen ? (
+                      <div
+                        role="group"
+                        aria-label={t("noteReaction.picker")}
+                        style={st.reactionPicker}
+                      >
+                        {noteReactionEmojis.map((emoji) => {
+                          const summary = standardReactions.find(
+                            (reaction) => reaction.emoji === emoji,
+                          );
+                          return (
+                            <button
+                              key={emoji}
+                              type="button"
+                              style={{
+                                ...st.reactionChoice,
+                                ...(summary?.reactedByMe
+                                  ? st.reactionChoiceActive
+                                  : {}),
+                              }}
+                              aria-label={t("noteReaction.react", { emoji })}
+                              aria-pressed={summary?.reactedByMe ?? false}
+                              disabled={pendingEntryId != null}
+                              onClick={() => {
+                                setReactionPickerEntryId(null);
+                                onReact(
+                                  entry.id,
+                                  summary?.reactedByMe ? null : emoji,
+                                );
+                              }}
+                            >
+                              {emoji}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
               </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
       {error ? (
         <p role="alert" style={st.reactionError}>
@@ -427,6 +548,8 @@ const st: Record<string, React.CSSProperties> = {
   wrap: { maxWidth: 920, margin: "0 auto", padding: "28px 20px 60px" },
   top: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap", marginBottom: 20 },
   profileHeader: { display: "flex", alignItems: "flex-start", gap: 14, marginTop: 8, maxWidth: 620 },
+  profileMeta: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", color: "var(--muted)", marginTop: 2 },
+  federationBadge: { display: "inline-flex", alignItems: "center", padding: "2px 7px", border: "1px solid var(--border)", borderRadius: 999, background: "var(--surface-2)", fontSize: 11, fontWeight: 600 },
   bio: { margin: "10px 0 0", lineHeight: 1.55, whiteSpace: "pre-wrap", overflowWrap: "anywhere" },
   stats: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 16 },
   tile: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "14px 16px", boxShadow: "var(--shadow)" },
@@ -491,6 +614,50 @@ const st: Record<string, React.CSSProperties> = {
   },
   reactionButtonActive: {
     borderColor: "var(--accent)",
+    background: "var(--accent-weak)",
+  },
+  reactionPickerWrap: {
+    position: "relative",
+    display: "inline-flex",
+  },
+  reactionAddButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 32,
+    minHeight: 30,
+    padding: 0,
+    border: "1px solid var(--border)",
+    borderRadius: 999,
+    background: "var(--surface-2)",
+    color: "var(--muted)",
+  },
+  reactionPicker: {
+    position: "absolute",
+    left: 0,
+    bottom: "calc(100% + 6px)",
+    zIndex: 10,
+    display: "flex",
+    gap: 2,
+    padding: 6,
+    border: "1px solid var(--border)",
+    borderRadius: 10,
+    background: "var(--surface)",
+    boxShadow: "var(--shadow)",
+  },
+  reactionChoice: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 34,
+    height: 34,
+    padding: 0,
+    border: 0,
+    borderRadius: 7,
+    background: "transparent",
+    fontSize: 18,
+  },
+  reactionChoiceActive: {
     background: "var(--accent-weak)",
   },
   remoteReaction: {

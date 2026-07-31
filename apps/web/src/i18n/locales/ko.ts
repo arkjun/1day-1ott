@@ -230,6 +230,8 @@ export default {
   },
   noteReaction: {
     group: "감상평 반응",
+    add: "반응 추가",
+    picker: "반응 선택",
     react: "{{emoji}} 반응하기",
     federatedCount_other: "연합우주 반응 {{count}}개",
     loginToReact: "로그인 후 반응할 수 있어요",
@@ -263,6 +265,7 @@ export default {
   },
   profile: {
     avatarAlt: "{{name}}님의 프로필 이미지",
+    federationEnabled: "연합우주 계정",
     notFoundTitle: "프로필을 찾을 수 없어요",
     notFoundBody: "비공개거나 없는 사용자입니다.",
     toHome: "홈으로",

@@ -231,6 +231,8 @@ export default {
   },
   noteReaction: {
     group: "感想へのリアクション",
+    add: "リアクションを追加",
+    picker: "リアクションを選択",
     react: "{{emoji}}でリアクション",
     federatedCount_other: "Fediverseから{{count}}件",
     loginToReact: "ログインするとリアクションできます",
@@ -264,6 +266,7 @@ export default {
   },
   profile: {
     avatarAlt: "{{name}}さんのプロフィール画像",
+    federationEnabled: "Fediverseアカウント",
     notFoundTitle: "プロフィールが見つかりません",
     notFoundBody: "非公開または存在しないユーザーです。",
     toHome: "ホームへ",

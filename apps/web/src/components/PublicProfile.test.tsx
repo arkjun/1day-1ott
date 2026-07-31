@@ -25,6 +25,7 @@ describe("ProfileHeader", () => {
             followerCount: 0,
             followingCount: 0,
             canReact: false,
+            federationEnabled: true,
             total: 0,
             cells: [],
             posters: [],
@@ -38,6 +39,39 @@ describe("ProfileHeader", () => {
     expect(html).toContain("@tester");
     expect(html).toContain("첫 줄\n둘째 줄");
     expect(html).toContain("https://media.1day1ott.com/avatars/test.webp");
+    expect(html).toContain("연합우주 계정");
+  });
+
+  it("연합우주 옵션이 비활성화된 계정에는 배지를 표시하지 않는다", async () => {
+    const i18n = createInstance();
+    await i18n.init({
+      lng: "ko",
+      fallbackLng: "ko",
+      resources,
+      interpolation: { escapeValue: false },
+    });
+    const html = renderToStaticMarkup(
+      <I18nextProvider i18n={i18n}>
+        <ProfileHeader
+          profile={{
+            username: "tester",
+            name: "테스터",
+            bio: null,
+            avatarUrl: "https://media.1day1ott.com/avatars/test.webp",
+            followerCount: 0,
+            followingCount: 0,
+            canReact: false,
+            federationEnabled: false,
+            total: 0,
+            cells: [],
+            posters: [],
+            notes: [],
+          }}
+        />
+      </I18nextProvider>,
+    );
+
+    expect(html).not.toContain("연합우주 계정");
   });
 });
 
@@ -70,7 +104,7 @@ describe("PublicProfileActions", () => {
 });
 
 describe("PublicNotes", () => {
-  it("공개 감상평에 작품, 날짜, 반응, 포스터와 이모티콘 반응을 표시한다", async () => {
+  it("공개 감상평에는 집계된 반응과 반응 추가 버튼만 먼저 표시한다", async () => {
     const i18n = createInstance();
     await i18n.init({
       lng: "ko",
@@ -129,6 +163,9 @@ describe("PublicNotes", () => {
     expect(html).toContain("연합우주 반응 2개");
     expect(html).toContain("https://remote.example/party.png");
     expect(html).toContain('aria-pressed="true"');
-    expect(html).toContain('aria-label="👍 반응하기"');
+    expect(html).toContain('aria-label="❤️ 반응하기"');
+    expect(html).toContain('aria-label="반응 추가"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain('aria-label="👍 반응하기"');
   });
 });

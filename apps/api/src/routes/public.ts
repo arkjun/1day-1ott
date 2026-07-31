@@ -29,6 +29,7 @@ export async function loadPublicUser(db: Db, username: string) {
       name: schema.user.name,
       username: schema.user.username,
       isPublic: schema.user.isPublic,
+      federationEnabled: schema.user.federationEnabled,
       bio: schema.user.bio,
       avatarKey: schema.user.avatarKey,
     })
@@ -207,6 +208,7 @@ publicRoute.get("/u/:username", async (c) => {
     followerCount,
     followingCount,
     canReact: viewerId != null && viewerId !== u.id,
+    federationEnabled: u.federationEnabled,
     total,
     cells,
     posters,
