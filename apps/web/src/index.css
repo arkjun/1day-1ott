@@ -523,9 +523,9 @@ a {
 .landing-preview-grass {
   display: grid;
   grid-auto-flow: column;
-  grid-template-rows: repeat(7, 7px);
-  grid-auto-columns: 7px;
-  justify-content: space-between;
+  grid-template-rows: repeat(7, 10px);
+  grid-auto-columns: 10px;
+  justify-content: center;
   gap: 3px;
 }
 
@@ -751,9 +751,9 @@ a {
   }
 
   .landing-preview-grass {
-    grid-template-rows: repeat(7, 6px);
-    grid-auto-columns: 6px;
-    gap: 2px;
+    grid-template-rows: repeat(7, clamp(5px, 1.15vw, 10px));
+    grid-auto-columns: clamp(5px, 1.15vw, 10px);
+    gap: clamp(1px, 0.25vw, 3px);
   }
 
   .landing-preview-posters > div {
@@ -800,7 +800,12 @@ a {
     padding: 8px;
   }
 
-  .landing-preview-grass span:nth-child(-n + 28) {
+  .landing-preview-grass {
+    grid-template-rows: repeat(7, 5px);
+    grid-auto-columns: 5px;
+  }
+
+  .landing-preview-grass span:nth-child(-n + 98) {
     display: none;
   }
 

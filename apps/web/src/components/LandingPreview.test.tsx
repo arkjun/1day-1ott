@@ -27,5 +27,6 @@ describe("LandingPreview", () => {
     expect(html).toContain("기록하기");
     expect(html).toContain("연속 기록");
     expect(html).toContain("최근 본 콘텐츠");
+    expect(html.match(/data-level=/g)).toHaveLength(52 * 7);
   });
 });
