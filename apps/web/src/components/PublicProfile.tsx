@@ -13,6 +13,7 @@ import { useTheme } from "../lib/theme";
 import { updatePageMetadata } from "../lib/seo";
 import { REACTION_META } from "../lib/reactions";
 import { Avatar } from "./Avatar";
+import { ProfileFollows } from "./ProfileFollows";
 
 interface PublicProfileActionsProps {
   scheme: "light" | "dark";
@@ -140,6 +141,16 @@ export function PublicProfile({ username }: { username: string }) {
             🌱 {t("common.serviceName")}
           </div>
           <ProfileHeader profile={profile} />
+          <ProfileFollows
+            username={profile.username}
+            followerCount={profile.followerCount}
+            followingCount={profile.followingCount}
+            onFollowerCountChange={(followerCount) =>
+              setProfile((current) =>
+                current ? { ...current, followerCount } : current,
+              )
+            }
+          />
         </div>
         <PublicProfileActions
           scheme={scheme}
