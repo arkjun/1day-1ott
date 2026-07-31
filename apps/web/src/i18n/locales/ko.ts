@@ -228,6 +228,13 @@ export default {
     visibilityHint: "공개 프로필과 연합우주에 표시",
     publicTitle: "감상평",
   },
+  noteReaction: {
+    group: "감상평 반응",
+    react: "{{emoji}} 반응하기",
+    federatedCount_other: "연합우주 반응 {{count}}개",
+    loginToReact: "로그인 후 반응할 수 있어요",
+    failed: "반응을 저장하지 못했습니다.",
+  },
   modal: {
     title: "오늘 뭐 봤어요?",
     recentContents: "최근 기록",

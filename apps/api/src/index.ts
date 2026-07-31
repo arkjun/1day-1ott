@@ -9,6 +9,7 @@ import { entriesRoute } from "./routes/entries";
 import { followsRoute } from "./routes/follows";
 import { meRoute } from "./routes/me";
 import { loadPublicUser, publicRoute } from "./routes/public";
+import { reactionsRoute } from "./routes/reactions";
 import { searchRoute } from "./routes/search";
 import {
   handleFederationRequest,
@@ -129,6 +130,7 @@ app.route("/api", entriesRoute);
 app.route("/api", searchRoute);
 app.route("/api", meRoute);
 app.route("/api", followsRoute);
+app.route("/api", reactionsRoute);
 
 export default {
   async fetch(

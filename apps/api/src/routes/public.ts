@@ -1,6 +1,7 @@
 import { countToLevel } from "@1ott/shared";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { Hono, type Context } from "hono";
+import { createAuth } from "../auth";
 import { createDb, schema } from "../db";
 import type { Env } from "../env";
 import { avatarUrl } from "../lib/avatar";
@@ -10,6 +11,7 @@ import {
   InvalidFollowCursorError,
   listPublicFollowUsers,
 } from "../lib/follows";
+import { listEntryReactionSummaries } from "../lib/entry-reactions";
 import { pickLang, resolveLocalized } from "../lib/titles";
 
 export const publicRoute = new Hono<{ Bindings: Env }>();
@@ -95,12 +97,15 @@ publicRoute.get("/u/:username", async (c) => {
   const db = createDb(c.env.DB);
   const u = await loadPublicUser(db, c.req.param("username"));
   if (!u) return c.json({ error: "not_found" }, 404);
+  c.header("cache-control", "private, no-store");
 
-  const [counts, followerCount, followingCount] = await Promise.all([
+  const [counts, followerCount, followingCount, session] = await Promise.all([
     dayCounts(db, u.id),
     countFollowers(db, u.id),
     countPublicFollowing(db, u.id),
+    createAuth(c.env).api.getSession({ headers: c.req.raw.headers }),
   ]);
+  const viewerId = session?.user.id;
   const cells = [...counts.entries()].map(([date, count]) => ({
     date,
     count,
@@ -153,12 +158,19 @@ publicRoute.get("/u/:username", async (c) => {
     .orderBy(desc(schema.entries.watchedOn), desc(schema.entries.createdAt))
     .all();
 
-  const locByContent = await resolveLocalized(
-    db,
-    c.env,
-    [...posterRows, ...noteRows],
-    pickLang(c.req.query("lang")),
-  );
+  const [locByContent, reactionsByEntry] = await Promise.all([
+    resolveLocalized(
+      db,
+      c.env,
+      [...posterRows, ...noteRows],
+      pickLang(c.req.query("lang")),
+    ),
+    listEntryReactionSummaries(
+      db,
+      noteRows.map((entry) => entry.id),
+      viewerId,
+    ),
+  ]);
   const posters = posterRows.map((p) => {
     const loc = locByContent.get(p.contentId);
     return {
@@ -178,6 +190,7 @@ publicRoute.get("/u/:username", async (c) => {
       watchedOn: entry.watchedOn,
       reaction: entry.reaction,
       note: entry.note!,
+      reactions: reactionsByEntry.get(entry.id) ?? [],
     };
   });
 
@@ -188,6 +201,7 @@ publicRoute.get("/u/:username", async (c) => {
     avatarUrl: avatarUrl(c.env.MEDIA_ORIGIN, u.avatarKey),
     followerCount,
     followingCount,
+    canReact: viewerId != null && viewerId !== u.id,
     total,
     cells,
     posters,

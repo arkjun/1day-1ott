@@ -475,6 +475,163 @@ describe("기록 삭제 (DELETE /api/entries/:id)", () => {
   });
 });
 
+describe("감상평 이모티콘 반응", () => {
+  async function publishProfile(cookie: string, username: string) {
+    const response = await app.request(
+      "/api/me",
+      authed(cookie, {
+        method: "PATCH",
+        body: JSON.stringify({ username, isPublic: true }),
+      }),
+      env,
+    );
+    expect(response.status).toBe(200);
+  }
+
+  it("다른 사용자의 공개 감상평에 반응하고 다른 이모티콘으로 바꿀 수 있다", async () => {
+    const owner = await signUp(`reaction-owner-${++seq}`);
+    await publishProfile(owner, `reaction_owner_${seq}`);
+    const created = await createEntry(owner, { note: "좋았던 장면" });
+    const { id } = (await created.json()) as { id: string };
+
+    const reactor = await signUp(`reaction-user-${++seq}`);
+    const added = await app.request(
+      `/api/entries/${id}/reaction`,
+      authed(reactor, {
+        method: "PUT",
+        body: JSON.stringify({ emoji: "👍" }),
+      }),
+      env,
+    );
+    expect(added.status).toBe(200);
+    expect(await added.json()).toEqual({
+      reactions: [
+        {
+          emoji: "👍",
+          imageUrl: null,
+          count: 1,
+          remoteCount: 0,
+          reactedByMe: true,
+        },
+      ],
+    });
+
+    const changed = await app.request(
+      `/api/entries/${id}/reaction`,
+      authed(reactor, {
+        method: "PUT",
+        body: JSON.stringify({ emoji: "❤️" }),
+      }),
+      env,
+    );
+    expect(changed.status).toBe(200);
+    expect(await changed.json()).toMatchObject({
+      reactions: [{ emoji: "❤️", count: 1, reactedByMe: true }],
+    });
+
+    const rows = await env.DB.prepare(
+      "SELECT emoji FROM entry_reactions WHERE entry_id = ?",
+    )
+      .bind(id)
+      .all<{ emoji: string }>();
+    expect(rows.results).toEqual([{ emoji: "❤️" }]);
+  });
+
+  it("반응을 취소하고 공개 프로필 집계에 로그인 사용자의 선택을 표시한다", async () => {
+    const owner = await signUp(`reaction-profile-owner-${++seq}`);
+    const username = `reaction_profile_${seq}`;
+    await publishProfile(owner, username);
+    const { id } = (await (
+      await createEntry(owner, { note: "다시 보고 싶은 작품" })
+    ).json()) as { id: string };
+
+    const reactor = await signUp(`reaction-profile-user-${++seq}`);
+    await app.request(
+      `/api/entries/${id}/reaction`,
+      authed(reactor, {
+        method: "PUT",
+        body: JSON.stringify({ emoji: "😂" }),
+      }),
+      env,
+    );
+
+    const profile = await app.request(
+      `/api/u/${username}`,
+      { headers: { cookie: reactor } },
+      env,
+    );
+    expect(await profile.json()).toMatchObject({
+      canReact: true,
+      notes: [
+        {
+          id,
+          reactions: [
+            {
+              emoji: "😂",
+              count: 1,
+              remoteCount: 0,
+              reactedByMe: true,
+            },
+          ],
+        },
+      ],
+    });
+
+    const removed = await app.request(
+      `/api/entries/${id}/reaction`,
+      authed(reactor, { method: "DELETE" }),
+      env,
+    );
+    expect(removed.status).toBe(200);
+    expect(await removed.json()).toEqual({ reactions: [] });
+  });
+
+  it("본인 감상평·비공개 감상평·지원하지 않는 이모티콘은 거부한다", async () => {
+    const owner = await signUp(`reaction-guard-owner-${++seq}`);
+    const publicEntry = (await (
+      await createEntry(owner, { note: "공개 감상" })
+    ).json()) as { id: string };
+    const privateEntry = (await (
+      await createEntry(owner, {
+        title: "비공개 감상 작품",
+        note: "숨긴 감상",
+        isNotePublic: false,
+      })
+    ).json()) as { id: string };
+
+    const own = await app.request(
+      `/api/entries/${publicEntry.id}/reaction`,
+      authed(owner, {
+        method: "PUT",
+        body: JSON.stringify({ emoji: "👍" }),
+      }),
+      env,
+    );
+    expect(own.status).toBe(403);
+
+    const reactor = await signUp(`reaction-guard-user-${++seq}`);
+    const hidden = await app.request(
+      `/api/entries/${privateEntry.id}/reaction`,
+      authed(reactor, {
+        method: "PUT",
+        body: JSON.stringify({ emoji: "👍" }),
+      }),
+      env,
+    );
+    expect(hidden.status).toBe(404);
+
+    const invalid = await app.request(
+      `/api/entries/${publicEntry.id}/reaction`,
+      authed(reactor, {
+        method: "PUT",
+        body: JSON.stringify({ emoji: "💣" }),
+      }),
+      env,
+    );
+    expect(invalid.status).toBe(400);
+  });
+});
+
 describe("프로필/공개 (PATCH /api/me, GET /api/u/:username)", () => {
   async function setProfile(cookie: string, body: Record<string, unknown>) {
     return app.request(

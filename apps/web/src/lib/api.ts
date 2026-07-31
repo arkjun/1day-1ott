@@ -7,6 +7,8 @@ import type {
   FollowStatus,
   HeatmapCell,
   MyContentEntry,
+  NoteReactionEmoji,
+  NoteReactionSummary,
   Reaction,
   SearchResult,
 } from "@1ott/shared";
@@ -164,6 +166,19 @@ export const api = {
       `/api/u/${encodeURIComponent(username)}/${direction}?${query}`,
     );
   },
+  reactToNote: (entryId: string, emoji: NoteReactionEmoji) =>
+    req<{ reactions: NoteReactionSummary[] }>(
+      `/api/entries/${encodeURIComponent(entryId)}/reaction`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ emoji }),
+      },
+    ),
+  removeNoteReaction: (entryId: string) =>
+    req<{ reactions: NoteReactionSummary[] }>(
+      `/api/entries/${encodeURIComponent(entryId)}/reaction`,
+      { method: "DELETE" },
+    ),
   content: (id: string) =>
     req<ContentDetail>(`/api/content/${encodeURIComponent(id)}?lang=${i18n.language}`),
   contentMine: (id: string) =>

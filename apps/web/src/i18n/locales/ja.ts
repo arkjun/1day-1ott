@@ -229,6 +229,13 @@ export default {
     visibilityHint: "公開プロフィールとFediverseに表示",
     publicTitle: "感想",
   },
+  noteReaction: {
+    group: "感想へのリアクション",
+    react: "{{emoji}}でリアクション",
+    federatedCount_other: "Fediverseから{{count}}件",
+    loginToReact: "ログインするとリアクションできます",
+    failed: "リアクションを保存できませんでした。",
+  },
   modal: {
     title: "今日は何を観ましたか？",
     recentContents: "最近の記録",

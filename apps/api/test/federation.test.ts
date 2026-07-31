@@ -1,12 +1,23 @@
 import { env } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
-import { Endpoints, Follow, Person, Undo } from "@fedify/fedify/vocab";
+import {
+  Emoji,
+  EmojiReact,
+  Endpoints,
+  Follow,
+  Image,
+  Like,
+  Person,
+  Undo,
+} from "@fedify/fedify/vocab";
 import { createAuth } from "../src/auth";
 import { app } from "../src/index";
 import {
   handleFederationRequest,
   handleFollow,
+  handleReaction,
   handleUndoFollow,
+  handleUndoReaction,
 } from "../src/federation";
 
 const JSON_HEADERS = { "content-type": "application/json" };
@@ -561,5 +572,142 @@ describe("ActivityPub Actor와 WebFinger", () => {
       type: "Tombstone",
       formerType: "as:Note",
     });
+  });
+
+  it("연합우주의 EmojiReact와 일반 Like를 감상평 반응으로 집계한다", async () => {
+    const { cookie, userId, username } = await enableFederation();
+    const created = await app.request(
+      "/api/entries",
+      {
+        method: "POST",
+        headers: { ...JSON_HEADERS, cookie },
+        body: JSON.stringify({
+          type: "movie",
+          title: "연합 반응 테스트",
+          watchedOn: "2026-07-31",
+          note: "반응을 기다리는 감상",
+        }),
+      },
+      env,
+    );
+    const { id } = (await created.json()) as { id: string };
+    const object = new URL(`http://localhost/ap/entries/${id}`);
+    const custom = new EmojiReact({
+      id: new URL("https://remote.example/activities/reaction-1"),
+      actor: new URL("https://remote.example/users/alice"),
+      object,
+      content: ":party:",
+      tags: [
+        new Emoji({
+          name: ":party:",
+          icon: new Image({
+            url: new URL("https://remote.example/emoji/party.png"),
+          }),
+        }),
+      ],
+    });
+    const like = new Like({
+      id: new URL("https://elsewhere.example/activities/like-1"),
+      actor: new URL("https://elsewhere.example/users/bob"),
+      object,
+    });
+    const ctx = {
+      data: env,
+      parseUri: (uri: URL) =>
+        uri.href === object.href
+          ? { type: "object", values: { id }, class: null }
+          : null,
+    };
+
+    await handleReaction(ctx as never, custom);
+    await handleReaction(ctx as never, like);
+
+    const profile = await app.request(`/api/u/${username}`, undefined, env);
+    expect(await profile.json()).toMatchObject({
+      notes: [
+        {
+          id,
+          reactions: expect.arrayContaining([
+            {
+              emoji: ":party:",
+              imageUrl: "https://remote.example/emoji/party.png",
+              count: 1,
+              remoteCount: 1,
+              reactedByMe: false,
+            },
+            {
+              emoji: "❤️",
+              imageUrl: null,
+              count: 1,
+              remoteCount: 1,
+              reactedByMe: false,
+            },
+          ]),
+        },
+      ],
+    });
+    const rows = await env.DB.prepare(
+      `SELECT remote_actor_uri, remote_activity_uri, emoji, emoji_image_url
+         FROM entry_reactions
+        WHERE entry_id = ?
+        ORDER BY emoji`,
+    )
+      .bind(id)
+      .all<Record<string, unknown>>();
+    expect(rows.results).toHaveLength(2);
+    expect(rows.results).toContainEqual({
+      remote_actor_uri: "https://remote.example/users/alice",
+      remote_activity_uri: "https://remote.example/activities/reaction-1",
+      emoji: ":party:",
+      emoji_image_url: "https://remote.example/emoji/party.png",
+    });
+    expect(userId).toBeTruthy();
+  });
+
+  it("Undo(EmojiReact)는 같은 원격 Actor와 activity의 반응만 취소한다", async () => {
+    const { cookie } = await enableFederation();
+    const created = await app.request(
+      "/api/entries",
+      {
+        method: "POST",
+        headers: { ...JSON_HEADERS, cookie },
+        body: JSON.stringify({
+          type: "tv",
+          title: "연합 반응 취소",
+          watchedOn: "2026-07-31",
+          note: "취소 가능한 반응",
+        }),
+      },
+      env,
+    );
+    const { id } = (await created.json()) as { id: string };
+    const actor = new URL("https://remote.example/users/alice");
+    const reaction = new EmojiReact({
+      id: new URL("https://remote.example/activities/reaction-undo"),
+      actor,
+      object: new URL(`http://localhost/ap/entries/${id}`),
+      content: "🔥",
+    });
+    const ctx = {
+      data: env,
+      parseUri: () => ({ type: "object", values: { id }, class: null }),
+    };
+    await handleReaction(ctx as never, reaction);
+
+    await handleUndoReaction(
+      ctx as never,
+      new Undo({
+        id: new URL("https://remote.example/activities/undo-reaction"),
+        actor,
+        object: reaction,
+      }),
+    );
+
+    const row = await env.DB.prepare(
+      "SELECT id FROM entry_reactions WHERE entry_id = ?",
+    )
+      .bind(id)
+      .first();
+    expect(row).toBeNull();
   });
 });

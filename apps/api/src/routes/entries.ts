@@ -404,6 +404,12 @@ entriesRoute.patch("/entries/:id", async (c) => {
   ]);
   const shouldPublish = !!entry?.note?.trim() && entry.isNotePublic && actor?.enabled;
 
+  if (!entry?.note?.trim() || !entry.isNotePublic) {
+    await db
+      .delete(schema.entryReactions)
+      .where(eq(schema.entryReactions.entryId, id));
+  }
+
   if (!shouldPublish && publication && publication.status !== "deleted") {
     federationStatus = await deletePublishedEntry(c.req.raw, c.env, id);
   } else if (shouldPublish && publication?.status === "published") {

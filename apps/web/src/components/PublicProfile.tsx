@@ -1,7 +1,10 @@
 import type {
+  NoteReactionEmoji,
+  NoteReactionSummary,
   PublicNote,
   PublicProfile as Profile,
 } from "@1ott/shared";
+import { noteReactionEmojis } from "@1ott/shared";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ActivityCalendar from "react-activity-calendar";
@@ -71,6 +74,10 @@ export function PublicProfile({ username }: { username: string }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [state, setState] = useState<"loading" | "ok" | "notfound">("loading");
   const [copied, setCopied] = useState(false);
+  const [pendingReactionEntryId, setPendingReactionEntryId] = useState<
+    string | null
+  >(null);
+  const [reactionError, setReactionError] = useState<string | null>(null);
   const { resolved: scheme, toggle } = useTheme();
 
   // 언어가 바뀌면 포스터 제목도 그 언어로 다시 받아온다.
@@ -131,6 +138,35 @@ export function PublicProfile({ username }: { username: string }) {
     await navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  }
+
+  async function updateNoteReaction(
+    entryId: string,
+    emoji: NoteReactionEmoji | null,
+  ) {
+    setPendingReactionEntryId(entryId);
+    setReactionError(null);
+    try {
+      const result = emoji
+        ? await api.reactToNote(entryId, emoji)
+        : await api.removeNoteReaction(entryId);
+      setProfile((current) =>
+        current
+          ? {
+              ...current,
+              notes: current.notes.map((note) =>
+                note.id === entryId
+                  ? { ...note, reactions: result.reactions }
+                  : note,
+              ),
+            }
+          : current,
+      );
+    } catch {
+      setReactionError(t("noteReaction.failed"));
+    } finally {
+      setPendingReactionEntryId(null);
+    }
   }
 
   return (
@@ -200,12 +236,49 @@ export function PublicProfile({ username }: { username: string }) {
         </div>
       )}
 
-      <PublicNotes notes={profile.notes} />
+      <PublicNotes
+        notes={profile.notes}
+        canReact={profile.canReact}
+        pendingEntryId={pendingReactionEntryId}
+        error={reactionError}
+        onReact={updateNoteReaction}
+      />
     </div>
   );
 }
 
-export function PublicNotes({ notes }: { notes: PublicNote[] }) {
+const noteReactionEmojiSet = new Set<string>(noteReactionEmojis);
+
+function ReactionGlyph({
+  summary,
+}: {
+  summary: Pick<NoteReactionSummary, "emoji" | "imageUrl">;
+}) {
+  return summary.imageUrl ? (
+    <img
+      src={summary.imageUrl}
+      alt={summary.emoji}
+      loading="lazy"
+      style={st.reactionEmojiImage}
+    />
+  ) : (
+    <span>{summary.emoji}</span>
+  );
+}
+
+export function PublicNotes({
+  notes,
+  canReact,
+  pendingEntryId,
+  error,
+  onReact,
+}: {
+  notes: PublicNote[];
+  canReact: boolean;
+  pendingEntryId: string | null;
+  error?: string | null;
+  onReact: (entryId: string, emoji: NoteReactionEmoji | null) => void;
+}) {
   const { t } = useTranslation();
   if (notes.length === 0) return null;
 
@@ -240,10 +313,99 @@ export function PublicNotes({ notes }: { notes: PublicNote[] }) {
                 ) : null}
               </div>
               <p style={st.noteBody}>{entry.note}</p>
+              <div
+                role="group"
+                aria-label={t("noteReaction.group")}
+                style={st.noteReactions}
+              >
+                {noteReactionEmojis.map((emoji) => {
+                  const summary = entry.reactions.find(
+                    (reaction) =>
+                      reaction.emoji === emoji && reaction.imageUrl == null,
+                  );
+                  const remoteTitle =
+                    summary && summary.remoteCount > 0
+                      ? t("noteReaction.federatedCount", {
+                          count: summary.remoteCount,
+                        })
+                      : undefined;
+                  return (
+                    <button
+                      key={emoji}
+                      type="button"
+                      style={{
+                        ...st.reactionButton,
+                        ...(summary?.reactedByMe
+                          ? st.reactionButtonActive
+                          : {}),
+                      }}
+                      aria-label={t("noteReaction.react", { emoji })}
+                      aria-pressed={summary?.reactedByMe ?? false}
+                      title={
+                        remoteTitle ??
+                        (canReact
+                          ? t("noteReaction.react", { emoji })
+                          : t("noteReaction.loginToReact"))
+                      }
+                      disabled={!canReact || pendingEntryId != null}
+                      onClick={() =>
+                        onReact(
+                          entry.id,
+                          summary?.reactedByMe ? null : emoji,
+                        )
+                      }
+                    >
+                      <span>{emoji}</span>
+                      {summary ? <span>{summary.count}</span> : null}
+                      {summary && summary.remoteCount > 0 ? (
+                        <span
+                          aria-label={t("noteReaction.federatedCount", {
+                            count: summary.remoteCount,
+                          })}
+                          style={st.remoteCount}
+                        >
+                          🌐{summary.remoteCount}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+                {entry.reactions
+                  .filter(
+                    (reaction) =>
+                      !noteReactionEmojiSet.has(reaction.emoji) ||
+                      reaction.imageUrl != null,
+                  )
+                  .map((summary) => (
+                    <span
+                      key={`${summary.emoji}\n${summary.imageUrl ?? ""}`}
+                      style={st.remoteReaction}
+                      title={t("noteReaction.federatedCount", {
+                        count: summary.remoteCount,
+                      })}
+                    >
+                      <ReactionGlyph summary={summary} />
+                      <span>{summary.count}</span>
+                      <span
+                        aria-label={t("noteReaction.federatedCount", {
+                          count: summary.remoteCount,
+                        })}
+                        style={st.remoteCount}
+                      >
+                        🌐{summary.remoteCount}
+                      </span>
+                    </span>
+                  ))}
+              </div>
             </div>
           </article>
         ))}
       </div>
+      {error ? (
+        <p role="alert" style={st.reactionError}>
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -307,6 +469,48 @@ const st: Record<string, React.CSSProperties> = {
     whiteSpace: "pre-wrap",
     overflowWrap: "anywhere",
   },
+  noteReactions: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
+    marginTop: 10,
+  },
+  reactionButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 4,
+    minHeight: 30,
+    padding: "4px 8px",
+    border: "1px solid var(--border)",
+    borderRadius: 999,
+    background: "var(--surface-2)",
+    color: "inherit",
+    fontSize: 12,
+  },
+  reactionButtonActive: {
+    borderColor: "var(--accent)",
+    background: "var(--accent-weak)",
+  },
+  remoteReaction: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 4,
+    minHeight: 30,
+    padding: "4px 8px",
+    boxSizing: "border-box",
+    border: "1px solid var(--border)",
+    borderRadius: 999,
+    background: "var(--surface-2)",
+    fontSize: 12,
+  },
+  reactionEmojiImage: {
+    width: 18,
+    height: 18,
+    objectFit: "contain",
+  },
+  remoteCount: { color: "var(--muted)", fontSize: 10 },
+  reactionError: { margin: "10px 0 0", color: "crimson", fontSize: 13 },
   ghost: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 14px", background: "var(--surface)", color: "inherit" },
   iconBtn: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px", background: "var(--surface)", lineHeight: 1 },
 };

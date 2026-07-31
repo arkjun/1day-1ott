@@ -236,6 +236,13 @@ export default {
     visibilityHint: "Show on your public profile and the fediverse",
     publicTitle: "Notes",
   },
+  noteReaction: {
+    group: "Note reactions",
+    react: "React with {{emoji}}",
+    federatedCount_other: "{{count}} from the fediverse",
+    loginToReact: "Sign in to react",
+    failed: "Could not save your reaction.",
+  },
   modal: {
     title: "What did you watch?",
     recentContents: "Recently watched",

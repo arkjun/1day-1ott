@@ -10,6 +10,11 @@ export const reactions = ["down", "up", "love"] as const;
 export const reactionSchema = z.enum(reactions);
 export type Reaction = (typeof reactions)[number];
 
+/** 다른 사용자의 공개 감상평에 남길 수 있는 이모티콘 반응. */
+export const noteReactionEmojis = ["👍", "❤️", "😂", "😮", "😢"] as const;
+export const noteReactionEmojiSchema = z.enum(noteReactionEmojis);
+export type NoteReactionEmoji = (typeof noteReactionEmojis)[number];
+
 /**
  * 기록 생성 입력. 웹앱과 (미래의) 북마클릿/확장이 공유하는 단일 계약.
  * - tmdbId / ytId 없이 title만으로도 생성 가능(자유입력 폴백).
@@ -59,6 +64,15 @@ export interface SearchResult {
   genreIds?: number[]; // 장르 id. 이름은 클라 i18n에서 매핑
 }
 
+/** 공개 감상평의 로컬·연합우주 통합 반응 집계. */
+export interface NoteReactionSummary {
+  emoji: string;
+  imageUrl: string | null;
+  count: number;
+  remoteCount: number;
+  reactedByMe: boolean;
+}
+
 /** 공개 프로필 응답. */
 export interface PublicNote {
   id: string;
@@ -68,6 +82,7 @@ export interface PublicNote {
   watchedOn: string;
   reaction: Reaction | null;
   note: string;
+  reactions: NoteReactionSummary[];
 }
 
 export interface PublicProfile {
@@ -77,6 +92,7 @@ export interface PublicProfile {
   avatarUrl: string;
   followerCount: number;
   followingCount: number;
+  canReact: boolean;
   total: number;
   cells: HeatmapCell[];
   posters: { id: string; contentId: string; title: string; posterUrl: string | null }[];

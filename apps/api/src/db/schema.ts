@@ -150,6 +150,46 @@ export const entries = sqliteTable(
   ],
 );
 
+/**
+ * 공개 감상평의 이모티콘 반응.
+ * 로컬 사용자와 원격 Actor는 각각 감상평당 하나의 반응만 유지한다.
+ */
+export const entryReactions = sqliteTable(
+  "entry_reactions",
+  {
+    id: text("id").primaryKey(),
+    entryId: text("entry_id")
+      .notNull()
+      .references(() => entries.id, { onDelete: "cascade" }),
+    emoji: text("emoji").notNull(),
+    emojiImageUrl: text("emoji_image_url"),
+    localUserId: text("local_user_id").references(() => user.id, {
+      onDelete: "cascade",
+    }),
+    remoteActorUri: text("remote_actor_uri"),
+    remoteActivityUri: text("remote_activity_uri"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    check(
+      "entry_reactions_actor_ck",
+      sql`(${t.localUserId} is not null and ${t.remoteActorUri} is null and ${t.remoteActivityUri} is null) or (${t.localUserId} is null and ${t.remoteActorUri} is not null and ${t.remoteActivityUri} is not null)`,
+    ),
+    uniqueIndex("entry_reactions_local_user_uq").on(
+      t.entryId,
+      t.localUserId,
+    ),
+    uniqueIndex("entry_reactions_remote_actor_uq").on(
+      t.entryId,
+      t.remoteActorUri,
+    ),
+    uniqueIndex("entry_reactions_remote_activity_uq").on(t.remoteActivityUri),
+    index("entry_reactions_entry_idx").on(t.entryId),
+  ],
+);
+
 /** 서비스 내부 사용자의 단방향 팔로우 관계. */
 export const userFollows = sqliteTable(
   "user_follows",
@@ -270,6 +310,7 @@ export const schema = {
   passkey,
   content,
   entries,
+  entryReactions,
   userFollows,
   federationActorKeys,
   federationFollowers,

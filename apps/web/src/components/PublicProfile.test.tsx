@@ -24,6 +24,7 @@ describe("ProfileHeader", () => {
             avatarUrl: "https://media.1day1ott.com/avatars/test.webp",
             followerCount: 0,
             followingCount: 0,
+            canReact: false,
             total: 0,
             cells: [],
             posters: [],
@@ -69,7 +70,7 @@ describe("PublicProfileActions", () => {
 });
 
 describe("PublicNotes", () => {
-  it("공개 감상평에 작품, 날짜, 반응, 포스터를 표시한다", async () => {
+  it("공개 감상평에 작품, 날짜, 반응, 포스터와 이모티콘 반응을 표시한다", async () => {
     const i18n = createInstance();
     await i18n.init({
       lng: "ko",
@@ -90,8 +91,27 @@ describe("PublicNotes", () => {
               watchedOn: "2026-07-30",
               reaction: "love",
               note: "압도적인 영상미",
+              reactions: [
+                {
+                  emoji: "❤️",
+                  imageUrl: null,
+                  count: 3,
+                  remoteCount: 2,
+                  reactedByMe: true,
+                },
+                {
+                  emoji: ":party:",
+                  imageUrl: "https://remote.example/party.png",
+                  count: 1,
+                  remoteCount: 1,
+                  reactedByMe: false,
+                },
+              ],
             },
           ]}
+          canReact
+          pendingEntryId={null}
+          onReact={vi.fn()}
         />
       </I18nextProvider>,
     );
@@ -102,5 +122,11 @@ describe("PublicNotes", () => {
     expect(html).toContain("👍👍");
     expect(html).toContain("압도적인 영상미");
     expect(html).toContain("https://example.com/dune.jpg");
+    expect(html).toContain("❤️");
+    expect(html).toContain(">3<");
+    expect(html).toContain("연합우주 반응 2개");
+    expect(html).toContain("https://remote.example/party.png");
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain('aria-label="👍 반응하기"');
   });
 });

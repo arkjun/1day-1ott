@@ -64,6 +64,13 @@
       "when": 1785418823536,
       "tag": "0008_add_user_follows",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1785475863286,
+      "tag": "0009_add_entry_reactions",
+      "breakpoints": true
     }
   ]
 }

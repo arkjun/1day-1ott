@@ -8,8 +8,10 @@ import {
 import {
   Endpoints,
   Delete,
+  EmojiReact,
   Follow,
   Image,
+  Like,
   Note,
   Person,
   PUBLIC_COLLECTION,
@@ -24,6 +26,7 @@ import { avatarMediaType, avatarUrl } from "../lib/avatar";
 import { escapeHtml } from "../lib/html";
 import { loadActorKeyPairs } from "./keys";
 import { handleFollow, handleUndoFollow } from "./followers";
+import { handleReaction, handleUndoReaction } from "./reactions";
 import {
   buildCreate,
   dispatchEntryObject,
@@ -31,6 +34,7 @@ import {
 } from "./notes";
 
 export { handleFollow, handleUndoFollow } from "./followers";
+export { handleReaction, handleUndoReaction } from "./reactions";
 
 const builder = createFederationBuilder<Env>();
 
@@ -125,7 +129,12 @@ builder
   .setInboxListeners("/ap/users/{identifier}/inbox", "/ap/inbox")
   .withIdempotency("per-inbox")
   .on(Follow, handleFollow)
-  .on(Undo, handleUndoFollow);
+  .on(EmojiReact, handleReaction)
+  .on(Like, handleReaction)
+  .on(Undo, async (ctx, undo) => {
+    await handleUndoFollow(ctx, undo);
+    await handleUndoReaction(ctx, undo);
+  });
 
 builder
   .setFollowersDispatcher(
