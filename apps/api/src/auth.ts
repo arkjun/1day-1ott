@@ -2,16 +2,20 @@ import { passkey } from "@better-auth/passkey";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createEmailVerificationToken } from "better-auth/api";
+import { emailOTP } from "better-auth/plugins/email-otp";
 import { createDb, schema } from "./db";
 import type { Env } from "./env";
 import {
   createResendVerificationEmailSender,
+  createResendSignInOtpEmailSender,
   normalizeVerificationEmailLang,
+  type SignInOtpEmailSender,
   type VerificationEmailSender,
 } from "./lib/email";
 
 interface CreateAuthOptions {
   sendVerificationEmail?: VerificationEmailSender;
+  sendSignInOtpEmail?: SignInOtpEmailSender;
   backgroundTaskHandler?: (promise: Promise<unknown>) => void;
 }
 
@@ -24,11 +28,31 @@ export function createAuth(env: Env, options: CreateAuthOptions = {}) {
   const sendVerificationEmail =
     options.sendVerificationEmail ??
     createResendVerificationEmailSender(env.RESEND_API_KEY);
+  const sendSignInOtpEmail =
+    options.sendSignInOtpEmail ??
+    createResendSignInOtpEmailSender(env.RESEND_API_KEY);
   // WebAuthn rpID 는 스킴/포트 없는 호스트명. origin 은 웹 앱이 뜨는 곳.
   const rpID = new URL(env.WEB_ORIGIN).hostname;
   return betterAuth({
     plugins: [
       passkey({ rpID, rpName: "1일 1OTT", origin: env.WEB_ORIGIN }),
+      emailOTP({
+        disableSignUp: true,
+        expiresIn: 10 * 60,
+        otpLength: 6,
+        storeOTP: "hashed",
+        async sendVerificationOTP({ email, otp, type }, ctx) {
+          if (type !== "sign-in") return;
+          const user = await ctx?.context.internalAdapter.findUserByEmail(email);
+          await sendSignInOtpEmail({
+            to: email,
+            otp,
+            lang: user
+              ? verificationEmailLangFromUser(user.user)
+              : undefined,
+          });
+        },
+      }),
     ],
     database: drizzleAdapter(db, { provider: "sqlite", schema }),
     secret: env.BETTER_AUTH_SECRET,

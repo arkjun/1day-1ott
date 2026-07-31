@@ -170,6 +170,23 @@ export default {
     resend: "Resend verification email",
     resending: "Sending…",
     resendFailed: "Could not resend the verification email.",
+    emailOtpEntry: "Sign in with email verification",
+    emailOtpPrompt: "Lost your password or passkey?",
+    emailOtpDescription:
+      "We will send a sign-in code to the email address on your account.",
+    emailOtpRequest: "Send sign-in code",
+    emailOtpSent:
+      "We sent a sign-in code to {{email}}. Email is only sent for registered accounts.",
+    emailOtpCode: "6-digit sign-in code",
+    emailOtpSignIn: "Sign in with code",
+    emailOtpResend: "Send another code",
+    emailOtpBack: "Use another sign-in method",
+    emailOtpRequestFailed: "Could not send the sign-in code.",
+    emailOtpInvalid: "The sign-in code is incorrect.",
+    emailOtpExpired: "The sign-in code has expired. Request a new code.",
+    emailOtpTooManyAttempts:
+      "Too many incorrect attempts. Request a new code.",
+    emailOtpSignInFailed: "Email verification sign-in failed.",
     agreementPrefix: "By signing up, you agree to the",
     agreementAnd: " and ",
     agreementSuffix: ".",

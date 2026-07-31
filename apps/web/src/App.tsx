@@ -13,6 +13,7 @@ import { AllEntries } from "./components/AllEntries";
 import { AnalyticsConsentBanner } from "./components/AnalyticsConsent";
 import { CalendarView } from "./components/CalendarView";
 import { ContentPage } from "./components/ContentPage";
+import { EmailOtpLogin } from "./components/EmailOtpLogin";
 import { AuthVerificationNotice } from "./components/AuthVerificationNotice";
 import { MyPage } from "./components/MyPage";
 import { PublicProfile } from "./components/PublicProfile";
@@ -25,6 +26,7 @@ import { LanguageSelect } from "./components/LanguageSelect";
 import { LandingPreview } from "./components/LandingPreview";
 import { api, type EntryRow } from "./lib/api";
 import {
+  authClient,
   sendVerificationEmail,
   signIn,
   signOut,
@@ -269,6 +271,9 @@ function Auth() {
   const [verificationResent, setVerificationResent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [emailOtpMode, setEmailOtpMode] = useState(false);
+  const [emailOtpCodeSent, setEmailOtpCodeSent] = useState(false);
+  const [emailOtpCode, setEmailOtpCode] = useState("");
 
   async function submit(ev: React.FormEvent) {
     ev.preventDefault();
@@ -356,6 +361,69 @@ function Auth() {
     if (res?.error) setErr(t("passkey.signinFailed"));
   }
 
+  async function requestEmailOtp() {
+    setErr(null);
+    setIsSubmitting(true);
+    try {
+      const res = await authClient.emailOtp.sendVerificationOtp({
+        email,
+        type: "sign-in",
+      });
+      if (res.error) {
+        setErr(res.error.message ?? t("auth.emailOtpRequestFailed"));
+        return;
+      }
+      setEmailOtpCode("");
+      setEmailOtpCodeSent(true);
+    } catch {
+      setErr(t("auth.emailOtpRequestFailed"));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function signInWithEmailOtp() {
+    setErr(null);
+    setIsSubmitting(true);
+    try {
+      const res = await signIn.emailOtp({
+        email,
+        otp: emailOtpCode,
+      });
+      if (!res.error) {
+        clearPendingVerificationEmail();
+        return;
+      }
+      const errorKey =
+        res.error.code === "OTP_EXPIRED"
+          ? "auth.emailOtpExpired"
+          : res.error.code === "TOO_MANY_ATTEMPTS"
+            ? "auth.emailOtpTooManyAttempts"
+            : res.error.code === "INVALID_OTP"
+              ? "auth.emailOtpInvalid"
+              : "auth.emailOtpSignInFailed";
+      setErr(t(errorKey));
+    } catch {
+      setErr(t("auth.emailOtpSignInFailed"));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function openEmailOtpLogin() {
+    setErr(null);
+    setEmailOtpCode("");
+    setEmailOtpCodeSent(false);
+    setEmailOtpMode(true);
+  }
+
+  function closeEmailOtpLogin() {
+    setErr(null);
+    setEmailOtpCode("");
+    setEmailOtpCodeSent(false);
+    setEmailOtpMode(false);
+  }
+
   const features = [
     { t: t("landing.feat1Title"), b: t("landing.feat1Body") },
     { t: t("landing.feat2Title"), b: t("landing.feat2Body") },
@@ -405,66 +473,95 @@ function Auth() {
             </>
           ) : (
             <>
-              <p style={{ ...st.muted, marginTop: -6, marginBottom: 14 }}>
-                {t("landing.loginSub")}
-              </p>
-              <form onSubmit={submit} style={{ display: "grid", gap: 8 }}>
-                {mode === "up" ? (
-                  <input
-                    style={st.input}
-                    placeholder={t("auth.name")}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                ) : null}
-                <input
-                  style={st.input}
-                  placeholder={t("auth.email")}
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+              {emailOtpMode ? (
+                <EmailOtpLogin
+                  email={email}
+                  otp={emailOtpCode}
+                  codeSent={emailOtpCodeSent}
+                  isSubmitting={isSubmitting}
+                  onEmailChange={setEmail}
+                  onOtpChange={setEmailOtpCode}
+                  onRequestCode={requestEmailOtp}
+                  onSignIn={signInWithEmailOtp}
+                  onBack={closeEmailOtpLogin}
                 />
-                <input
-                  style={st.input}
-                  placeholder={t("auth.password")}
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                {mode === "up" ? (
-                  <p className="signup-agreement">
-                    {t("auth.agreementPrefix")}{" "}
-                    <a href="/terms">{t("footer.terms")}</a>
-                    {t("auth.agreementAnd")}
-                    <a href="/privacy">{t("footer.privacy")}</a>
-                    {t("auth.agreementSuffix")}
+              ) : (
+                <>
+                  <p style={{ ...st.muted, marginTop: -6, marginBottom: 14 }}>
+                    {t("landing.loginSub")}
                   </p>
-                ) : null}
-                <button style={st.primary} type="submit" disabled={isSubmitting}>
-                  {isSubmitting
-                    ? t("auth.processing")
-                    : mode === "up"
-                      ? t("auth.signup")
-                      : t("auth.signin")}
-                </button>
-              </form>
-              <button
-                style={{ ...st.ghost, width: "100%", marginTop: 8 }}
-                onClick={passkeyLogin}
-              >
-                🔑 {t("passkey.signin")}
-              </button>
+                  <form onSubmit={submit} style={{ display: "grid", gap: 8 }}>
+                    {mode === "up" ? (
+                      <input
+                        style={st.input}
+                        placeholder={t("auth.name")}
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                      />
+                    ) : null}
+                    <input
+                      style={st.input}
+                      placeholder={t("auth.email")}
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                    <input
+                      style={st.input}
+                      placeholder={t("auth.password")}
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    {mode === "up" ? (
+                      <p className="signup-agreement">
+                        {t("auth.agreementPrefix")}{" "}
+                        <a href="/terms">{t("footer.terms")}</a>
+                        {t("auth.agreementAnd")}
+                        <a href="/privacy">{t("footer.privacy")}</a>
+                        {t("auth.agreementSuffix")}
+                      </p>
+                    ) : null}
+                    <button style={st.primary} type="submit" disabled={isSubmitting}>
+                      {isSubmitting
+                        ? t("auth.processing")
+                        : mode === "up"
+                          ? t("auth.signup")
+                          : t("auth.signin")}
+                    </button>
+                  </form>
+                  <button
+                    type="button"
+                    style={{ ...st.ghost, width: "100%", marginTop: 8 }}
+                    onClick={passkeyLogin}
+                  >
+                    🔑 {t("passkey.signin")}
+                  </button>
+                  {mode === "in" ? (
+                    <button
+                      type="button"
+                      style={{ ...st.ghost, width: "100%", marginTop: 8 }}
+                      onClick={openEmailOtpLogin}
+                    >
+                      ✉️ {t("auth.emailOtpEntry")}
+                    </button>
+                  ) : null}
+                </>
+              )}
               {err ? (
                 <p role="alert" style={{ color: "crimson" }}>
                   {err}
                 </p>
               ) : null}
-              <button
-                style={{ ...st.ghost, marginTop: 12, width: "100%" }}
-                onClick={toggleMode}
-              >
-                {mode === "in" ? t("auth.toSignup") : t("auth.toSignin")}
-              </button>
+              {emailOtpMode ? null : (
+                <button
+                  type="button"
+                  style={{ ...st.ghost, marginTop: 12, width: "100%" }}
+                  onClick={toggleMode}
+                >
+                  {mode === "in" ? t("auth.toSignup") : t("auth.toSignin")}
+                </button>
+              )}
             </>
           )}
         </div>

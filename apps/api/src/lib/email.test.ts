@@ -1,6 +1,9 @@
 import type { Message, Receipt } from "@upyo/core";
 import { describe, expect, it } from "vitest";
-import { createVerificationEmailSender } from "./email";
+import {
+  createSignInOtpEmailSender,
+  createVerificationEmailSender,
+} from "./email";
 
 function transportWith(receipt: Receipt) {
   const messages: Message[] = [];
@@ -90,5 +93,74 @@ describe("createVerificationEmailSender", () => {
         verificationUrl: "https://1day1ott.com/verify",
       }),
     ).rejects.toThrow("domain is not verified");
+  });
+});
+
+describe("createSignInOtpEmailSender", () => {
+  it.each([
+    {
+      lang: "ko" as const,
+      subject: "[1일 1OTT] 로그인 인증 코드",
+      heading: "로그인 인증 코드",
+    },
+    {
+      lang: "en" as const,
+      subject: "[1DAY 1OTT] Your sign-in code",
+      heading: "Your sign-in code",
+    },
+    {
+      lang: "ja" as const,
+      subject: "[1日 1OTT] ログイン認証コード",
+      heading: "ログイン認証コード",
+    },
+  ])("$lang 로그인 코드를 발송한다", async ({
+    lang,
+    subject,
+    heading,
+  }) => {
+    const { messages, transport } = transportWith({
+      successful: true,
+      messageId: "email-otp-1",
+    });
+    const sendSignInOtpEmail = createSignInOtpEmailSender(transport);
+
+    await sendSignInOtpEmail({
+      to: "existing-user@example.com",
+      otp: "123456",
+      lang,
+    });
+
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toMatchObject({
+      sender: {
+        name: "1일 1OTT",
+        address: "noreply@1day1ott.com",
+      },
+      recipients: [{ address: "existing-user@example.com" }],
+      subject,
+      tags: ["sign-in-otp"],
+    });
+    const content = messages[0]!.content;
+    expect(content.text).toContain(heading);
+    expect(content.text).toContain("123456");
+    expect("html" in content ? content.html : "").toContain("123456");
+    expect("html" in content ? content.html : "").toContain(
+      `<html lang="${lang}">`,
+    );
+  });
+
+  it("Upyo 전송 실패 영수증을 예외로 전환한다", async () => {
+    const { transport } = transportWith({
+      successful: false,
+      errorMessages: ["rate limited"],
+    });
+    const sendSignInOtpEmail = createSignInOtpEmailSender(transport);
+
+    await expect(
+      sendSignInOtpEmail({
+        to: "existing-user@example.com",
+        otp: "123456",
+      }),
+    ).rejects.toThrow("rate limited");
   });
 });

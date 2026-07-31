@@ -6,7 +6,7 @@ import {
 import { ResendTransport } from "@upyo/resend";
 import { escapeHtml } from "./html";
 
-const VERIFICATION_FROM = "1일 1OTT <noreply@1day1ott.com>";
+const EMAIL_FROM = "1일 1OTT <noreply@1day1ott.com>";
 
 export const VERIFICATION_EMAIL_LANGS = ["ko", "en", "ja"] as const;
 export type VerificationEmailLang = (typeof VERIFICATION_EMAIL_LANGS)[number];
@@ -21,6 +21,16 @@ export type VerificationEmailSender = (
   email: VerificationEmail,
 ) => Promise<void>;
 
+export interface SignInOtpEmail {
+  to: string;
+  otp: string;
+  lang?: VerificationEmailLang;
+}
+
+export type SignInOtpEmailSender = (
+  email: SignInOtpEmail,
+) => Promise<void>;
+
 interface EmailTransport {
   send(message: Message): Promise<Receipt>;
 }
@@ -32,7 +42,7 @@ export function createVerificationEmailSender(
     const copy = VERIFICATION_EMAIL_COPY[lang];
     const receipt = await transport.send(
       createMessage({
-        from: VERIFICATION_FROM,
+        from: EMAIL_FROM,
         to,
         subject: copy.subject,
         content: {
@@ -61,6 +71,51 @@ export function createResendVerificationEmailSender(
   apiKey: string,
 ): VerificationEmailSender {
   return createVerificationEmailSender(
+    new ResendTransport({
+      apiKey,
+      retries: 3,
+      timeout: 15_000,
+    }),
+  );
+}
+
+export function createSignInOtpEmailSender(
+  transport: EmailTransport,
+): SignInOtpEmailSender {
+  return async ({ to, otp, lang = "ko" }) => {
+    const copy = SIGN_IN_OTP_EMAIL_COPY[lang];
+    const receipt = await transport.send(
+      createMessage({
+        from: EMAIL_FROM,
+        to,
+        subject: copy.subject,
+        content: {
+          html: signInOtpEmailHtml(otp, lang),
+          text: [
+            copy.text,
+            "",
+            otp,
+            "",
+            copy.expires,
+            copy.ignore,
+          ].join("\n"),
+        },
+        tags: ["sign-in-otp"],
+      }),
+    );
+
+    if (!receipt.successful) {
+      throw new Error(
+        `Failed to send sign-in OTP email: ${receipt.errorMessages.join(", ")}`,
+      );
+    }
+  };
+}
+
+export function createResendSignInOtpEmailSender(
+  apiKey: string,
+): SignInOtpEmailSender {
+  return createSignInOtpEmailSender(
     new ResendTransport({
       apiKey,
       retries: 3,
@@ -132,6 +187,49 @@ const VERIFICATION_EMAIL_COPY: Record<
   },
 };
 
+interface SignInOtpEmailCopy {
+  serviceName: string;
+  subject: string;
+  title: string;
+  description: string;
+  expires: string;
+  ignore: string;
+  text: string;
+}
+
+const SIGN_IN_OTP_EMAIL_COPY: Record<
+  VerificationEmailLang,
+  SignInOtpEmailCopy
+> = {
+  ko: {
+    serviceName: "1일 1OTT",
+    subject: "[1일 1OTT] 로그인 인증 코드",
+    title: "로그인 인증 코드",
+    description: "아래 인증 코드를 로그인 화면에 입력해 주세요.",
+    expires: "인증 코드는 10분 동안 유효합니다.",
+    ignore: "본인이 요청하지 않았다면 이 메일을 무시해 주세요.",
+    text: "1일 1OTT 로그인 인증 코드입니다.",
+  },
+  en: {
+    serviceName: "1DAY 1OTT",
+    subject: "[1DAY 1OTT] Your sign-in code",
+    title: "Your sign-in code",
+    description: "Enter the verification code below on the sign-in screen.",
+    expires: "This code is valid for 10 minutes.",
+    ignore: "If you did not request this code, you can safely ignore this email.",
+    text: "Your sign-in code for 1DAY 1OTT.",
+  },
+  ja: {
+    serviceName: "1日 1OTT",
+    subject: "[1日 1OTT] ログイン認証コード",
+    title: "ログイン認証コード",
+    description: "以下の認証コードをログイン画面に入力してください。",
+    expires: "認証コードは10分間有効です。",
+    ignore: "このメールに心当たりがない場合は、そのまま無視してください。",
+    text: "1日 1OTTのログイン認証コードです。",
+  },
+};
+
 function verificationEmailHtml(
   verificationUrl: string,
   lang: VerificationEmailLang,
@@ -158,6 +256,37 @@ function verificationEmailHtml(
           <a href="${escapedUrl}" style="color:#287a45">${escapedUrl}</a>
         </p>
         <p style="margin:28px 0 0;color:#607066;font-size:12px">
+          ${copy.ignore}
+        </p>
+      </div>
+    </div>
+  </body>
+</html>`;
+}
+
+function signInOtpEmailHtml(
+  otp: string,
+  lang: VerificationEmailLang,
+): string {
+  const escapedOtp = escapeHtml(otp);
+  const copy = SIGN_IN_OTP_EMAIL_COPY[lang];
+  return `<!doctype html>
+<html lang="${lang}">
+  <body style="margin:0;background:#f6f8f6;color:#1f2a22;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+    <div style="max-width:560px;margin:0 auto;padding:40px 20px">
+      <div style="background:#fff;border:1px solid #dce5dd;border-radius:16px;padding:32px">
+        <p style="margin:0 0 24px;font-size:20px;font-weight:700">🌱 ${copy.serviceName}</p>
+        <h1 style="margin:0 0 16px;font-size:24px">${copy.title}</h1>
+        <p style="margin:0 0 24px;line-height:1.6">
+          ${copy.description}
+        </p>
+        <p style="margin:0 0 24px;padding:16px;border-radius:10px;background:#f0f6f1;font-size:30px;font-weight:800;letter-spacing:0.18em;text-align:center">
+          ${escapedOtp}
+        </p>
+        <p style="margin:0;color:#607066;font-size:13px">
+          ${copy.expires}
+        </p>
+        <p style="margin:12px 0 0;color:#607066;font-size:12px">
           ${copy.ignore}
         </p>
       </div>

@@ -162,6 +162,23 @@ export default {
     resend: "인증 메일 다시 보내기",
     resending: "보내는 중…",
     resendFailed: "인증 메일을 다시 보내지 못했습니다.",
+    emailOtpEntry: "이메일 인증으로 로그인",
+    emailOtpPrompt: "비밀번호나 Passkey를 분실했나요?",
+    emailOtpDescription:
+      "가입한 이메일로 로그인 인증 코드를 보내드립니다.",
+    emailOtpRequest: "인증 코드 받기",
+    emailOtpSent:
+      "{{email}} 주소로 인증 코드를 보냈습니다. 가입된 계정의 메일만 발송됩니다.",
+    emailOtpCode: "6자리 인증 코드",
+    emailOtpSignIn: "인증 코드로 로그인",
+    emailOtpResend: "인증 코드 다시 받기",
+    emailOtpBack: "다른 방법으로 로그인",
+    emailOtpRequestFailed: "인증 코드를 보내지 못했습니다.",
+    emailOtpInvalid: "인증 코드가 올바르지 않습니다.",
+    emailOtpExpired: "인증 코드가 만료되었습니다. 새 코드를 받아 주세요.",
+    emailOtpTooManyAttempts:
+      "인증 코드 입력 횟수를 초과했습니다. 새 코드를 받아 주세요.",
+    emailOtpSignInFailed: "이메일 인증 로그인에 실패했습니다.",
     agreementPrefix: "가입하면",
     agreementAnd: " 및 ",
     agreementSuffix: "에 동의합니다.",

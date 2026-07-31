@@ -162,6 +162,24 @@ export default {
     resend: "確認メールを再送信",
     resending: "送信中…",
     resendFailed: "確認メールを再送信できませんでした。",
+    emailOtpEntry: "メール認証でログイン",
+    emailOtpPrompt: "パスワードやPasskeyを紛失しましたか？",
+    emailOtpDescription:
+      "登録済みのメールアドレスにログイン認証コードを送信します。",
+    emailOtpRequest: "認証コードを受け取る",
+    emailOtpSent:
+      "{{email}} に認証コードを送信しました。登録済みアカウントにのみメールが届きます。",
+    emailOtpCode: "6桁の認証コード",
+    emailOtpSignIn: "認証コードでログイン",
+    emailOtpResend: "認証コードを再送信",
+    emailOtpBack: "別の方法でログイン",
+    emailOtpRequestFailed: "認証コードを送信できませんでした。",
+    emailOtpInvalid: "認証コードが正しくありません。",
+    emailOtpExpired:
+      "認証コードの有効期限が切れました。新しいコードを取得してください。",
+    emailOtpTooManyAttempts:
+      "認証コードの入力回数を超えました。新しいコードを取得してください。",
+    emailOtpSignInFailed: "メール認証ログインに失敗しました。",
     agreementPrefix: "登録すると、",
     agreementAnd: "および",
     agreementSuffix: "に同意したものとみなされます。",
