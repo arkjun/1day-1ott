@@ -6,6 +6,7 @@ import type { Env } from "./env";
 import { avatarMediaType, avatarUrl } from "./lib/avatar";
 import { renderProfileHtml } from "./lib/profile-html";
 import { entriesRoute } from "./routes/entries";
+import { followsRoute } from "./routes/follows";
 import { meRoute } from "./routes/me";
 import { loadPublicUser, publicRoute } from "./routes/public";
 import { searchRoute } from "./routes/search";
@@ -26,7 +27,7 @@ app.use("/api/*", (c, next) =>
     origin: c.env.WEB_ORIGIN,
     credentials: true,
     allowHeaders: ["Content-Type", "Authorization"],
-    allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   })(c, next),
 );
 
@@ -127,6 +128,7 @@ app.use("/api/*", async (c, next) => {
 app.route("/api", entriesRoute);
 app.route("/api", searchRoute);
 app.route("/api", meRoute);
+app.route("/api", followsRoute);
 
 export default {
   async fetch(

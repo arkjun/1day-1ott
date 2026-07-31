@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  check,
   index,
   integer,
   primaryKey,
@@ -149,6 +150,39 @@ export const entries = sqliteTable(
   ],
 );
 
+/** 서비스 내부 사용자의 단방향 팔로우 관계. */
+export const userFollows = sqliteTable(
+  "user_follows",
+  {
+    followerId: text("follower_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    followeeId: text("followee_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    primaryKey({ columns: [t.followerId, t.followeeId] }),
+    check(
+      "user_follows_not_self_ck",
+      sql`${t.followerId} <> ${t.followeeId}`,
+    ),
+    index("user_follows_followee_created_idx").on(
+      t.followeeId,
+      t.createdAt,
+      t.followerId,
+    ),
+    index("user_follows_follower_created_idx").on(
+      t.followerId,
+      t.createdAt,
+      t.followeeId,
+    ),
+  ],
+);
+
 /** 로컬 ActivityPub Actor의 서명 키. privateKey는 애플리케이션 키로 암호화한다. */
 export const federationActorKeys = sqliteTable(
   "federation_actor_keys",
@@ -236,6 +270,7 @@ export const schema = {
   passkey,
   content,
   entries,
+  userFollows,
   federationActorKeys,
   federationFollowers,
   federationPublications,

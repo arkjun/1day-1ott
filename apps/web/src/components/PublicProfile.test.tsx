@@ -22,6 +22,8 @@ describe("ProfileHeader", () => {
             name: "테스터",
             bio: "첫 줄\n둘째 줄",
             avatarUrl: "https://media.1day1ott.com/avatars/test.webp",
+            followerCount: 0,
+            followingCount: 0,
             total: 0,
             cells: [],
             posters: [],

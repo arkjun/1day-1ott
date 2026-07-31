@@ -1,9 +1,15 @@
 import { countToLevel } from "@1ott/shared";
 import { and, desc, eq, sql } from "drizzle-orm";
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { createDb, schema } from "../db";
 import type { Env } from "../env";
 import { avatarUrl } from "../lib/avatar";
+import {
+  countFollowers,
+  countPublicFollowing,
+  InvalidFollowCursorError,
+  listPublicFollowUsers,
+} from "../lib/follows";
 import { pickLang, resolveLocalized } from "../lib/titles";
 
 export const publicRoute = new Hono<{ Bindings: Env }>();
@@ -37,13 +43,64 @@ async function dayCounts(db: Db, userId: string): Promise<Map<string, number>> {
   return new Map(rows.map((r) => [r.date, Number(r.count)]));
 }
 
+function followListLimit(value: string | undefined): number | null {
+  if (value === undefined) return 20;
+  if (!/^\d+$/.test(value)) return null;
+  const limit = Number(value);
+  return Number.isInteger(limit) && limit >= 1 && limit <= 50
+    ? limit
+    : null;
+}
+
+async function followList(
+  c: Context<{ Bindings: Env }>,
+  username: string,
+  direction: "followers" | "following",
+) {
+  const db = createDb(c.env.DB);
+  const u = await loadPublicUser(db, username);
+  if (!u) return c.json({ error: "not_found" }, 404);
+  const limit = followListLimit(c.req.query("limit"));
+  if (limit == null) return c.json({ error: "invalid_limit" }, 400);
+
+  try {
+    return c.json(
+      await listPublicFollowUsers(
+        db,
+        c.env.MEDIA_ORIGIN,
+        u.id,
+        direction,
+        limit,
+        c.req.query("cursor"),
+      ),
+    );
+  } catch (error) {
+    if (error instanceof InvalidFollowCursorError) {
+      return c.json({ error: "invalid_cursor" }, 400);
+    }
+    throw error;
+  }
+}
+
+publicRoute.get("/u/:username/followers", (c) =>
+  followList(c, c.req.param("username"), "followers"),
+);
+
+publicRoute.get("/u/:username/following", (c) =>
+  followList(c, c.req.param("username"), "following"),
+);
+
 /** 공개 프로필 JSON (무인증). 비공개/없음 → 404. */
 publicRoute.get("/u/:username", async (c) => {
   const db = createDb(c.env.DB);
   const u = await loadPublicUser(db, c.req.param("username"));
   if (!u) return c.json({ error: "not_found" }, 404);
 
-  const counts = await dayCounts(db, u.id);
+  const [counts, followerCount, followingCount] = await Promise.all([
+    dayCounts(db, u.id),
+    countFollowers(db, u.id),
+    countPublicFollowing(db, u.id),
+  ]);
   const cells = [...counts.entries()].map(([date, count]) => ({
     date,
     count,
@@ -129,6 +186,8 @@ publicRoute.get("/u/:username", async (c) => {
     name: u.name,
     bio: u.bio,
     avatarUrl: avatarUrl(c.env.MEDIA_ORIGIN, u.avatarKey),
+    followerCount,
+    followingCount,
     total,
     cells,
     posters,

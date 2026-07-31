@@ -1,4 +1,15 @@
-import type { ContentDetail, ContentType, EntryInput, HeatmapCell, MyContentEntry, Reaction, SearchResult } from "@1ott/shared";
+import type {
+  ContentDetail,
+  ContentType,
+  EntryInput,
+  FollowListResponse,
+  FollowMutationResult,
+  FollowStatus,
+  HeatmapCell,
+  MyContentEntry,
+  Reaction,
+  SearchResult,
+} from "@1ott/shared";
 import i18n from "../i18n";
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
@@ -132,6 +143,27 @@ export const api = {
     req<import("@1ott/shared").PublicProfile>(
       `/api/u/${encodeURIComponent(username)}?lang=${i18n.language}`,
     ),
+  followStatus: (username: string) =>
+    req<FollowStatus>(`/api/follows/${encodeURIComponent(username)}`),
+  follow: (username: string) =>
+    req<FollowMutationResult>(`/api/follows/${encodeURIComponent(username)}`, {
+      method: "PUT",
+    }),
+  unfollow: (username: string) =>
+    req<FollowMutationResult>(`/api/follows/${encodeURIComponent(username)}`, {
+      method: "DELETE",
+    }),
+  followList: (
+    username: string,
+    direction: "followers" | "following",
+    cursor?: string,
+  ) => {
+    const query = new URLSearchParams({ limit: "20" });
+    if (cursor) query.set("cursor", cursor);
+    return req<FollowListResponse>(
+      `/api/u/${encodeURIComponent(username)}/${direction}?${query}`,
+    );
+  },
   content: (id: string) =>
     req<ContentDetail>(`/api/content/${encodeURIComponent(id)}?lang=${i18n.language}`),
   contentMine: (id: string) =>

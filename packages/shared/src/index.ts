@@ -75,10 +75,34 @@ export interface PublicProfile {
   name: string;
   bio: string | null;
   avatarUrl: string;
+  followerCount: number;
+  followingCount: number;
   total: number;
   cells: HeatmapCell[];
   posters: { id: string; contentId: string; title: string; posterUrl: string | null }[];
   notes: PublicNote[];
+}
+
+export interface PublicUserSummary {
+  username: string;
+  name: string;
+  bio: string | null;
+  avatarUrl: string;
+}
+
+export interface FollowListResponse {
+  users: PublicUserSummary[];
+  nextCursor: string | null;
+}
+
+export interface FollowStatus {
+  isSelf: boolean;
+  following: boolean;
+}
+
+export interface FollowMutationResult {
+  following: boolean;
+  followerCount: number;
 }
 
 /** 작품 공개 페이지: 작품 정보 + 익명 집계. */

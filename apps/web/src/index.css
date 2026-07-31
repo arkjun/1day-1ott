@@ -314,6 +314,10 @@ a {
   outline-offset: 2px;
 }
 
+.follow-list-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.46);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
