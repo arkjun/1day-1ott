@@ -152,7 +152,7 @@ export const entries = sqliteTable(
 
 /**
  * 공개 감상평의 이모티콘 반응.
- * 로컬 사용자와 원격 Actor는 각각 감상평당 하나의 반응만 유지한다.
+ * 로컬 사용자와 원격 Actor는 각각 감상평·이모티콘 조합당 하나만 유지한다.
  */
 export const entryReactions = sqliteTable(
   "entry_reactions",
@@ -180,10 +180,12 @@ export const entryReactions = sqliteTable(
     uniqueIndex("entry_reactions_local_user_uq").on(
       t.entryId,
       t.localUserId,
+      t.emoji,
     ),
     uniqueIndex("entry_reactions_remote_actor_uq").on(
       t.entryId,
       t.remoteActorUri,
+      t.emoji,
     ),
     uniqueIndex("entry_reactions_remote_activity_uq").on(t.remoteActivityUri),
     index("entry_reactions_entry_idx").on(t.entryId),

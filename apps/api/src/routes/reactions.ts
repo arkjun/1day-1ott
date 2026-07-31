@@ -65,9 +65,9 @@ reactionsRoute.put("/entries/:id/reaction", async (c) => {
       target: [
         schema.entryReactions.entryId,
         schema.entryReactions.localUserId,
+        schema.entryReactions.emoji,
       ],
       set: {
-        emoji: parsed.data.emoji,
         emojiImageUrl: null,
         createdAt: new Date(),
       },
@@ -79,6 +79,13 @@ reactionsRoute.put("/entries/:id/reaction", async (c) => {
 });
 
 reactionsRoute.delete("/entries/:id/reaction", async (c) => {
+  const parsed = reactionBodySchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return c.json({ error: "invalid_input", issues: parsed.error.issues }, 400);
+  }
+
   const db = createDb(c.env.DB);
   const entryId = c.req.param("id");
   const userId = c.get("userId");
@@ -88,6 +95,7 @@ reactionsRoute.delete("/entries/:id/reaction", async (c) => {
       and(
         eq(schema.entryReactions.entryId, entryId),
         eq(schema.entryReactions.localUserId, userId),
+        eq(schema.entryReactions.emoji, parsed.data.emoji),
       ),
     );
   return c.json({

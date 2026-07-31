@@ -128,6 +128,13 @@ describe("PublicNotes", () => {
               note: "압도적인 영상미",
               reactions: [
                 {
+                  emoji: "👍",
+                  imageUrl: null,
+                  count: 1,
+                  remoteCount: 0,
+                  reactedByMe: true,
+                },
+                {
                   emoji: "❤️",
                   imageUrl: null,
                   count: 3,
@@ -162,10 +169,10 @@ describe("PublicNotes", () => {
     expect(html).toContain(">3<");
     expect(html).toContain("연합우주 반응 2개");
     expect(html).toContain("https://remote.example/party.png");
-    expect(html).toContain('aria-pressed="true"');
+    expect(html.match(/aria-pressed="true"/g)).toHaveLength(2);
+    expect(html).toContain('aria-label="👍 반응하기"');
     expect(html).toContain('aria-label="❤️ 반응하기"');
     expect(html).toContain('aria-label="반응 추가"');
     expect(html).toContain('aria-expanded="false"');
-    expect(html).not.toContain('aria-label="👍 반응하기"');
   });
 });

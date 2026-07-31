@@ -504,7 +504,7 @@ describe("감상평 이모티콘 반응", () => {
     expect(response.status).toBe(200);
   }
 
-  it("다른 사용자의 공개 감상평에 반응하고 다른 이모티콘으로 바꿀 수 있다", async () => {
+  it("다른 사용자의 공개 감상평에 종류별로 반응할 수 있다", async () => {
     const owner = await signUp(`reaction-owner-${++seq}`);
     await publishProfile(owner, `reaction_owner_${seq}`);
     const created = await createEntry(owner, { note: "좋았던 장면" });
@@ -532,7 +532,7 @@ describe("감상평 이모티콘 반응", () => {
       ],
     });
 
-    const changed = await app.request(
+    const addedLove = await app.request(
       `/api/entries/${id}/reaction`,
       authed(reactor, {
         method: "PUT",
@@ -540,20 +540,23 @@ describe("감상평 이모티콘 반응", () => {
       }),
       env,
     );
-    expect(changed.status).toBe(200);
-    expect(await changed.json()).toMatchObject({
-      reactions: [{ emoji: "❤️", count: 1, reactedByMe: true }],
+    expect(addedLove.status).toBe(200);
+    expect(await addedLove.json()).toMatchObject({
+      reactions: [
+        { emoji: "👍", count: 1, reactedByMe: true },
+        { emoji: "❤️", count: 1, reactedByMe: true },
+      ],
     });
 
     const rows = await env.DB.prepare(
-      "SELECT emoji FROM entry_reactions WHERE entry_id = ?",
+      "SELECT emoji FROM entry_reactions WHERE entry_id = ? ORDER BY emoji",
     )
       .bind(id)
       .all<{ emoji: string }>();
-    expect(rows.results).toEqual([{ emoji: "❤️" }]);
+    expect(rows.results).toEqual([{ emoji: "❤️" }, { emoji: "👍" }]);
   });
 
-  it("반응을 취소하고 공개 프로필 집계에 로그인 사용자의 선택을 표시한다", async () => {
+  it("선택한 반응만 취소하고 공개 프로필 집계에 나머지 선택을 표시한다", async () => {
     const owner = await signUp(`reaction-profile-owner-${++seq}`);
     const username = `reaction_profile_${seq}`;
     await publishProfile(owner, username);
@@ -570,6 +573,14 @@ describe("감상평 이모티콘 반응", () => {
       }),
       env,
     );
+    await app.request(
+      `/api/entries/${id}/reaction`,
+      authed(reactor, {
+        method: "PUT",
+        body: JSON.stringify({ emoji: "😮" }),
+      }),
+      env,
+    );
 
     const profile = await app.request(
       `/api/u/${username}`,
@@ -581,25 +592,46 @@ describe("감상평 이모티콘 반응", () => {
       notes: [
         {
           id,
-          reactions: [
+          reactions: expect.arrayContaining([
             {
               emoji: "😂",
+              imageUrl: null,
               count: 1,
               remoteCount: 0,
               reactedByMe: true,
             },
-          ],
+            {
+              emoji: "😮",
+              imageUrl: null,
+              count: 1,
+              remoteCount: 0,
+              reactedByMe: true,
+            },
+          ]),
         },
       ],
     });
 
     const removed = await app.request(
       `/api/entries/${id}/reaction`,
-      authed(reactor, { method: "DELETE" }),
+      authed(reactor, {
+        method: "DELETE",
+        body: JSON.stringify({ emoji: "😂" }),
+      }),
       env,
     );
     expect(removed.status).toBe(200);
-    expect(await removed.json()).toEqual({ reactions: [] });
+    expect(await removed.json()).toEqual({
+      reactions: [
+        {
+          emoji: "😮",
+          imageUrl: null,
+          count: 1,
+          remoteCount: 0,
+          reactedByMe: true,
+        },
+      ],
+    });
   });
 
   it("본인 감상평·비공개 감상평·지원하지 않는 이모티콘은 거부한다", async () => {

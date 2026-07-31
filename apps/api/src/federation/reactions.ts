@@ -93,9 +93,9 @@ export async function handleReaction(
       target: [
         schema.entryReactions.entryId,
         schema.entryReactions.remoteActorUri,
+        schema.entryReactions.emoji,
       ],
       set: {
-        emoji,
         emojiImageUrl,
         remoteActivityUri: activity.id.href,
         createdAt: new Date(),

@@ -175,10 +175,13 @@ export const api = {
         body: JSON.stringify({ emoji }),
       },
     ),
-  removeNoteReaction: (entryId: string) =>
+  removeNoteReaction: (entryId: string, emoji: NoteReactionEmoji) =>
     req<{ reactions: NoteReactionSummary[] }>(
       `/api/entries/${encodeURIComponent(entryId)}/reaction`,
-      { method: "DELETE" },
+      {
+        method: "DELETE",
+        body: JSON.stringify({ emoji }),
+      },
     ),
   content: (id: string) =>
     req<ContentDetail>(`/api/content/${encodeURIComponent(id)}?lang=${i18n.language}`),

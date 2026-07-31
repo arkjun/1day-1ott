@@ -608,7 +608,7 @@ describe("ActivityPub Actor와 WebFinger", () => {
     });
     const like = new Like({
       id: new URL("https://elsewhere.example/activities/like-1"),
-      actor: new URL("https://elsewhere.example/users/bob"),
+      actor: new URL("https://remote.example/users/alice"),
       object,
     });
     const ctx = {

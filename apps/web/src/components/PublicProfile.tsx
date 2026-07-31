@@ -149,14 +149,15 @@ export function PublicProfile({ username }: { username: string }) {
 
   async function updateNoteReaction(
     entryId: string,
-    emoji: NoteReactionEmoji | null,
+    emoji: NoteReactionEmoji,
+    remove: boolean,
   ) {
     setPendingReactionEntryId(entryId);
     setReactionError(null);
     try {
-      const result = emoji
-        ? await api.reactToNote(entryId, emoji)
-        : await api.removeNoteReaction(entryId);
+      const result = remove
+        ? await api.removeNoteReaction(entryId, emoji)
+        : await api.reactToNote(entryId, emoji);
       setProfile((current) =>
         current
           ? {
@@ -304,7 +305,11 @@ export function PublicNotes({
   canReact: boolean;
   pendingEntryId: string | null;
   error?: string | null;
-  onReact: (entryId: string, emoji: NoteReactionEmoji | null) => void;
+  onReact: (
+    entryId: string,
+    emoji: NoteReactionEmoji,
+    remove: boolean,
+  ) => void;
 }) {
   const { t } = useTranslation();
   const [reactionPickerEntryId, setReactionPickerEntryId] = useState<
@@ -408,10 +413,7 @@ export function PublicNotes({
                         }
                         disabled={!canReact || pendingEntryId != null}
                         onClick={() =>
-                          onReact(
-                            entry.id,
-                            summary.reactedByMe ? null : emoji,
-                          )
+                          onReact(entry.id, emoji, summary.reactedByMe)
                         }
                       >
                         <span>{emoji}</span>
@@ -506,7 +508,8 @@ export function PublicNotes({
                                 setReactionPickerEntryId(null);
                                 onReact(
                                   entry.id,
-                                  summary?.reactedByMe ? null : emoji,
+                                  emoji,
+                                  summary?.reactedByMe ?? false,
                                 );
                               }}
                             >
