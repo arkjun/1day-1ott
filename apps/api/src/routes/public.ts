@@ -13,7 +13,10 @@ import {
 } from "../lib/follows";
 import { listEntryReactionSummaries } from "../lib/entry-reactions";
 import { pickLang, resolveLocalized } from "../lib/titles";
-import { resolveYouTubeSource } from "../lib/youtube";
+import {
+  parseYouTubeChannelName,
+  resolveYouTubeSource,
+} from "../lib/youtube";
 
 export const publicRoute = new Hono<{ Bindings: Env }>();
 
@@ -187,6 +190,7 @@ publicRoute.get("/u/:username", async (c) => {
       id: entry.id,
       contentId: entry.contentId,
       title: loc?.title ?? entry.title,
+      channelName: parseYouTubeChannelName(entry.meta),
       posterUrl: loc?.posterUrl ?? entry.posterUrl,
       watchedOn: entry.watchedOn,
       reaction: entry.reaction,

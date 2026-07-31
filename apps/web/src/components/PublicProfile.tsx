@@ -305,6 +305,7 @@ export function PublicNotes({
                 <a href={`/c/${entry.contentId}`} style={st.noteTitle}>
                   {entry.title}
                 </a>
+                {entry.channelName ? <span>{entry.channelName}</span> : null}
                 <span>{entry.watchedOn}</span>
                 {entry.reaction ? (
                   <span title={t(`reaction.${entry.reaction}`)}>

@@ -520,6 +520,7 @@ entriesRoute.get("/entries", async (c) => {
       platform: r.platform,
       type: r.type,
       title: loc?.title ?? r.title,
+      channelName: parseYouTubeChannelName(r.meta),
       posterUrl: loc?.posterUrl ?? r.posterUrl,
     };
   });

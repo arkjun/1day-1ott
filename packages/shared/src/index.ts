@@ -82,6 +82,7 @@ export interface PublicNote {
   id: string;
   contentId: string;
   title: string;
+  channelName: string | null;
   posterUrl: string | null;
   watchedOn: string;
   reaction: Reaction | null;

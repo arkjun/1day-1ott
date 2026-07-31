@@ -34,6 +34,7 @@ export interface EntryRow {
   platform: string | null;
   type: ContentType;
   title: string;
+  channelName: string | null;
   posterUrl: string | null;
 }
 

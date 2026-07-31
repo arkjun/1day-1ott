@@ -230,6 +230,22 @@ describe("기록 생성 (POST /api/entries)", () => {
     );
   });
 
+  it("유튜브 기록 목록에 채널명을 포함한다", async () => {
+    const cookie = await signUp();
+    await createEntry(cookie, {
+      type: "youtube",
+      title: "테스트 영상",
+      ytId: `youtube-list-${++seq}`,
+      channelName: "테스트 채널",
+    });
+
+    expect((await listEntries(cookie))[0]).toMatchObject({
+      type: "youtube",
+      title: "테스트 영상",
+      channelName: "테스트 채널",
+    });
+  });
+
   it("잘못된 입력은 400 (제목 없음/날짜 형식/모르는 reaction)", async () => {
     const cookie = await signUp();
     for (const bad of [
@@ -999,7 +1015,10 @@ describe("프로필/공개 (PATCH /api/me, GET /api/u/:username)", () => {
   it("공개 감상평만 최신순으로 공개 프로필에 노출한다", async () => {
     const cookie = await signUp();
     await createEntry(cookie, {
-      title: "공개 작품",
+      type: "youtube",
+      title: "공개 영상",
+      ytId: `youtube-note-${++seq}`,
+      channelName: "공개 채널",
       note: "모두에게 보이는 감상",
       reaction: "love",
       watchedOn: "2026-07-12",
@@ -1021,6 +1040,7 @@ describe("프로필/공개 (PATCH /api/me, GET /api/u/:username)", () => {
     const profile = (await res.json()) as {
       notes: {
         title: string;
+        channelName: string | null;
         note: string;
         reaction: string | null;
         watchedOn: string;
@@ -1028,7 +1048,8 @@ describe("프로필/공개 (PATCH /api/me, GET /api/u/:username)", () => {
     };
     expect(profile.notes).toEqual([
       expect.objectContaining({
-        title: "공개 작품",
+        title: "공개 영상",
+        channelName: "공개 채널",
         note: "모두에게 보이는 감상",
         reaction: "love",
         watchedOn: "2026-07-12",

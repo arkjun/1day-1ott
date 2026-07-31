@@ -13,6 +13,7 @@ function row(p: Partial<EntryRow>): EntryRow {
     platform: null,
     type: "movie",
     title: "무제",
+    channelName: null,
     posterUrl: null,
     ...p,
   };

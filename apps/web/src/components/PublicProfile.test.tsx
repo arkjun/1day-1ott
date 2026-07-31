@@ -87,6 +87,7 @@ describe("PublicNotes", () => {
               id: "entry-1",
               contentId: "content-1",
               title: "듄: 파트2",
+              channelName: "테스트 채널",
               posterUrl: "https://example.com/dune.jpg",
               watchedOn: "2026-07-30",
               reaction: "love",
@@ -118,6 +119,7 @@ describe("PublicNotes", () => {
 
     expect(html).toContain("감상평");
     expect(html).toContain("듄: 파트2");
+    expect(html).toContain("테스트 채널");
     expect(html).toContain("2026-07-30");
     expect(html).toContain("👍👍");
     expect(html).toContain("압도적인 영상미");

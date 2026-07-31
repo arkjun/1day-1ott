@@ -93,6 +93,7 @@ export function ContentPage({ contentId }: { contentId: string }) {
     contentId,
     type: detail.type,
     title: detail.title,
+    channelName: detail.source?.name ?? null,
     posterUrl: null,
   }));
 

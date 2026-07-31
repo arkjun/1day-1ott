@@ -47,6 +47,7 @@ export function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: (
       <div style={st.entryEdit}>
         <div style={{ fontWeight: 600, marginBottom: 8 }}>
           {t(`type.${entry.type}`)} · {entry.title}
+          {entry.channelName ? ` · ${entry.channelName}` : ""}
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <input
@@ -88,6 +89,7 @@ export function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: (
       <div style={{ flex: 1, minWidth: 0 }}>
         <b>{entry.watchedOn}</b> · {t(`type.${entry.type}`)} ·{" "}
         <a href={`/c/${entry.contentId}`} style={{ color: "inherit" }}>{entry.title}</a>
+        {entry.channelName ? <span style={st.muted}> · {entry.channelName}</span> : null}
         {entry.reaction ? ` · ${REACTION_META[entry.reaction].emoji}` : ""}
         {entry.note ? <span style={st.muted}> · {entry.note}</span> : null}
       </div>

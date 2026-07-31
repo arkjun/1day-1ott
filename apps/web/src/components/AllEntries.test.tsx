@@ -17,6 +17,7 @@ function makeEntries(n: number): EntryRow[] {
     platform: null,
     type: "movie" as const,
     title: `작품 ${i}`,
+    channelName: null,
     posterUrl: null,
   }));
 }
@@ -49,6 +50,21 @@ describe("AllEntries", () => {
   it("전부 보이면 더 보기 버튼이 없다", async () => {
     const html = await render(makeEntries(3));
     expect(html).not.toContain("더 보기");
+  });
+
+  it("유튜브 기록에 채널명을 함께 보여준다", async () => {
+    const [entry] = makeEntries(1);
+    const html = await render([
+      {
+        ...entry!,
+        type: "youtube",
+        title: "테스트 영상",
+        channelName: "테스트 채널",
+      },
+    ]);
+
+    expect(html).toContain("테스트 영상");
+    expect(html).toContain("테스트 채널");
   });
 
   it("기록이 없으면 안내 문구", async () => {
