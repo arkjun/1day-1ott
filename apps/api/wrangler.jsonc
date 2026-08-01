@@ -49,12 +49,18 @@
   ],
   "kv_namespaces": [
     {
-      "binding": "FEDIFY_KV",
-      "id": "9930f29e784647c1af528e78f337108f"
-    },
-    {
       "binding": "FEDIFY_ORDERING_KV",
       "id": "640fb51d4c47462f8bbf758f83aab9d0"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "FEDERATION_RATE_LIMITER",
+      "namespace_id": "10001",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
     }
   ],
   "queues": {

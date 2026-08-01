@@ -304,6 +304,13 @@ export const federationPublications = sqliteTable(
   (t) => [index("federation_publication_status_idx").on(t.status)],
 );
 
+/** Fedify의 공개키 캐시, 멱등성 키와 서명 사양 판별 결과. */
+export const federationKv = sqliteTable("federation_kv", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  expiresAt: integer("expires_at"),
+});
+
 export const schema = {
   user,
   session,
@@ -317,4 +324,5 @@ export const schema = {
   federationActorKeys,
   federationFollowers,
   federationPublications,
+  federationKv,
 };

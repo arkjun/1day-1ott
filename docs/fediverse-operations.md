@@ -1,21 +1,32 @@
 # 연합우주 운영 설정
 
-Fedify 기능은 D1 외에 Cloudflare KV 2개와 Queue/DLQ가 필요하다.
+Fedify 기능은 D1의 `federation_kv` 테이블, Queue ordering용 Cloudflare KV 1개와
+Queue/DLQ가 필요하다.
 리소스 생성은 배포 환경 변경이므로 저장소 설정만으로 자동 수행하지 않는다.
 
 ## 최초 1회 프로비저닝
 
 ```bash
-pnpm --filter @1ott/api exec wrangler kv namespace create FEDIFY_KV
 pnpm --filter @1ott/api exec wrangler kv namespace create FEDIFY_ORDERING_KV
 pnpm --filter @1ott/api exec wrangler queues create 1ott-fedify
 pnpm --filter @1ott/api exec wrangler queues create 1ott-fedify-dlq
 pnpm --filter @1ott/api exec wrangler secret put FEDERATION_KEY_SECRET
 ```
 
-- KV 생성 결과의 ID를 `apps/api/wrangler.jsonc`의 placeholder와 교체한다.
+- ordering KV 생성 결과의 ID를 `apps/api/wrangler.jsonc`의 placeholder와 교체한다.
 - `FEDERATION_KEY_SECRET`에는 비밀번호가 아니라 32바이트 이상 난수 값을 넣는다.
 - 키를 분실하면 저장된 Actor private JWK를 복호화할 수 없으므로 백업 대상에 포함한다.
+- 배포 전에 `0011_add_federation_kv.sql`까지 원격 D1 migration을 적용한다.
+
+## Inbox 보호
+
+- inbox 본문은 최대 64 KiB로 제한한다.
+- `Follow`, `Like`, `EmojiReact`, embedded `Undo`만 서명 검증으로 전달한다.
+- 공개된 로컬 Actor 또는 Note 대상이 아니면 `202`로 폐기한다.
+- Cloudflare Rate Limiting binding으로 전체 및 원격 Actor origin별 요청을 각각
+  분당 20건으로 제한한다. Rate Limiting API는 Cloudflare location 단위의 근사
+  제한이므로 정확한 사용량 집계 용도로 사용하지 않는다.
+- 폐기 및 rate limit 결과는 Worker Observability 구조화 로그로 확인한다.
 
 ## 배포 전 확인
 

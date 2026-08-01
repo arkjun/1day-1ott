@@ -1,4 +1,4 @@
-import { WorkersKvStore, WorkersMessageQueue } from "@fedify/cfworkers";
+import { WorkersMessageQueue } from "@fedify/cfworkers";
 import {
   createFederationBuilder,
   type Context,
@@ -24,8 +24,13 @@ import { createDb, schema } from "../db";
 import type { Env } from "../env";
 import { avatarMediaType, avatarUrl } from "../lib/avatar";
 import { escapeHtml } from "../lib/html";
-import { loadActorKeyPairs } from "./keys";
+import { D1KvStore } from "./d1-kv-store";
 import { handleFollow, handleUndoFollow } from "./followers";
+import {
+  isFederationInboxPath,
+  prepareFederationInboxRequest,
+} from "./inbox-policy";
+import { loadActorKeyPairs } from "./keys";
 import { handleReaction, handleUndoReaction } from "./reactions";
 import {
   buildCreate,
@@ -249,7 +254,7 @@ async function buildFederation(env: Env): Promise<{
   });
   const federation = await builder.build({
     origin: env.BETTER_AUTH_URL,
-    kv: new WorkersKvStore(env.FEDIFY_KV),
+    kv: new D1KvStore(env.DB),
     queue,
     firstKnock: "draft-cavage-http-signatures-12",
     userAgent: {
@@ -272,6 +277,18 @@ export async function handleFederationRequest(
   request: Request,
   env: Env,
 ): Promise<Response> {
+  if (
+    request.method === "POST" &&
+    isFederationInboxPath(new URL(request.url).pathname)
+  ) {
+    const prepared = await prepareFederationInboxRequest(request, {
+      db: env.DB,
+      origin: env.BETTER_AUTH_URL,
+      rateLimiter: env.FEDERATION_RATE_LIMITER,
+    });
+    if (prepared instanceof Response) return prepared;
+    request = prepared;
+  }
   const { federation } = await buildFederation(env);
   return federation.fetch(request, { contextData: env });
 }

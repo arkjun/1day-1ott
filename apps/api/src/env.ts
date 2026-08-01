@@ -2,9 +2,9 @@ export interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
   MEDIA: R2Bucket;
-  FEDIFY_KV: KVNamespace;
   FEDIFY_ORDERING_KV: KVNamespace;
   FEDIFY_QUEUE: Queue;
+  FEDERATION_RATE_LIMITER: RateLimit;
   BETTER_AUTH_SECRET: string;
   RESEND_API_KEY: string;
   FEDERATION_KEY_SECRET: string;

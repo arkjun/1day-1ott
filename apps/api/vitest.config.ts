@@ -20,7 +20,7 @@ export default defineConfig(async () => {
           compatibilityFlags: ["nodejs_compat"],
           d1Databases: ["DB"],
           r2Buckets: ["MEDIA"],
-          kvNamespaces: ["FEDIFY_KV", "FEDIFY_ORDERING_KV"],
+          kvNamespaces: ["FEDIFY_ORDERING_KV"],
           queueProducers: {
             FEDIFY_QUEUE: { queueName: "fedify-test" },
           },
