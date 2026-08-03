@@ -36,6 +36,13 @@ import {
   useSession,
 } from "./lib/authClient";
 import { buildTypeBreakdown } from "./lib/breakdown";
+import {
+  ensureDashboardHistoryState,
+  pushDashboardHistoryState,
+  readDashboardHistoryState,
+  type DashboardHistoryState,
+  type DashboardView,
+} from "./lib/dashboardHistory";
 import { GREEN, buildYear, currentStreak, isoDaysAgo } from "./lib/heatmap";
 import { useTheme } from "./lib/theme";
 import { TYPE_META } from "./lib/typeMeta";
@@ -92,7 +99,7 @@ function Dashboard({ user }: { user: SessionUser }) {
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [cells, setCells] = useState<HeatmapCell[]>([]);
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState<"home" | "calendar" | "all">("home");
+  const [view, setView] = useState<DashboardView>("home");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const { resolved: scheme } = useTheme();
 
@@ -105,6 +112,37 @@ function Dashboard({ user }: { user: SessionUser }) {
   useEffect(() => {
     refresh().catch(console.error);
   }, [i18n.language]);
+
+  const applyDashboardHistoryState = useCallback(
+    (state: DashboardHistoryState) => {
+      setView(state.view);
+      setSelectedDate(state.selectedDate);
+    },
+    [],
+  );
+  useEffect(() => {
+    applyDashboardHistoryState(ensureDashboardHistoryState(window.history));
+
+    function restoreDashboardView(event: PopStateEvent) {
+      applyDashboardHistoryState(
+        readDashboardHistoryState(event.state) ?? {
+          view: "home",
+          selectedDate: null,
+        },
+      );
+    }
+
+    window.addEventListener("popstate", restoreDashboardView);
+    return () => window.removeEventListener("popstate", restoreDashboardView);
+  }, [applyDashboardHistoryState]);
+
+  const navigateDashboard = useCallback(
+    (state: DashboardHistoryState) => {
+      pushDashboardHistoryState(window.history, state);
+      applyDashboardHistoryState(state);
+    },
+    [applyDashboardHistoryState],
+  );
 
   const year = useMemo(() => buildYear(cells), [cells]);
   const streak = useMemo(() => currentStreak(cells), [cells]);
@@ -119,9 +157,8 @@ function Dashboard({ user }: { user: SessionUser }) {
     if (sc) sc.scrollLeft = sc.scrollWidth;
   }, []);
   const showEntriesForDate = useCallback((date: string) => {
-    setSelectedDate(date);
-    setView("all");
-  }, []);
+    navigateDashboard({ view: "all", selectedDate: date });
+  }, [navigateDashboard]);
   const heatmapEventHandlers = useMemo<EventHandlerMap>(
     () => ({
       onClick: () => (activity) => showEntriesForDate(activity.date),
@@ -163,8 +200,8 @@ function Dashboard({ user }: { user: SessionUser }) {
             key={v}
             style={{ ...st.viewTab, ...(view === v ? st.viewTabActive : {}) }}
             onClick={() => {
-              setSelectedDate(null);
-              setView(v);
+              if (view === v && selectedDate === null) return;
+              navigateDashboard({ view: v, selectedDate: null });
             }}
           >
             {t(`nav.${v}`)}
@@ -173,7 +210,12 @@ function Dashboard({ user }: { user: SessionUser }) {
       </div>
 
       {view === "calendar" ? (
-        <CalendarView entries={entries} onShowAll={() => setView("all")} />
+        <CalendarView
+          entries={entries}
+          onShowAll={() =>
+            navigateDashboard({ view: "all", selectedDate: null })
+          }
+        />
       ) : view === "all" ? (
         <AllEntries
           key={selectedDate ?? "all"}
