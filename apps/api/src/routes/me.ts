@@ -2,7 +2,7 @@ import {
   PROFILE_BIO_MAX_LENGTH,
   PROFILE_NAME_MAX_LENGTH,
 } from "@1ott/shared";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { createDb, schema } from "../db";
@@ -104,6 +104,24 @@ meRoute.patch("/me", async (c) => {
       return c.json({ error: "username_taken" }, 409);
     }
     throw error;
+  }
+  const federationInactive = !nextIsPublic || !nextFederationEnabled;
+  if (federationInactive) {
+    const now = new Date();
+    await db
+      .update(schema.federationPublications)
+      .set({
+        status: "deleted",
+        deletedAt: now,
+        updatedAt: now,
+        lastError: null,
+      })
+      .where(
+        and(
+          eq(schema.federationPublications.userId, userId),
+          inArray(schema.federationPublications.status, ["pending", "failed"]),
+        ),
+      );
   }
   const profileChanged =
     (parsed.data.name !== undefined && parsed.data.name !== current.name) ||

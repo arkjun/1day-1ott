@@ -11,6 +11,7 @@ import { app } from "../src/index";
 
 const JSON_HEADERS = { "content-type": "application/json" };
 let seq = 0;
+let authIpSeq = 0;
 
 /** 가입하고 세션 쿠키를 돌려준다. */
 async function signUp(name = `user${++seq}`) {
@@ -44,7 +45,10 @@ async function signUp(name = `user${++seq}`) {
     "/api/auth/sign-in/email",
     {
       method: "POST",
-      headers: JSON_HEADERS,
+      headers: {
+        ...JSON_HEADERS,
+        "cf-connecting-ip": `198.51.100.${++authIpSeq}`,
+      },
       body: JSON.stringify({
         email,
         password: "test-password-123",
@@ -143,9 +147,17 @@ describe("인증 게이트", () => {
   });
 
   it("health 와 공개 프로필 라우트는 인증 없이 접근 (없는 유저는 404)", async () => {
-    const health = await app.request("/health", undefined, env);
+    const health = await app.request("https://localhost/health", undefined, env);
     expect(health.status).toBe(200);
     expect(await health.json()).toEqual({ ok: true });
+    expect(health.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(health.headers.get("x-frame-options")).toBe("DENY");
+    expect(health.headers.get("referrer-policy")).toBe(
+      "strict-origin-when-cross-origin",
+    );
+    expect(health.headers.get("strict-transport-security")).toContain(
+      "max-age=31536000",
+    );
 
     const profile = await app.request("/api/u/nobody", undefined, env);
     expect(profile.status).toBe(404); // 401이 아니라 404 — 게이트를 우회함

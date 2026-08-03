@@ -58,6 +58,10 @@ export function createAuth(env: Env, options: CreateAuthOptions = {}) {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     basePath: "/api/auth",
+    rateLimit: {
+      enabled: true,
+      storage: "database",
+    },
     // M0: 자체 완결 검증을 위해 이메일+비밀번호.
     emailAndPassword: {
       enabled: true,
@@ -124,13 +128,18 @@ export function createAuth(env: Env, options: CreateAuthOptions = {}) {
           }
         : undefined,
     trustedOrigins: [env.WEB_ORIGIN, env.BETTER_AUTH_URL],
-    advanced: options.backgroundTaskHandler
-      ? {
-          backgroundTasks: {
-            handler: options.backgroundTaskHandler,
-          },
-        }
-      : undefined,
+    advanced: {
+      ipAddress: {
+        ipAddressHeaders: ["cf-connecting-ip"],
+      },
+      ...(options.backgroundTaskHandler
+        ? {
+            backgroundTasks: {
+              handler: options.backgroundTaskHandler,
+            },
+          }
+        : {}),
+    },
   });
 }
 

@@ -31,7 +31,10 @@ async function signUp() {
     "/api/auth/sign-in/email",
     {
       method: "POST",
-      headers: JSON_HEADERS,
+      headers: {
+        ...JSON_HEADERS,
+        "cf-connecting-ip": `192.0.2.${seq}`,
+      },
       body: JSON.stringify({
         email,
         password: "test-password-123",

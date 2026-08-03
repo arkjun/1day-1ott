@@ -1,4 +1,4 @@
-import type { InboxContext } from "@fedify/fedify";
+import { validatePublicUrl, type InboxContext } from "@fedify/fedify";
 import {
   Accept,
   Follow,
@@ -10,9 +10,12 @@ import { nanoid } from "nanoid";
 import { createDb, schema } from "../db";
 import type { Env } from "../env";
 
+type PublicUrlValidator = (url: string) => Promise<unknown>;
+
 export async function handleFollow(
   ctx: InboxContext<Env>,
   follow: Follow,
+  validateUrl: PublicUrlValidator = validatePublicUrl,
 ): Promise<void> {
   if (!follow.id || !follow.objectId || !follow.actorId) return;
   const target = ctx.parseUri(follow.objectId);
@@ -20,6 +23,14 @@ export async function handleFollow(
 
   const follower = await follow.getActor();
   if (!follower?.id || !follower.inboxId) return;
+  try {
+    await validateUrl(follower.inboxId.href);
+    if (follower.endpoints?.sharedInbox) {
+      await validateUrl(follower.endpoints.sharedInbox.href);
+    }
+  } catch {
+    return;
+  }
 
   const db = createDb(ctx.data.DB);
   const localActor = await db

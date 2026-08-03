@@ -268,9 +268,12 @@ async function targetExists(
       `SELECT fp.entry_id
          FROM federation_publications fp
          JOIN entries e ON e.id = fp.entry_id
+         JOIN user u ON u.id = fp.user_id
         WHERE fp.entry_id = ?
           AND fp.status = 'published'
           AND e.is_note_public = true
+          AND u.is_public = true
+          AND u.federation_enabled = true
           AND (? IS NULL OR fp.user_id = ?)`,
     )
     .bind(target.id, recipient, recipient)

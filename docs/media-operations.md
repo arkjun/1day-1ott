@@ -15,8 +15,8 @@ Cloudflare Dashboard의 R2 bucket 설정에서 다음 작업을 완료한다.
 
 - `media.1day1ott.com` custom domain 연결
 - 개발용 `r2.dev` public URL 비활성화
-- 필요하면 Response Header Transform Rule로
-  `X-Content-Type-Options: nosniff` 추가
+- Response Header Transform Rule로
+  `X-Content-Type-Options: nosniff`를 반드시 추가
 - GitHub Actions의 `CLOUDFLARE_API_TOKEN`에 R2 binding 배포 권한 추가
 
 기본 이미지가 다음 주소에서 `image/svg+xml`로 응답하는지 확인한다.

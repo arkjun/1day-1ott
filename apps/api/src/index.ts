@@ -22,6 +22,11 @@ type Vars = { userId: string };
 
 export const app = new Hono<{ Bindings: Env; Variables: Vars }>();
 
+app.use("*", async (c, next) => {
+  await next();
+  c.res = withSecurityHeaders(c.res, c.req.url);
+});
+
 // CORS: 웹 origin 허용 + 쿠키 세션. (미래 확장 origin 은 여기에 추가 → C 준비)
 app.use("/api/*", (c, next) =>
   cors({
@@ -139,7 +144,10 @@ export default {
     executionCtx: ExecutionContext,
   ): Promise<Response> {
     if (isFederationPath(new URL(request.url))) {
-      return handleFederationRequest(request, env);
+      return withSecurityHeaders(
+        await handleFederationRequest(request, env),
+        request.url,
+      );
     }
     return app.fetch(request, env, executionCtx);
   },
@@ -152,3 +160,25 @@ export default {
     executionCtx.waitUntil(retryFailedPublications(env));
   },
 } satisfies ExportedHandler<Env>;
+
+function withSecurityHeaders(response: Response, requestUrl: string): Response {
+  const headers = new Headers(response.headers);
+  headers.set("x-content-type-options", "nosniff");
+  headers.set("x-frame-options", "DENY");
+  headers.set("referrer-policy", "strict-origin-when-cross-origin");
+  headers.set(
+    "permissions-policy",
+    "camera=(), microphone=(), geolocation=()",
+  );
+  if (new URL(requestUrl).protocol === "https:") {
+    headers.set(
+      "strict-transport-security",
+      "max-age=31536000; includeSubDomains",
+    );
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}

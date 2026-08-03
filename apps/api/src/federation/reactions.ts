@@ -1,10 +1,5 @@
 import type { InboxContext } from "@fedify/fedify";
-import {
-  Emoji,
-  EmojiReact,
-  Like,
-  Undo,
-} from "@fedify/fedify/vocab";
+import { EmojiReact, Like, Undo } from "@fedify/fedify/vocab";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { createDb, schema } from "../db";
@@ -22,22 +17,6 @@ function normalizeEmoji(activity: Like | EmojiReact): string | null {
   if (customEmojiPattern.test(content)) return content;
   if (content.length > 32 || /\s/u.test(content)) return null;
   return [...segmenter.segment(content)].length === 1 ? content : null;
-}
-
-async function customEmojiImageUrl(
-  activity: Like | EmojiReact,
-  emoji: string,
-): Promise<string | null> {
-  if (!customEmojiPattern.test(emoji)) return null;
-  for await (const tag of activity.getTags()) {
-    if (!(tag instanceof Emoji) || tag.name !== emoji) continue;
-    const icon = await tag.getIcon();
-    const url = icon?.url;
-    if (!(url instanceof URL)) return null;
-    if (url.protocol !== "https:") return null;
-    return url.href.length <= 1000 ? url.href : null;
-  }
-  return null;
 }
 
 function entryIdFromObject(
@@ -68,24 +47,26 @@ export async function handleReaction(
       schema.entries,
       eq(schema.federationPublications.entryId, schema.entries.id),
     )
+    .innerJoin(schema.user, eq(schema.entries.userId, schema.user.id))
     .where(
       and(
         eq(schema.federationPublications.entryId, entryId),
         eq(schema.federationPublications.status, "published"),
         eq(schema.entries.isNotePublic, true),
+        eq(schema.user.isPublic, true),
+        eq(schema.user.federationEnabled, true),
       ),
     )
     .get();
   if (!target) return;
 
-  const emojiImageUrl = await customEmojiImageUrl(activity, emoji);
   await db
     .insert(schema.entryReactions)
     .values({
       id: nanoid(),
       entryId,
       emoji,
-      emojiImageUrl,
+      emojiImageUrl: null,
       remoteActorUri: activity.actorId.href,
       remoteActivityUri: activity.id.href,
     })
@@ -96,7 +77,7 @@ export async function handleReaction(
         schema.entryReactions.emoji,
       ],
       set: {
-        emojiImageUrl,
+        emojiImageUrl: null,
         remoteActivityUri: activity.id.href,
         createdAt: new Date(),
       },

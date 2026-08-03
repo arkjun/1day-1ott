@@ -260,18 +260,9 @@ const noteReactionEmojiSet = new Set<string>(noteReactionEmojis);
 function ReactionGlyph({
   summary,
 }: {
-  summary: Pick<NoteReactionSummary, "emoji" | "imageUrl">;
+  summary: Pick<NoteReactionSummary, "emoji">;
 }) {
-  return summary.imageUrl ? (
-    <img
-      src={summary.imageUrl}
-      alt={summary.emoji}
-      loading="lazy"
-      style={st.reactionEmojiImage}
-    />
-  ) : (
-    <span>{summary.emoji}</span>
-  );
+  return <span>{summary.emoji}</span>;
 }
 
 function ReactionPickerIcon() {
@@ -674,11 +665,6 @@ const st: Record<string, React.CSSProperties> = {
     borderRadius: 999,
     background: "var(--surface-2)",
     fontSize: 12,
-  },
-  reactionEmojiImage: {
-    width: 18,
-    height: 18,
-    objectFit: "contain",
   },
   remoteCount: { color: "var(--muted)", fontSize: 10 },
   reactionError: { margin: "10px 0 0", color: "crimson", fontSize: 13 },

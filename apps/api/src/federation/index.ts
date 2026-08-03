@@ -4,6 +4,7 @@ import {
   type Context,
   type Federation,
   type Message,
+  validatePublicUrl,
 } from "@fedify/fedify";
 import {
   Endpoints,
@@ -106,6 +107,7 @@ actorSetters.setKeyPairsDispatcher(async (ctx, identifier) => {
     .where(
       and(
         eq(schema.user.id, identifier),
+        eq(schema.user.isPublic, true),
         eq(schema.user.federationEnabled, true),
       ),
     )
@@ -152,6 +154,7 @@ builder
         .where(
           and(
             eq(schema.user.id, identifier),
+            eq(schema.user.isPublic, true),
             eq(schema.user.federationEnabled, true),
           ),
         )
@@ -207,6 +210,18 @@ builder.setOutboxDispatcher(
   "/ap/users/{identifier}/outbox",
   async (ctx, identifier) => {
     const db = createDb(ctx.data.DB);
+    const actor = await db
+      .select({ id: schema.user.id })
+      .from(schema.user)
+      .where(
+        and(
+          eq(schema.user.id, identifier),
+          eq(schema.user.isPublic, true),
+          eq(schema.user.federationEnabled, true),
+        ),
+      )
+      .get();
+    if (!actor) return null;
     const rows = await db
       .select({ entryId: schema.federationPublications.entryId })
       .from(schema.federationPublications)
@@ -472,12 +487,20 @@ export async function processFederationQueue(
   const { federation, queue } = await buildFederation(env);
   for (const item of batch.messages) {
     const result = await queue.processMessage(item.body);
-    if (!result.shouldProcess) {
-      item.retry();
-      continue;
-    }
     try {
-      await federation.processQueuedTask(env, result.message as Message);
+      if (!result.shouldProcess) {
+        item.retry();
+        continue;
+      }
+      const message = await prepareFederationQueueMessage(
+        env,
+        result.message as Message,
+      );
+      if (!message) {
+        item.ack();
+        continue;
+      }
+      await federation.processQueuedTask(env, message);
       item.ack();
     } catch {
       item.retry();
@@ -492,11 +515,125 @@ export async function retryFailedPublications(env: Env): Promise<void> {
   const rows = await db
     .select({ entryId: schema.federationPublications.entryId })
     .from(schema.federationPublications)
-    .where(eq(schema.federationPublications.status, "failed"))
+    .innerJoin(
+      schema.user,
+      eq(schema.federationPublications.userId, schema.user.id),
+    )
+    .where(
+      and(
+        eq(schema.federationPublications.status, "failed"),
+        eq(schema.user.isPublic, true),
+        eq(schema.user.federationEnabled, true),
+      ),
+    )
     .limit(20)
     .all();
   const request = new Request(env.BETTER_AUTH_URL);
   for (const row of rows) {
     await publishEntry(request, env, row.entryId);
+  }
+}
+
+type PublicUrlValidator = (url: string) => Promise<unknown>;
+
+interface OutgoingQueueMessage {
+  type: "fanout" | "outbox";
+  baseUrl: string;
+  activity: { actor?: unknown };
+  activityType: string;
+  inbox?: string;
+  inboxes?: Record<string, unknown>;
+}
+
+export async function prepareFederationQueueMessage(
+  env: Env,
+  message: Message,
+  validateUrl: PublicUrlValidator = validatePublicUrl,
+): Promise<Message | null> {
+  if (message.type !== "fanout" && message.type !== "outbox") return message;
+  const outgoing = message as Message & OutgoingQueueMessage;
+  const userId = localActorIdentifier(outgoing);
+  if (!userId) return null;
+
+  if (!isDeleteActivity(outgoing.activityType)) {
+    const db = createDb(env.DB);
+    const actor = await db
+      .select({ id: schema.user.id })
+      .from(schema.user)
+      .where(
+        and(
+          eq(schema.user.id, userId),
+          eq(schema.user.isPublic, true),
+          eq(schema.user.federationEnabled, true),
+        ),
+      )
+      .get();
+    if (!actor) return null;
+  }
+
+  if (outgoing.type === "outbox") {
+    return outgoing.inbox && await isSafeInbox(outgoing.inbox, validateUrl)
+      ? message
+      : null;
+  }
+
+  const inboxes = outgoing.inboxes ?? {};
+  const safeInboxes: Record<string, unknown> = {};
+  for (const [inbox, recipients] of Object.entries(inboxes)) {
+    if (await isSafeInbox(inbox, validateUrl)) {
+      safeInboxes[inbox] = recipients;
+    }
+  }
+  if (Object.keys(safeInboxes).length === 0) return null;
+  if (Object.keys(safeInboxes).length === Object.keys(inboxes).length) {
+    return message;
+  }
+  return { ...outgoing, inboxes: safeInboxes } as Message;
+}
+
+function localActorIdentifier(message: OutgoingQueueMessage): string | null {
+  const actorHref = activityActorHref(message.activity.actor);
+  if (!actorHref) return null;
+  try {
+    const actor = new URL(actorHref);
+    if (actor.origin !== new URL(message.baseUrl).origin) return null;
+    const match = /^\/ap\/users\/([^/]+)$/.exec(actor.pathname);
+    return match?.[1] ? decodeURIComponent(match[1]) : null;
+  } catch {
+    return null;
+  }
+}
+
+function activityActorHref(value: unknown): string | null {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const href = activityActorHref(item);
+      if (href) return href;
+    }
+    return null;
+  }
+  if (!value || typeof value !== "object") return null;
+  const actor = value as Record<string, unknown>;
+  return typeof actor.id === "string"
+    ? actor.id
+    : typeof actor["@id"] === "string"
+      ? actor["@id"]
+      : null;
+}
+
+function isDeleteActivity(activityType: string): boolean {
+  return activityType === "Delete" || /[#/]Delete$/.test(activityType);
+}
+
+async function isSafeInbox(
+  value: string,
+  validateUrl: PublicUrlValidator,
+): Promise<boolean> {
+  try {
+    await validateUrl(new URL(value).href);
+    return true;
+  } catch {
+    return false;
   }
 }

@@ -60,6 +60,8 @@ export async function loadPublishedEntry(
         eq(schema.federationPublications.entryId, entryId),
         inArray(schema.federationPublications.status, [...statuses]),
         eq(schema.entries.isNotePublic, true),
+        eq(schema.user.isPublic, true),
+        eq(schema.user.federationEnabled, true),
       ),
     )
     .get();

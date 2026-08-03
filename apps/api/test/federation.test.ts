@@ -18,6 +18,7 @@ import {
   handleReaction,
   handleUndoFollow,
   handleUndoReaction,
+  prepareFederationQueueMessage,
 } from "../src/federation";
 
 const JSON_HEADERS = { "content-type": "application/json" };
@@ -55,7 +56,10 @@ async function enableFederation(): Promise<{ cookie: string; userId: string; use
     "/api/auth/sign-in/email",
     {
       method: "POST",
-      headers: JSON_HEADERS,
+      headers: {
+        ...JSON_HEADERS,
+        "cf-connecting-ip": `203.0.113.${(seq % 250) + 1}`,
+      },
       body: JSON.stringify({
         email,
         password: "test-password-123",
@@ -228,7 +232,7 @@ describe("ActivityPub Actor와 WebFinger", () => {
       },
     };
 
-    await handleFollow(ctx as never, follow);
+    await handleFollow(ctx as never, follow, async () => {});
 
     const row = await env.DB.prepare(
       `SELECT remote_actor_uri, remote_inbox_uri, remote_shared_inbox_uri, status
@@ -259,6 +263,39 @@ describe("ActivityPub Actor와 WebFinger", () => {
     expect(body.totalItems).toBe(1);
     expect(body.orderedItems).toContain(actorUri.href);
   }, 10_000);
+
+  it("사설망 inbox를 가진 Follow는 저장하거나 Accept하지 않는다", async () => {
+    const { userId } = await enableFederation();
+    const follow = new Follow({
+      id: new URL("https://remote.example/activities/private-follow"),
+      actor: new Person({
+        id: new URL("https://remote.example/users/private"),
+        inbox: new URL("https://127.0.0.1/inbox"),
+      }),
+      object: new URL(`http://localhost/ap/users/${userId}`),
+    });
+    const sent: unknown[] = [];
+
+    await handleFollow(
+      {
+        data: env,
+        parseUri: () => ({ type: "actor", identifier: userId }),
+        getActorUri: () => new URL(`http://localhost/ap/users/${userId}`),
+        sendActivity: async (...args: unknown[]) => {
+          sent.push(args);
+        },
+      } as never,
+      follow,
+    );
+
+    const row = await env.DB.prepare(
+      "SELECT id FROM federation_followers WHERE local_user_id = ?",
+    )
+      .bind(userId)
+      .first();
+    expect(row).toBeNull();
+    expect(sent).toHaveLength(0);
+  });
 
   it("Undo(Follow)는 같은 로컬 Actor에 대한 원격 팔로우를 제거한다", async () => {
     const { userId } = await enableFederation();
@@ -397,6 +434,113 @@ describe("ActivityPub Actor와 WebFinger", () => {
       .bind(result.id)
       .first();
     expect(publication).toBeNull();
+  });
+
+  it("연합우주를 비활성화하면 실패 발행을 폐기하고 대기 중 Create를 버린다", async () => {
+    const { cookie, userId } = await enableFederation();
+    const created = await app.request(
+      "/api/entries",
+      {
+        method: "POST",
+        headers: { ...JSON_HEADERS, cookie },
+        body: JSON.stringify({
+          type: "movie",
+          title: "비활성화 직전 발행",
+          watchedOn: "2026-08-03",
+          note: "더 이상 배포하면 안 되는 감상",
+        }),
+      },
+      env,
+    );
+    const { id } = (await created.json()) as { id: string };
+    const published = await app.request(
+      "/api/entries",
+      {
+        method: "POST",
+        headers: { ...JSON_HEADERS, cookie },
+        body: JSON.stringify({
+          type: "movie",
+          title: "비활성화 후 숨길 발행",
+          watchedOn: "2026-08-03",
+          note: "이미 발행됐어도 더는 제공하지 않는 감상",
+        }),
+      },
+      env,
+    );
+    const { id: publishedId } = (await published.json()) as { id: string };
+    await env.DB.prepare(
+      "UPDATE federation_publications SET status = 'failed' WHERE entry_id = ?",
+    )
+      .bind(id)
+      .run();
+
+    const disabled = await app.request(
+      "/api/me",
+      {
+        method: "PATCH",
+        headers: { ...JSON_HEADERS, cookie },
+        body: JSON.stringify({ federationEnabled: false }),
+      },
+      env,
+    );
+    expect(disabled.status).toBe(200);
+
+    const publication = await env.DB.prepare(
+      "SELECT status, deleted_at FROM federation_publications WHERE entry_id = ?",
+    )
+      .bind(id)
+      .first<{ status: string; deleted_at: number | null }>();
+    expect(publication?.status).toBe("deleted");
+    expect(publication?.deleted_at).toBeTypeOf("number");
+
+    const hidden = await handleFederationRequest(
+      new Request(`http://localhost/ap/entries/${publishedId}`, {
+        headers: { accept: "application/activity+json" },
+      }),
+      env,
+    );
+    expect(hidden.status).toBe(404);
+
+    const message = {
+      type: "outbox",
+      baseUrl: "http://localhost",
+      activity: {
+        actor: `http://localhost/ap/users/${userId}`,
+      },
+      activityType: "Create",
+      inbox: "https://remote.example/inbox",
+    };
+    expect(
+      await prepareFederationQueueMessage(
+        env,
+        message as never,
+        async () => {},
+      ),
+    ).toBeNull();
+    expect(
+      await prepareFederationQueueMessage(
+        env,
+        { ...message, activityType: "Delete" } as never,
+        async () => {},
+      ),
+    ).not.toBeNull();
+  });
+
+  it("전송 직전 사설망 inbox를 가진 큐 메시지를 버린다", async () => {
+    const { userId } = await enableFederation();
+    const message = {
+      type: "outbox",
+      baseUrl: "http://localhost",
+      activity: {
+        actor: `http://localhost/ap/users/${userId}`,
+      },
+      activityType: "Create",
+      inbox: "https://127.0.0.1/inbox",
+    };
+
+    expect(
+      await prepareFederationQueueMessage(env, message as never),
+    ).toBeNull();
   });
 
   it("비공개 감상은 발행하지 않고 공개로 전환하면 발행한다", async () => {
@@ -630,7 +774,7 @@ describe("ActivityPub Actor와 WebFinger", () => {
           reactions: expect.arrayContaining([
             {
               emoji: ":party:",
-              imageUrl: "https://remote.example/emoji/party.png",
+              imageUrl: null,
               count: 1,
               remoteCount: 1,
               reactedByMe: false,
@@ -659,7 +803,7 @@ describe("ActivityPub Actor와 WebFinger", () => {
       remote_actor_uri: "https://remote.example/users/alice",
       remote_activity_uri: "https://remote.example/activities/reaction-1",
       emoji: ":party:",
-      emoji_image_url: "https://remote.example/emoji/party.png",
+      emoji_image_url: null,
     });
     expect(userId).toBeTruthy();
   });

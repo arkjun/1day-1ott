@@ -97,6 +97,14 @@ export const verification = sqliteTable("verification", {
   updatedAt: integer("updated_at", { mode: "timestamp" }),
 });
 
+/** Better Auth 인증 엔드포인트의 D1 영속 rate limit 상태. */
+export const rateLimit = sqliteTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: integer("last_request").notNull(),
+});
+
 /* ------------------------------------------------------------------ *
  * 도메인 테이블
  * ------------------------------------------------------------------ */
@@ -316,6 +324,7 @@ export const schema = {
   session,
   account,
   verification,
+  rateLimit,
   passkey,
   content,
   entries,

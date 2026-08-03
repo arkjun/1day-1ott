@@ -23,7 +23,6 @@ export async function listEntryReactionSummaries(
     .select({
       entryId: schema.entryReactions.entryId,
       emoji: schema.entryReactions.emoji,
-      imageUrl: schema.entryReactions.emojiImageUrl,
       localUserId: schema.entryReactions.localUserId,
     })
     .from(schema.entryReactions)
@@ -37,7 +36,7 @@ export async function listEntryReactionSummaries(
       entry = new Map();
       grouped.set(row.entryId, entry);
     }
-    const key = `${row.emoji}\n${row.imageUrl ?? ""}`;
+    const key = row.emoji;
     const summary = entry.get(key);
     if (summary) {
       summary.count++;
@@ -46,7 +45,7 @@ export async function listEntryReactionSummaries(
     } else {
       entry.set(key, {
         emoji: row.emoji,
-        imageUrl: row.imageUrl,
+        imageUrl: null,
         count: 1,
         remoteCount: row.localUserId == null ? 1 : 0,
         reactedByMe: row.localUserId === viewerId,

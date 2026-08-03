@@ -168,7 +168,8 @@ describe("PublicNotes", () => {
     expect(html).toContain("❤️");
     expect(html).toContain(">3<");
     expect(html).toContain("연합우주 반응 2개");
-    expect(html).toContain("https://remote.example/party.png");
+    expect(html).toContain(":party:");
+    expect(html).not.toContain("https://remote.example/party.png");
     expect(html.match(/aria-pressed="true"/g)).toHaveLength(2);
     expect(html).toContain('aria-label="👍 반응하기"');
     expect(html).toContain('aria-label="❤️ 반응하기"');
