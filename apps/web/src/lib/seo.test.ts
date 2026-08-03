@@ -4,7 +4,7 @@ import robots from "../../public/robots.txt?raw";
 import sitemap from "../../public/sitemap.xml?raw";
 
 describe("SEO 정적 메타데이터", () => {
-  it("홈 canonical, 검색 로봇, OG 이미지를 선언한다", () => {
+  it("홈 canonical, 검색 로봇, 영문 OG 정보를 선언한다", () => {
     expect(indexHtml).toContain(
       '<link rel="canonical" href="https://1day1ott.com/"',
     );
@@ -12,7 +12,16 @@ describe("SEO 정적 메타데이터", () => {
       '<meta name="robots" content="index,follow,max-image-preview:large"',
     );
     expect(indexHtml).toContain(
-      'content="https://1day1ott.com/og-image.png"',
+      '<meta property="og:locale" content="en_US"',
+    );
+    expect(indexHtml).toContain(
+      '<meta property="og:title" content="1DAY 1OTT | One a Day, Your Watch Journal"',
+    );
+    expect(indexHtml).toContain(
+      'content="Log what you watch every day and watch your activity grow."',
+    );
+    expect(indexHtml).toContain(
+      'content="https://1day1ott.com/og-image-en.png"',
     );
   });
 
