@@ -7,7 +7,7 @@ interface ConsentStorage {
 
 declare global {
   interface Window {
-    dataLayer?: unknown[][];
+    dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
   }
 }
@@ -25,6 +25,14 @@ export function isGaMeasurementId(id: string): boolean {
 
 export function isAnalyticsConfigured(): boolean {
   return isGaMeasurementId(GA_MEASUREMENT_ID);
+}
+
+export function createGoogleTag(
+  dataLayer: unknown[],
+): (...args: unknown[]) => void {
+  return function gtag() {
+    dataLayer.push(arguments);
+  };
 }
 
 export function readAnalyticsConsent(
@@ -89,9 +97,7 @@ function loadGoogleAnalytics(): void {
   if (document.getElementById(GA_SCRIPT_ID)) return;
 
   window.dataLayer = window.dataLayer ?? [];
-  window.gtag = (...args: unknown[]) => {
-    window.dataLayer?.push(args);
-  };
+  window.gtag = createGoogleTag(window.dataLayer);
   window.gtag("consent", "default", {
     analytics_storage: "granted",
     ad_storage: "denied",

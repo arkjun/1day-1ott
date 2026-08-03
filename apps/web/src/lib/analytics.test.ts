@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ANALYTICS_CONSENT_KEY,
+  createGoogleTag,
   readAnalyticsConsent,
   writeAnalyticsConsent,
   isGaMeasurementId,
@@ -32,5 +33,19 @@ describe("Google Analytics 설정", () => {
 
     values.set(ANALYTICS_CONSENT_KEY, "unknown");
     expect(readAnalyticsConsent(storage)).toBeNull();
+  });
+
+  it("Google 태그 명령을 arguments 객체로 큐에 추가한다", () => {
+    const dataLayer: unknown[] = [];
+    const gtag = createGoogleTag(dataLayer);
+
+    gtag("config", "G-ABC123");
+
+    expect(dataLayer).toHaveLength(1);
+    expect(Array.isArray(dataLayer[0])).toBe(false);
+    expect(Array.from(dataLayer[0] as IArguments)).toEqual([
+      "config",
+      "G-ABC123",
+    ]);
   });
 });
