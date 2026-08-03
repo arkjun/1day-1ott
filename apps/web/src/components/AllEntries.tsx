@@ -10,13 +10,15 @@ export const PAGE_SIZE = 50;
 /** 전체 기록 목록 — 검색 + 점진 로딩. 행 편집/삭제는 RecentItem 이 그대로 담당. */
 export function AllEntries({
   entries,
+  initialQuery = "",
   onChanged,
 }: {
   entries: EntryRow[];
+  initialQuery?: string;
   onChanged: () => void;
 }) {
   const { t } = useTranslation();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [limit, setLimit] = useState(PAGE_SIZE);
 
   const filtered = useMemo(() => filterEntries(entries, query), [entries, query]);

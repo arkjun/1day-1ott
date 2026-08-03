@@ -22,12 +22,12 @@ function makeEntries(n: number): EntryRow[] {
   }));
 }
 
-async function render(entries: EntryRow[]) {
+async function render(entries: EntryRow[], initialQuery = "") {
   const i18n = createInstance();
   await i18n.init({ lng: "ko", fallbackLng: "ko", resources, interpolation: { escapeValue: false } });
   return renderToStaticMarkup(
     <I18nextProvider i18n={i18n}>
-      <AllEntries entries={entries} onChanged={() => {}} />
+      <AllEntries entries={entries} initialQuery={initialQuery} onChanged={() => {}} />
     </I18nextProvider>,
   );
 }
@@ -70,5 +70,18 @@ describe("AllEntries", () => {
   it("기록이 없으면 안내 문구", async () => {
     const html = await render([]);
     expect(html).toContain("아직 기록이 없어요");
+  });
+
+  it("초기 검색 날짜에 해당하는 기록만 렌더링한다", async () => {
+    const entries = makeEntries(2).map((entry, index) => ({
+      ...entry,
+      watchedOn: index === 0 ? "2026-08-02" : "2026-08-03",
+    }));
+
+    const html = await render(entries, "2026-08-02");
+
+    expect(html).toContain('value="2026-08-02"');
+    expect(html).toContain("작품 0");
+    expect(html).not.toContain("작품 1");
   });
 });

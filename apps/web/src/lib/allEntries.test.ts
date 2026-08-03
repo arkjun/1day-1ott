@@ -42,6 +42,15 @@ describe("filterEntries", () => {
     expect(filterEntries(entries, "2025-12").map((e) => e.id)).toEqual(["b", "c"]);
   });
 
+  it("완전한 날짜 검색은 감상일이 정확히 같은 기록만 찾는다", () => {
+    const withDateInNote = [
+      ...entries,
+      row({ id: "d", watchedOn: "2026-01-01", note: "2025-12-24에 다시 보기" }),
+    ];
+
+    expect(filterEntries(withDateInNote, "2025-12-24").map((e) => e.id)).toEqual(["b"]);
+  });
+
   it("일치가 없으면 빈 배열", () => {
     expect(filterEntries(entries, "없는작품")).toEqual([]);
   });

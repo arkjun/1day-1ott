@@ -7,7 +7,9 @@ import {
   useMemo,
   useState,
 } from "react";
-import ActivityCalendar from "react-activity-calendar";
+import ActivityCalendar, {
+  type EventHandlerMap,
+} from "react-activity-calendar";
 import { useTranslation } from "react-i18next";
 import { AllEntries } from "./components/AllEntries";
 import { AnalyticsConsentBanner } from "./components/AnalyticsConsent";
@@ -91,6 +93,7 @@ function Dashboard({ user }: { user: SessionUser }) {
   const [cells, setCells] = useState<HeatmapCell[]>([]);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"home" | "calendar" | "all">("home");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const { resolved: scheme } = useTheme();
 
   async function refresh() {
@@ -115,6 +118,16 @@ function Dashboard({ user }: { user: SessionUser }) {
     );
     if (sc) sc.scrollLeft = sc.scrollWidth;
   }, []);
+  const showEntriesForDate = useCallback((date: string) => {
+    setSelectedDate(date);
+    setView("all");
+  }, []);
+  const heatmapEventHandlers = useMemo<EventHandlerMap>(
+    () => ({
+      onClick: () => (activity) => showEntriesForDate(activity.date),
+    }),
+    [showEntriesForDate],
+  );
   const thisMonth = useMemo(() => {
     const pre = isoDaysAgo(0).slice(0, 7);
     return entries.filter((e) => e.watchedOn.startsWith(pre)).length;
@@ -149,7 +162,10 @@ function Dashboard({ user }: { user: SessionUser }) {
           <button
             key={v}
             style={{ ...st.viewTab, ...(view === v ? st.viewTabActive : {}) }}
-            onClick={() => setView(v)}
+            onClick={() => {
+              setSelectedDate(null);
+              setView(v);
+            }}
           >
             {t(`nav.${v}`)}
           </button>
@@ -159,7 +175,12 @@ function Dashboard({ user }: { user: SessionUser }) {
       {view === "calendar" ? (
         <CalendarView entries={entries} onShowAll={() => setView("all")} />
       ) : view === "all" ? (
-        <AllEntries entries={entries} onChanged={refresh} />
+        <AllEntries
+          key={selectedDate ?? "all"}
+          entries={entries}
+          initialQuery={selectedDate ?? ""}
+          onChanged={refresh}
+        />
       ) : (
         <>
       <div style={st.stats}>
@@ -181,6 +202,7 @@ function Dashboard({ user }: { user: SessionUser }) {
             blockSize={12}
             blockMargin={3}
             labels={activityLabels(i18n.language)}
+            eventHandlers={heatmapEventHandlers}
           />
         </div>
       </div>
