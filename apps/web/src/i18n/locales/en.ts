@@ -309,6 +309,8 @@ export default {
     noFollowers: "No followers yet.",
     noFollowing: "Not following anyone yet.",
     privateOmitted: "Private users are not shown in this list.",
+    federatedAccount: "Fediverse account",
+    unknownFederatedAccount: "Unknown Fediverse account",
     more: "Show more",
     retry: "Try again",
   },

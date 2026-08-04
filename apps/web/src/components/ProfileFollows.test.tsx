@@ -104,6 +104,7 @@ describe("FollowListView", () => {
         direction="followers"
         users={[
           {
+            kind: "local",
             username: "tester",
             name: "테스터",
             bio: "영화와 드라마",
@@ -125,6 +126,32 @@ describe("FollowListView", () => {
     expect(html).toContain("비공개 사용자는 목록에 표시되지 않습니다.");
     expect(html).toContain("더 보기");
     expect(html).toContain('aria-label="닫기"');
+  });
+
+  it("연합 팔로워를 외부 프로필 링크로 표시한다", async () => {
+    const html = await render(
+      <FollowListView
+        direction="followers"
+        users={[
+          {
+            kind: "federated",
+            handle: "@alice@remote.example",
+            actorUrl: "https://remote.example/users/alice",
+          },
+        ]}
+        state="ready"
+        hasMore={false}
+        onClose={vi.fn()}
+        onLoadMore={vi.fn()}
+        onRetry={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain("@alice@remote.example");
+    expect(html).toContain("연합우주 계정");
+    expect(html).toContain('href="https://remote.example/users/alice"');
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain('rel="noreferrer"');
   });
 
   it("빈 팔로잉 목록과 오류 상태를 구분한다", async () => {

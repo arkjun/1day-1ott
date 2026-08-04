@@ -301,6 +301,8 @@ export default {
     noFollowers: "아직 팔로워가 없습니다.",
     noFollowing: "아직 팔로우한 사용자가 없습니다.",
     privateOmitted: "비공개 사용자는 목록에 표시되지 않습니다.",
+    federatedAccount: "연합우주 계정",
+    unknownFederatedAccount: "알 수 없는 연합우주 계정",
     more: "더 보기",
     retry: "다시 시도",
   },

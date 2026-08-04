@@ -302,6 +302,8 @@ export default {
     noFollowers: "まだフォロワーはいません。",
     noFollowing: "まだ誰もフォローしていません。",
     privateOmitted: "非公開ユーザーは一覧に表示されません。",
+    federatedAccount: "Fediverseアカウント",
+    unknownFederatedAccount: "不明なFediverseアカウント",
     more: "もっと見る",
     retry: "再試行",
   },

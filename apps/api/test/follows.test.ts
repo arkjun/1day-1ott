@@ -298,6 +298,108 @@ describe("사용자 팔로우", () => {
     });
   });
 
+  it("활성 연합 팔로워를 수치와 목록에 포함하고 제거된 팔로워는 제외한다", async () => {
+    const target = await signUp();
+    const localFollower = await signUp();
+    await setProfile(target.cookie, "federated_target");
+    await setProfile(localFollower.cookie, "federated_local");
+
+    await app.request(
+      "/api/follows/federated_target",
+      authed(localFollower.cookie, { method: "PUT" }),
+      env,
+    );
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO federation_followers (
+           id, local_user_id, remote_actor_uri, remote_inbox_uri,
+           follow_activity_uri, handle, status, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(
+        "active-remote-follower",
+        target.userId,
+        "https://remote.example/users/alice",
+        "https://remote.example/users/alice/inbox",
+        "https://remote.example/activities/follow-active",
+        "@alice@remote.example",
+        "active",
+        2_000_000_000,
+        2_000_000_000,
+      ),
+      env.DB.prepare(
+        `INSERT INTO federation_followers (
+           id, local_user_id, remote_actor_uri, remote_inbox_uri,
+           follow_activity_uri, handle, status, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(
+        "removed-remote-follower",
+        target.userId,
+        "https://remote.example/users/removed",
+        "https://remote.example/users/removed/inbox",
+        "https://remote.example/activities/follow-removed",
+        "@removed@remote.example",
+        "removed",
+        2_000_000_001,
+        2_000_000_001,
+      ),
+    ]);
+
+    expect(await profile("federated_target")).toMatchObject({
+      followerCount: 2,
+    });
+
+    const firstPage = await app.request(
+      "/api/u/federated_target/followers?limit=1",
+      undefined,
+      env,
+    );
+    expect(firstPage.status).toBe(200);
+    const firstBody = (await firstPage.json()) as {
+      users: unknown[];
+      nextCursor: string | null;
+    };
+    expect(firstBody.users).toEqual([
+      {
+        kind: "federated",
+        handle: "@alice@remote.example",
+        actorUrl: "https://remote.example/users/alice",
+      },
+    ]);
+    expect(firstBody.nextCursor).toBeTruthy();
+
+    const secondPage = await app.request(
+      `/api/u/federated_target/followers?limit=1&cursor=${encodeURIComponent(firstBody.nextCursor!)}`,
+      undefined,
+      env,
+    );
+    expect(await secondPage.json()).toEqual({
+      users: [
+        expect.objectContaining({
+          kind: "local",
+          username: "federated_local",
+        }),
+      ],
+      nextCursor: null,
+    });
+
+    const mutation = await app.request(
+      "/api/follows/federated_target",
+      authed(localFollower.cookie, { method: "DELETE" }),
+      env,
+    );
+    expect(await mutation.json()).toEqual({
+      following: false,
+      followerCount: 1,
+    });
+
+    const following = await app.request(
+      "/api/u/federated_target/following",
+      undefined,
+      env,
+    );
+    expect(await following.json()).toEqual({ users: [], nextCursor: null });
+  });
+
   it("팔로워와 팔로잉 목록을 불투명 커서로 페이지 조회한다", async () => {
     const target = await signUp();
     const first = await signUp();

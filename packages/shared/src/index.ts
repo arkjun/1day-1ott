@@ -106,14 +106,23 @@ export interface PublicProfile {
 }
 
 export interface PublicUserSummary {
+  kind: "local";
   username: string;
   name: string;
   bio: string | null;
   avatarUrl: string;
 }
 
+export interface FederatedFollowerSummary {
+  kind: "federated";
+  handle: string | null;
+  actorUrl: string | null;
+}
+
+export type FollowListItem = PublicUserSummary | FederatedFollowerSummary;
+
 export interface FollowListResponse {
-  users: PublicUserSummary[];
+  users: FollowListItem[];
   nextCursor: string | null;
 }
 

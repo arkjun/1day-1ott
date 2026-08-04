@@ -1,4 +1,4 @@
-import type { PublicUserSummary } from "@1ott/shared";
+import type { FollowListItem } from "@1ott/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
@@ -205,7 +205,7 @@ function FollowListDialog({
   returnFocusTarget,
   onClose,
 }: FollowListDialogProps) {
-  const [users, setUsers] = useState<PublicUserSummary[]>([]);
+  const [users, setUsers] = useState<FollowListItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">(
     "loading",
@@ -278,7 +278,7 @@ function FollowListDialog({
 
 interface FollowListViewProps {
   direction: ListDirection;
-  users: PublicUserSummary[];
+  users: FollowListItem[];
   state: "loading" | "ready" | "error";
   hasMore: boolean;
   onClose: () => void;
@@ -342,24 +342,57 @@ export function FollowListView({
         </button>
       </div>
       <div style={styles.userList}>
-        {users.map((user) => (
-          <a
-            key={user.username}
-            href={`/@${encodeURIComponent(user.username)}`}
-            style={styles.userRow}
-          >
-            <Avatar
-              src={user.avatarUrl}
-              alt={t("profile.avatarAlt", { name: user.name })}
-              size={44}
-            />
-            <span style={styles.userBody}>
-              <b>{user.name}</b>
-              <span style={styles.muted}>@{user.username}</span>
-              {user.bio ? <span style={styles.bio}>{user.bio}</span> : null}
-            </span>
-          </a>
-        ))}
+        {users.map((user) => {
+          if (user.kind === "local") {
+            return (
+              <a
+                key={`local:${user.username}`}
+                href={`/@${encodeURIComponent(user.username)}`}
+                style={styles.userRow}
+              >
+                <Avatar
+                  src={user.avatarUrl}
+                  alt={t("profile.avatarAlt", { name: user.name })}
+                  size={44}
+                />
+                <span style={styles.userBody}>
+                  <b>{user.name}</b>
+                  <span style={styles.muted}>@{user.username}</span>
+                  {user.bio ? <span style={styles.bio}>{user.bio}</span> : null}
+                </span>
+              </a>
+            );
+          }
+
+          const label = user.handle ?? t("follow.unknownFederatedAccount");
+          const body = (
+            <>
+              <span aria-hidden="true" style={styles.federatedAvatar}>🌐</span>
+              <span style={styles.userBody}>
+                <b>{label}</b>
+                <span style={styles.muted}>{t("follow.federatedAccount")}</span>
+              </span>
+            </>
+          );
+          return user.actorUrl ? (
+            <a
+              key={`federated:${user.actorUrl}`}
+              href={user.actorUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={styles.userRow}
+            >
+              {body}
+            </a>
+          ) : (
+            <div
+              key={`federated:${user.handle ?? "unknown"}`}
+              style={styles.userRow}
+            >
+              {body}
+            </div>
+          );
+        })}
         {state === "ready" && users.length === 0 ? (
           <p style={styles.empty}>{empty}</p>
         ) : null}
@@ -496,6 +529,17 @@ const styles: Record<string, React.CSSProperties> = {
     textDecoration: "none",
   },
   userBody: { display: "grid", minWidth: 0 },
+  federatedAvatar: {
+    display: "grid",
+    width: 44,
+    height: 44,
+    flex: "0 0 44px",
+    placeItems: "center",
+    border: "1px solid var(--border)",
+    borderRadius: "50%",
+    background: "var(--surface-2)",
+    fontSize: 20,
+  },
   muted: { color: "var(--muted)", fontSize: 12 },
   bio: {
     overflow: "hidden",
