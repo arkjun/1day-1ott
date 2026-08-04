@@ -116,7 +116,7 @@ export default {
   landing: {
     badge: "One a day, one green square",
     headline: "Turn what you watch\ninto green squares",
-    sub: "Movies, TV, variety, YouTube — log today's watch in one line. Your viewing habit, filling up green like a GitHub contribution graph.",
+    sub: "Movies, TV, variety, YouTube — log today's watch in one line. Watch your own viewing log fill up green like a GitHub contribution graph.",
     benefitsEyebrow: "Your log, your way — connection when you want it",
     benefitsTitle: "Don't just watch it. Keep it as part of your taste.",
     benefitsSub: "Logging takes seconds, and your growing taste stays easy to see. You decide what remains private and what gets shared.",

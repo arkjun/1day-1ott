@@ -47,6 +47,14 @@ describe("서비스명", () => {
   });
 });
 
+describe("랜딩 소개 문구", () => {
+  it("시청 습관이 아닌 시청 기록으로 안내한다", () => {
+    expect(resources.ko.translation.landing.sub).toContain("나만의 시청 기록");
+    expect(resources.en.translation.landing.sub).toContain("your own viewing log");
+    expect(resources.ja.translation.landing.sub).toContain("自分だけの視聴記録");
+  });
+});
+
 describe("복수형(i18next)", () => {
   function t(lng: string) {
     const i = createInstance();
