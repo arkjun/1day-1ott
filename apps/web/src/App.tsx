@@ -25,6 +25,7 @@ import { SiteFooter } from "./components/SiteFooter";
 import { activityLabels } from "./i18n/format";
 import { DEFAULT_LANG, normalizeLang } from "./i18n/locales";
 import { LanguageSelect } from "./components/LanguageSelect";
+import { LandingBenefits } from "./components/LandingBenefits";
 import { LandingPreview } from "./components/LandingPreview";
 import { api, type EntryRow } from "./lib/api";
 import {
@@ -488,12 +489,6 @@ function Auth() {
     setEmailOtpMode(false);
   }
 
-  const features = [
-    { t: t("landing.feat1Title"), b: t("landing.feat1Body") },
-    { t: t("landing.feat2Title"), b: t("landing.feat2Body") },
-    { t: t("landing.feat3Title"), b: t("landing.feat3Body") },
-  ];
-
   return (
     <div style={st.landing}>
       <div style={st.landingBar}>
@@ -631,16 +626,8 @@ function Auth() {
         </div>
       </div>
 
+      <LandingBenefits />
       <LandingPreview />
-
-      <div style={st.features}>
-        {features.map((f) => (
-          <div key={f.t} style={st.card}>
-            <b style={{ fontSize: 16 }}>{f.t}</b>
-            <p style={{ ...st.muted, fontSize: 14, marginTop: 8, marginBottom: 0 }}>{f.b}</p>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -759,5 +746,4 @@ const st: Record<string, React.CSSProperties> = {
   heroH1: { fontSize: 44, lineHeight: 1.12, letterSpacing: "-0.03em", fontWeight: 800, margin: 0, whiteSpace: "pre-line" },
   heroSub: { marginTop: 18, fontSize: 16, color: "var(--muted)", lineHeight: 1.6, maxWidth: 460 },
   loginCard: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 22, boxShadow: "var(--shadow)" },
-  features: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16 },
 };

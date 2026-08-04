@@ -324,6 +324,193 @@ a {
   }
 }
 
+.landing-benefits {
+  margin: 0 0 56px;
+}
+
+.landing-benefits-copy {
+  max-width: 650px;
+  margin: 0 auto 24px;
+  text-align: center;
+}
+
+.landing-benefits-eyebrow {
+  color: var(--accent-ink);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.landing-benefits-copy h2 {
+  margin: 8px 0 0;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+}
+
+.landing-benefits-copy p {
+  margin: 12px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.landing-benefit-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.landing-benefit-card {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.landing-benefit-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--accent-weak);
+  font-size: 18px;
+}
+
+.landing-benefit-card h3 {
+  margin: 14px 0 0;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+}
+
+.landing-benefit-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.landing-fediverse {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  gap: 30px;
+  align-items: center;
+  overflow: hidden;
+  margin-top: 16px;
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 92% 12%, var(--accent-weak), transparent 35%),
+    var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.landing-fediverse-copy > span {
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.landing-fediverse-copy h3 {
+  margin: 7px 0 0;
+  font-size: 25px;
+  letter-spacing: -0.03em;
+}
+
+.landing-fediverse-copy p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.landing-fediverse-copy ul {
+  display: grid;
+  gap: 7px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.landing-fediverse-copy li::before {
+  margin-right: 7px;
+  color: var(--accent-ink);
+  content: "✓";
+  font-weight: 800;
+}
+
+.landing-fediverse-visual {
+  display: grid;
+  justify-items: stretch;
+  max-width: 330px;
+  margin: 0 auto;
+}
+
+.landing-fediverse-profile,
+.landing-fediverse-network {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 10px 30px rgba(20, 26, 38, 0.08);
+}
+
+.landing-fediverse-profile > span,
+.landing-fediverse-network > span {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-weak);
+  font-size: 19px;
+}
+
+.landing-fediverse-visual b,
+.landing-fediverse-visual small {
+  display: block;
+}
+
+.landing-fediverse-visual b {
+  font-size: 13px;
+}
+
+.landing-fediverse-visual small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.landing-fediverse-path {
+  display: flex;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-ink);
+}
+
+.landing-fediverse-path i {
+  width: 32%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent));
+}
+
+.landing-fediverse-path i:last-child {
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+.landing-fediverse-path span {
+  padding: 0 8px;
+  letter-spacing: 0.2em;
+}
+
 .landing-preview {
   margin: 0 0 48px;
 }
@@ -745,6 +932,19 @@ a {
     font-size: 34px !important;
   }
 
+  .landing-benefits-copy h2 {
+    font-size: 24px;
+  }
+
+  .landing-benefit-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .landing-fediverse {
+    grid-template-columns: 1fr;
+    padding: 24px;
+  }
+
   .landing-preview-copy h2 {
     font-size: 23px;
   }
@@ -779,6 +979,18 @@ a {
 
   .legal-page h1 {
     font-size: 30px;
+  }
+
+  .landing-benefit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-benefit-card {
+    padding: 17px;
+  }
+
+  .landing-fediverse {
+    padding: 20px;
   }
 
   .landing-preview-tabs button {
