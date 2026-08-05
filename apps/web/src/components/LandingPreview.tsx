@@ -65,7 +65,7 @@ export function LandingPreview() {
           <span />
           <span />
           <span />
-          <div>1day1ott.app</div>
+          <div>1day1ott.com</div>
         </div>
 
         <div className="landing-preview-screen">
