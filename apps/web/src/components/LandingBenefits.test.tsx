@@ -26,6 +26,6 @@ describe("LandingBenefits", () => {
     expect(html).toContain("공개 범위는 직접 선택");
     expect(html).toContain("연합우주로 이어지는 감상");
     expect(html).toContain("Mastodon");
-    expect(html).toContain("@myname@1day1ott.app");
+    expect(html).toContain("@myname@1day1ott.com");
   });
 });
