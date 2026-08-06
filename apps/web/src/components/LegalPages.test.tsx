@@ -172,11 +172,11 @@ describe("법적 고지", () => {
     expect(html).toContain('<option value="ja">日本語</option>');
   });
 
-  it("footer에서 정책 페이지로 이동할 수 있다", async () => {
+  it("footer에서 정책 페이지와 소스 코드로 이동할 수 있다", async () => {
     const html = await render(<SiteFooter />);
 
     expect(html).toContain('href="/privacy"');
     expect(html).toContain('href="/terms"');
-    expect(html).not.toContain("github.com");
+    expect(html).toContain('href="https://github.com/arkjun/1day-1ott"');
   });
 });

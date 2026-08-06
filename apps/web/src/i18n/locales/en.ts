@@ -16,6 +16,7 @@ export default {
     legalNav: "Policy links",
     privacy: "Privacy Policy",
     terms: "Terms",
+    source: "GitHub",
     analyticsSettings: "Analytics settings",
   },
   analytics: {

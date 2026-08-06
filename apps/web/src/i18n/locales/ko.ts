@@ -16,6 +16,7 @@ export default {
     legalNav: "정책 링크",
     privacy: "개인정보 처리방침",
     terms: "이용약관",
+    source: "GitHub",
     analyticsSettings: "분석 설정",
   },
   analytics: {

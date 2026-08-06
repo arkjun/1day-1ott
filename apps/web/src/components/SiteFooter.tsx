@@ -14,6 +14,7 @@ export function SiteFooter({
         <nav aria-label={t("footer.legalNav")}>
           <a href="/privacy">{t("footer.privacy")}</a>
           <a href="/terms">{t("footer.terms")}</a>
+          <a href="https://github.com/arkjun/1day-1ott">{t("footer.source")}</a>
           {onAnalyticsSettings ? (
             <button type="button" onClick={onAnalyticsSettings}>
               {t("footer.analyticsSettings")}
