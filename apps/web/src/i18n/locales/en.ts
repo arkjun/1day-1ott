@@ -73,6 +73,12 @@ export default {
     fetch: "Fetch",
     submitRecord: "Log it",
   },
+  guest: {
+    start: "Continue as guest",
+    startHint: "No account · logs stay only in this browser",
+    exit: "Exit guest mode",
+    localOnly: "Logs are not sent to the server and stay only in this browser.",
+  },
   stat: { streak: "🔥 Current streak", thisMonth: "This month", total: "Total logged" },
   unit: { day_one: "day", day_other: "days", entry_one: "entry", entry_other: "entries" },
   count: {

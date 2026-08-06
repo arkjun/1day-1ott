@@ -198,6 +198,11 @@ export const api = {
     }),
 };
 
+export type EntriesApi = Pick<
+  typeof api,
+  "createEntry" | "listEntries" | "updateEntry" | "deleteEntry" | "heatmap"
+>;
+
 export interface PasskeyRow {
   id: string;
   name: string | null;

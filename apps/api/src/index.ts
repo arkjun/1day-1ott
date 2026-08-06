@@ -118,6 +118,8 @@ app.on(["GET", "POST"], "/api/auth/*", (c) => {
 
 // 공개 라우트(무인증): 공개 프로필 + 잔디 SVG. 인증 게이트보다 먼저.
 app.route("/api", publicRoute);
+// 게스트도 쓰는 읽기 전용 메타데이터 프록시. D1을 읽거나 쓰지 않는다.
+app.route("/api", searchRoute);
 
 // 인증 게이트: /api/entries, /api/heatmap, /api/me 등 도메인 라우트.
 app.use("/api/*", async (c, next) => {
@@ -132,7 +134,6 @@ app.use("/api/*", async (c, next) => {
 });
 
 app.route("/api", entriesRoute);
-app.route("/api", searchRoute);
 app.route("/api", meRoute);
 app.route("/api", followsRoute);
 app.route("/api", reactionsRoute);

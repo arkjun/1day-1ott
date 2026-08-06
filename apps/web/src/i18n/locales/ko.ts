@@ -73,6 +73,12 @@ export default {
     fetch: "가져오기",
     submitRecord: "기록하기",
   },
+  guest: {
+    start: "게스트로 시작하기",
+    startHint: "가입 없이 사용 · 기록은 이 브라우저에만 저장",
+    exit: "게스트 종료",
+    localOnly: "기록은 서버로 전송되지 않고 이 브라우저에만 저장됩니다.",
+  },
   stat: { streak: "🔥 현재 연속", thisMonth: "이번 달", total: "총 기록" },
   unit: { day_other: "일", entry_other: "편" },
   count: { entry_other: "{{count}}편", work_other: "{{count}}작품", totalEntry_other: "총 {{count}}편" },

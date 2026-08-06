@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { EntryRow } from "../lib/api";
+import { api, type EntriesApi, type EntryRow } from "../lib/api";
 import { filterEntries } from "../lib/allEntries";
 import { RecentItem } from "./RecentItem";
 
@@ -12,10 +12,16 @@ export function AllEntries({
   entries,
   initialQuery = "",
   onChanged,
+  entriesApi = api,
+  linkContent = true,
+  showVisibility = true,
 }: {
   entries: EntryRow[];
   initialQuery?: string;
   onChanged: () => void;
+  entriesApi?: EntriesApi;
+  linkContent?: boolean;
+  showVisibility?: boolean;
 }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState(initialQuery);
@@ -41,7 +47,14 @@ export function AllEntries({
       />
       <div>
         {visible.map((e) => (
-          <RecentItem key={e.id} entry={e} onChanged={onChanged} />
+          <RecentItem
+            key={e.id}
+            entry={e}
+            onChanged={onChanged}
+            entriesApi={entriesApi}
+            linkContent={linkContent}
+            showVisibility={showVisibility}
+          />
         ))}
       </div>
       {filtered.length === 0 && (

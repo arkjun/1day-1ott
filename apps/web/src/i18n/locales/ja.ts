@@ -73,6 +73,12 @@ export default {
     fetch: "取得",
     submitRecord: "記録する",
   },
+  guest: {
+    start: "ゲストとして始める",
+    startHint: "登録不要 · 記録はこのブラウザにのみ保存",
+    exit: "ゲストモードを終了",
+    localOnly: "記録はサーバーへ送信されず、このブラウザにのみ保存されます。",
+  },
   stat: { streak: "🔥 連続記録", thisMonth: "今月", total: "総記録" },
   unit: { day_other: "日", entry_other: "本" },
   count: { entry_other: "{{count}}本", work_other: "{{count}}作品", totalEntry_other: "計{{count}}本" },

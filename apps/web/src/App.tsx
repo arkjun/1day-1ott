@@ -27,7 +27,7 @@ import { DEFAULT_LANG, normalizeLang } from "./i18n/locales";
 import { LanguageSelect } from "./components/LanguageSelect";
 import { LandingBenefits } from "./components/LandingBenefits";
 import { LandingPreview } from "./components/LandingPreview";
-import { api, type EntryRow } from "./lib/api";
+import { api, type EntriesApi, type EntryRow } from "./lib/api";
 import {
   authClient,
   sendVerificationEmail,
@@ -63,6 +63,13 @@ import {
 } from "./lib/pendingEmailVerification";
 import { usernameFromPublicProfilePath } from "./lib/publicProfilePath";
 import { updatePageMetadata } from "./lib/seo";
+import {
+  createGuestEntriesApi,
+  readActiveGuest,
+  startGuest,
+  stopGuest,
+  type GuestProfile,
+} from "./lib/guest";
 
 const LegalPage = lazy(() =>
   import("./components/LegalPage").then((module) => ({
@@ -95,7 +102,17 @@ function Stat({ k, v, unit, accent }: { k: string; v: number; unit: string; acce
   );
 }
 
-function Dashboard({ user }: { user: SessionUser }) {
+function Dashboard({
+  user,
+  entriesApi = api,
+  guest = false,
+  onGuestExit,
+}: {
+  user: SessionUser;
+  entriesApi?: EntriesApi;
+  guest?: boolean;
+  onGuestExit?: () => void;
+}) {
   const { t, i18n } = useTranslation();
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [cells, setCells] = useState<HeatmapCell[]>([]);
@@ -105,7 +122,10 @@ function Dashboard({ user }: { user: SessionUser }) {
   const { resolved: scheme } = useTheme();
 
   async function refresh() {
-    const [e, h] = await Promise.all([api.listEntries(), api.heatmap()]);
+    const [e, h] = await Promise.all([
+      entriesApi.listEntries(),
+      entriesApi.heatmap(),
+    ]);
     setEntries(e.entries);
     setCells(h.cells);
   }
@@ -183,17 +203,25 @@ function Dashboard({ user }: { user: SessionUser }) {
           🌱 {t("common.serviceName")}
         </b>
         <div style={{ display: "flex", gap: 8 }}>
-          <a style={{ ...st.ghost, textDecoration: "none" }} href="/me">
-            {t("nav.myPage")}
-          </a>
+          {guest ? null : (
+            <a style={{ ...st.ghost, textDecoration: "none" }} href="/me">
+              {t("nav.myPage")}
+            </a>
+          )}
           <button style={st.primary} onClick={() => setOpen(true)}>
             {t("action.addRecord")}
           </button>
-          <button style={st.ghost} onClick={() => signOut()}>
-            {t("action.logout")}
+          <button style={st.ghost} onClick={guest ? onGuestExit : () => signOut()}>
+            {t(guest ? "guest.exit" : "action.logout")}
           </button>
         </div>
       </div>
+
+      {guest ? (
+        <div style={st.guestNotice}>
+          <b>@{user.username}</b> · {t("guest.localOnly")}
+        </div>
+      ) : null}
 
       <div style={st.viewTabs}>
         {(["home", "calendar", "all"] as const).map((v) => (
@@ -223,6 +251,9 @@ function Dashboard({ user }: { user: SessionUser }) {
           entries={entries}
           initialQuery={selectedDate ?? ""}
           onChanged={refresh}
+          entriesApi={entriesApi}
+          linkContent={!guest}
+          showVisibility={!guest}
         />
       ) : (
         <>
@@ -258,9 +289,13 @@ function Dashboard({ user }: { user: SessionUser }) {
           </div>
           <div style={st.posterGrid}>
             {posters.map((e) => (
-              <a key={e.id} href={`/c/${e.contentId}`} style={{ display: "block" }}>
-                <img src={e.posterUrl!} alt={e.title} title={e.title} style={st.poster} />
-              </a>
+              guest ? (
+                <img key={e.id} src={e.posterUrl!} alt={e.title} title={e.title} style={st.poster} />
+              ) : (
+                <a key={e.id} href={`/c/${e.contentId}`} style={{ display: "block" }}>
+                  <img src={e.posterUrl!} alt={e.title} title={e.title} style={st.poster} />
+                </a>
+              )
             ))}
           </div>
         </div>
@@ -304,7 +339,14 @@ function Dashboard({ user }: { user: SessionUser }) {
         </div>
         <div>
           {entries.slice(0, 20).map((e) => (
-            <RecentItem key={e.id} entry={e} onChanged={refresh} />
+            <RecentItem
+              key={e.id}
+              entry={e}
+              onChanged={refresh}
+              entriesApi={entriesApi}
+              linkContent={!guest}
+              showVisibility={!guest}
+            />
           ))}
           {entries.length === 0 && <div style={st.muted}>{t("recent.empty")}</div>}
         </div>
@@ -317,13 +359,15 @@ function Dashboard({ user }: { user: SessionUser }) {
           recentContents={recentContents}
           onClose={() => setOpen(false)}
           onSaved={refresh}
+          entriesApi={entriesApi}
+          showVisibility={!guest}
         />
       )}
     </div>
   );
 }
 
-function Auth() {
+function Auth({ onGuestStart }: { onGuestStart: () => void }) {
   const { t, i18n } = useTranslation();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
@@ -623,6 +667,16 @@ function Auth() {
               )}
             </>
           )}
+          <button
+            type="button"
+            style={{ ...st.ghost, marginTop: 12, width: "100%" }}
+            onClick={onGuestStart}
+          >
+            {t("guest.start")}
+          </button>
+          <p style={{ ...st.muted, marginBottom: 0, textAlign: "center" }}>
+            {t("guest.startHint")}
+          </p>
         </div>
       </div>
 
@@ -635,12 +689,40 @@ function Auth() {
 function AuthedApp() {
   const { t } = useTranslation();
   const { data: session, isPending } = useSession();
+  const [guest, setGuest] = useState<GuestProfile | null>(() =>
+    readActiveGuest(),
+  );
+  const guestEntriesApi = useMemo(
+    () => createGuestEntriesApi(window.localStorage),
+    [],
+  );
   const sessionUserId = session?.user?.id;
   useEffect(() => {
     if (sessionUserId) clearPendingVerificationEmail();
   }, [sessionUserId]);
   if (isPending) return <p style={{ padding: 24 }}>{t("common.loading")}</p>;
-  if (!session?.user) return <Auth />;
+  if (!session?.user && guest) {
+    const user: SessionUser = {
+      id: guest.username,
+      name: guest.username,
+      email: "",
+      username: guest.username,
+    };
+    return (
+      <Dashboard
+        user={user}
+        entriesApi={guestEntriesApi}
+        guest
+        onGuestExit={() => {
+          stopGuest();
+          setGuest(null);
+        }}
+      />
+    );
+  }
+  if (!session?.user) {
+    return <Auth onGuestStart={() => setGuest(startGuest())} />;
+  }
   const user = session.user as SessionUser;
   if (window.location.pathname === "/me") return <MyPage user={user} />;
   return <Dashboard user={user} />;
@@ -716,6 +798,7 @@ const st: Record<string, React.CSSProperties> = {
   tileV: { marginTop: 6, fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" },
   tileU: { fontSize: 13, fontWeight: 600, color: "var(--muted)", marginLeft: 3 },
   card: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 18, marginBottom: 16, boxShadow: "var(--shadow)" },
+  guestNotice: { background: "var(--accent-weak)", color: "var(--accent-ink)", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13 },
   cardHead: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 },
   muted: { color: "var(--muted)", fontSize: 12 },
   posterGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(78px,1fr))", gap: 10 },

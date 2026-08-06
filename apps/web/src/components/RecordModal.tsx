@@ -1,7 +1,7 @@
 import { contentTypes, type ContentType, type EntryInput, type Reaction, type SearchResult } from "@1ott/shared";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api } from "../lib/api";
+import { api, type EntriesApi } from "../lib/api";
 import type { RecentContent } from "../lib/recentContents";
 import { REACTION_META, REACTION_ORDER } from "../lib/reactions";
 
@@ -79,10 +79,14 @@ export function RecordModal({
   recentContents,
   onClose,
   onSaved,
+  entriesApi = api,
+  showVisibility = true,
 }: {
   recentContents: RecentContent[];
   onClose: () => void;
   onSaved: () => void;
+  entriesApi?: EntriesApi;
+  showVisibility?: boolean;
 }) {
   const { t } = useTranslation();
   const genreNames = useGenreNames();
@@ -187,7 +191,7 @@ export function RecordModal({
     }
     setBusy(true);
     try {
-      await api.createEntry(input);
+      await entriesApi.createEntry(input);
       onSaved();
       onClose();
     } catch {
@@ -375,19 +379,21 @@ export function RecordModal({
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
-        <label style={S.visibility}>
-          <input
-            type="checkbox"
-            checked={isNotePublic}
-            onChange={(e) => setIsNotePublic(e.target.checked)}
-          />
-          <span>
-            <b>{t("note.visibility")}</b>
-            <span style={{ ...S.muted, display: "block" }}>
-              {t("note.visibilityHint")}
+        {showVisibility ? (
+          <label style={S.visibility}>
+            <input
+              type="checkbox"
+              checked={isNotePublic}
+              onChange={(e) => setIsNotePublic(e.target.checked)}
+            />
+            <span>
+              <b>{t("note.visibility")}</b>
+              <span style={{ ...S.muted, display: "block" }}>
+                {t("note.visibilityHint")}
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+        ) : null}
 
         {err && <div style={{ color: "crimson", marginTop: 8 }}>{err}</div>}
 

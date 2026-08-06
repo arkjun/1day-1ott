@@ -1,12 +1,24 @@
 import type { Reaction } from "@1ott/shared";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, type EntryRow } from "../lib/api";
+import { api, type EntriesApi, type EntryRow } from "../lib/api";
 import { REACTION_META } from "../lib/reactions";
 import { ReactionPicker } from "./RecordModal";
 
 /** 최근 기록 한 줄: 인라인 수정(반응/감상/날짜) + 2단계 삭제. */
-export function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: () => void }) {
+export function RecentItem({
+  entry,
+  onChanged,
+  entriesApi = api,
+  linkContent = true,
+  showVisibility = true,
+}: {
+  entry: EntryRow;
+  onChanged: () => void;
+  entriesApi?: EntriesApi;
+  linkContent?: boolean;
+  showVisibility?: boolean;
+}) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
@@ -19,7 +31,7 @@ export function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: (
   async function save() {
     setBusy(true);
     try {
-      await api.updateEntry(entry.id, {
+      await entriesApi.updateEntry(entry.id, {
         watchedOn,
         reaction: reaction ?? null,
         note: note.trim() || null,
@@ -35,7 +47,7 @@ export function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: (
   async function del() {
     setBusy(true);
     try {
-      await api.deleteEntry(entry.id);
+      await entriesApi.deleteEntry(entry.id);
       onChanged();
     } finally {
       setBusy(false);
@@ -64,14 +76,16 @@ export function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: (
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
-        <label style={st.visibility}>
-          <input
-            type="checkbox"
-            checked={isNotePublic}
-            onChange={(e) => setIsNotePublic(e.target.checked)}
-          />
-          {t("note.visibility")}
-        </label>
+        {showVisibility ? (
+          <label style={st.visibility}>
+            <input
+              type="checkbox"
+              checked={isNotePublic}
+              onChange={(e) => setIsNotePublic(e.target.checked)}
+            />
+            {t("note.visibility")}
+          </label>
+        ) : null}
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <button style={st.primary} disabled={busy} onClick={save}>
             {t("common.save")}
@@ -88,7 +102,11 @@ export function RecentItem({ entry, onChanged }: { entry: EntryRow; onChanged: (
     <div style={st.entryRow}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <b>{entry.watchedOn}</b> · {t(`type.${entry.type}`)} ·{" "}
-        <a href={`/c/${entry.contentId}`} style={{ color: "inherit" }}>{entry.title}</a>
+        {linkContent ? (
+          <a href={`/c/${entry.contentId}`} style={{ color: "inherit" }}>{entry.title}</a>
+        ) : (
+          entry.title
+        )}
         {entry.channelName ? <span style={st.muted}> · {entry.channelName}</span> : null}
         {entry.reaction ? ` · ${REACTION_META[entry.reaction].emoji}` : ""}
         {entry.note ? <span style={st.muted}> · {entry.note}</span> : null}

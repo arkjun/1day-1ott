@@ -139,11 +139,19 @@ describe("인증 게이트", () => {
       ["/api/entries", undefined],
       ["/api/heatmap", undefined],
       ["/api/me", { method: "PATCH", headers: JSON_HEADERS, body: "{}" }],
-      ["/api/search?q=dune", undefined],
     ] as const) {
       const res = await app.request(path, init, env);
       expect(res.status, path).toBe(401);
     }
+  });
+
+  it("검색 프록시는 인증 없이 접근한다", async () => {
+    const search = await app.request("/api/search", undefined, env);
+    expect(search.status).toBe(200);
+    expect(await search.json()).toEqual({ results: [] });
+
+    const youtube = await app.request("/api/yt", undefined, env);
+    expect(youtube.status).toBe(400);
   });
 
   it("health 와 공개 프로필 라우트는 인증 없이 접근 (없는 유저는 404)", async () => {
