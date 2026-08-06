@@ -47,7 +47,7 @@ export function LandingBenefits() {
             <span>🌱</span>
             <div>
               <b>{t("landing.fediverseProfile")}</b>
-              <small>@myname@1day1ott.app</small>
+              <small>@myname@1day1ott.com</small>
             </div>
           </div>
           <div className="landing-fediverse-path">
