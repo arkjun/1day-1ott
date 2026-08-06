@@ -74,8 +74,8 @@ export default {
     submitRecord: "記録する",
   },
   guest: {
-    start: "ゲストとして始める",
-    startHint: "登録不要 · 記録はこのブラウザにのみ保存",
+    start: "登録せずに試す",
+    startHint: "記録はこのブラウザにのみ保存されます。",
     exit: "ゲストモードを終了",
     localOnly: "記録はサーバーへ送信されず、このブラウザにのみ保存されます。",
   },

@@ -923,10 +923,17 @@ a {
   }
 }
 
+.landing-guest-card {
+  grid-column: 2;
+}
+
 /* 랜딩 히어로: 좁은 화면에서는 세로로 쌓고(로그인 카드가 먼저), 글자 크기 축소. */
 @media (max-width: 720px) {
   .landing-hero {
     grid-template-columns: 1fr !important;
+  }
+  .landing-guest-card {
+    grid-column: 1;
   }
   .landing-hero h1 {
     font-size: 34px !important;

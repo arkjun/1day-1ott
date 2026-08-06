@@ -74,8 +74,8 @@ export default {
     submitRecord: "기록하기",
   },
   guest: {
-    start: "게스트로 시작하기",
-    startHint: "가입 없이 사용 · 기록은 이 브라우저에만 저장",
+    start: "가입 없이 먼저 둘러보기",
+    startHint: "기록은 이 브라우저에만 저장됩니다",
     exit: "게스트 종료",
     localOnly: "기록은 서버로 전송되지 않고 이 브라우저에만 저장됩니다.",
   },

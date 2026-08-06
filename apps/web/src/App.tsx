@@ -367,7 +367,7 @@ function Dashboard({
   );
 }
 
-function Auth({ onGuestStart }: { onGuestStart: () => void }) {
+export function Auth({ onGuestStart }: { onGuestStart: () => void }) {
   const { t, i18n } = useTranslation();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
@@ -667,9 +667,15 @@ function Auth({ onGuestStart }: { onGuestStart: () => void }) {
               )}
             </>
           )}
+        </div>
+        <aside
+          className="landing-guest-card"
+          style={st.guestCard}
+          aria-label={t("guest.start")}
+        >
           <button
             type="button"
-            style={{ ...st.ghost, marginTop: 12, width: "100%" }}
+            style={{ ...st.ghost, width: "100%" }}
             onClick={onGuestStart}
           >
             {t("guest.start")}
@@ -677,7 +683,7 @@ function Auth({ onGuestStart }: { onGuestStart: () => void }) {
           <p style={{ ...st.muted, marginBottom: 0, textAlign: "center" }}>
             {t("guest.startHint")}
           </p>
-        </div>
+        </aside>
       </div>
 
       <LandingBenefits />
@@ -823,10 +829,11 @@ const st: Record<string, React.CSSProperties> = {
   input: { padding: "10px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface-2)", color: "inherit", fontSize: 14 },
   landing: { maxWidth: 960, margin: "0 auto", padding: "24px 20px 60px" },
   landingBar: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 40 },
-  hero: { display: "grid", gridTemplateColumns: "minmax(0,1.15fr) minmax(300px,0.85fr)", gap: 40, alignItems: "center", marginBottom: 48 },
+  hero: { display: "grid", gridTemplateColumns: "minmax(0,1.15fr) minmax(300px,0.85fr)", columnGap: 40, rowGap: 12, alignItems: "center", marginBottom: 48 },
   heroCopy: { minWidth: 0 },
   badge: { display: "inline-block", padding: "5px 12px", borderRadius: 999, background: "var(--accent-weak)", color: "var(--accent-ink)", fontSize: 13, fontWeight: 700, marginBottom: 18 },
   heroH1: { fontSize: 44, lineHeight: 1.12, letterSpacing: "-0.03em", fontWeight: 800, margin: 0, whiteSpace: "pre-line" },
   heroSub: { marginTop: 18, fontSize: 16, color: "var(--muted)", lineHeight: 1.6, maxWidth: 460 },
   loginCard: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 22, boxShadow: "var(--shadow)" },
+  guestCard: { background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 14 },
 };

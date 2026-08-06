@@ -74,8 +74,8 @@ export default {
     submitRecord: "Log it",
   },
   guest: {
-    start: "Continue as guest",
-    startHint: "No account · logs stay only in this browser",
+    start: "Explore without an account",
+    startHint: "Logs stay only in this browser.",
     exit: "Exit guest mode",
     localOnly: "Logs are not sent to the server and stay only in this browser.",
   },
