@@ -196,6 +196,10 @@ function ShareSettings({ user }: { user: MyPageUser }) {
   );
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const hasChanges =
+    username !== (user.username ?? "") ||
+    isPublic !== !!user.isPublic ||
+    federationEnabled !== !!user.federationEnabled;
 
   const profileUrl = user.username
     ? `${window.location.origin}${publicProfilePath(user.username)}`
@@ -253,9 +257,6 @@ function ShareSettings({ user }: { user: MyPageUser }) {
           />
           {t("share.public")}
         </label>
-        <button style={st.ghost} disabled={busy} onClick={save}>
-          {t("common.save")}
-        </button>
         {profileUrl && (
           <>
             <button style={st.ghost} onClick={copy}>
@@ -293,6 +294,13 @@ function ShareSettings({ user }: { user: MyPageUser }) {
           {t("federation.warning")}
         </div>
       </div>
+      <button
+        style={{ ...st.primary, marginTop: 12 }}
+        disabled={busy || !hasChanges}
+        onClick={save}
+      >
+        {t("share.saveChanges")}
+      </button>
       {msg && <div style={{ ...st.muted, marginTop: 8 }}>{msg}</div>}
     </div>
   );

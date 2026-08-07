@@ -241,6 +241,7 @@ export default {
     public: "Public",
     copyLink: "Copy link",
     openProfile: "Open profile ↗",
+    saveChanges: "Save changes",
     saved: "Saved — reloading…",
     error: "Failed: username taken or invalid (lowercase/digits/_ , 3–20 chars)",
     linkCopied: "Link copied!",

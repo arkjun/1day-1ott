@@ -53,4 +53,33 @@ describe("MyPage 연합우주 설정", () => {
       /<input type="checkbox" disabled=""\/><span><b>연합우주 활성화<\/b>/,
     );
   });
+
+  it("연합우주 설정 뒤에 비활성화된 강조 저장 버튼을 표시한다", async () => {
+    const i18n = createInstance();
+    await i18n.init({
+      lng: "ko",
+      fallbackLng: "ko",
+      resources,
+      interpolation: { escapeValue: false },
+    });
+
+    const html = renderToStaticMarkup(
+      <I18nextProvider i18n={i18n}>
+        <MyPage
+          user={{
+            id: "user-id",
+            name: "테스터",
+            email: "tester@example.com",
+          }}
+        />
+      </I18nextProvider>,
+    );
+    const federationIndex = html.indexOf("연합우주 활성화");
+    const saveIndex = html.indexOf(">변경사항 저장</button>");
+    const saveButton = html.slice(html.lastIndexOf("<button", saveIndex), saveIndex);
+
+    expect(saveIndex).toBeGreaterThan(federationIndex);
+    expect(saveButton).toContain("disabled");
+    expect(saveButton).toContain("linear-gradient");
+  });
 });

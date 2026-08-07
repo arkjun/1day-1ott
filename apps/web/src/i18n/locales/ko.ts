@@ -233,6 +233,7 @@ export default {
     public: "공개",
     copyLink: "링크 복사",
     openProfile: "프로필 열기 ↗",
+    saveChanges: "변경사항 저장",
     saved: "저장됨 — 새로고침 중…",
     error: "실패: username 중복이거나 형식(소문자/숫자/_ 3~20자) 오류",
     linkCopied: "링크 복사됨!",

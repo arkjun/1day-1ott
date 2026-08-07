@@ -234,6 +234,7 @@ export default {
     public: "公開",
     copyLink: "リンクをコピー",
     openProfile: "プロフィールを開く ↗",
+    saveChanges: "変更を保存",
     saved: "保存しました — 再読み込み中…",
     error: "失敗: username が重複、または形式(小文字/数字/_ 3〜20文字)エラー",
     linkCopied: "リンクをコピーしました！",
