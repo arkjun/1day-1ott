@@ -19,7 +19,9 @@
     "onlyBuiltDependencies": ["esbuild", "workerd"],
     "overrides": {
       "@esbuild-kit/core-utils>esbuild": "^0.25.0",
-      "@opentelemetry/core": "2.10.0"
+      "@opentelemetry/core": "2.10.0",
+      "postcss@8.5.19": "8.5.23",
+      "undici@7.28.0": "7.29.0"
     }
   }
 }
