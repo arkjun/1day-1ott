@@ -5,6 +5,7 @@ import {
   reactionSchema,
   formatEntriesMarkdown,
   parseEntriesMarkdown,
+  viewingStatusSchema,
 } from "@1ott/shared";
 import type {
   ContentType,
@@ -35,6 +36,10 @@ const entryPatchSchema = z.object({
   note: z.string().max(1000).nullable().optional(),
   isNotePublic: z.boolean().optional(),
   platform: z.string().max(60).nullable().optional(),
+});
+
+const viewingStatusInputSchema = z.object({
+  viewingStatus: viewingStatusSchema.nullable(),
 });
 
 const importContentMappingSchema = z.object({
@@ -528,25 +533,84 @@ entriesRoute.get("/entries", async (c) => {
   return c.json({ entries: result });
 });
 
-/** 작품 페이지 하단: 로그인 유저의 이 작품 기록만. */
+/** 작품 페이지에서 로그인 유저의 시청 상태를 설정하거나 해제한다. */
+entriesRoute.put("/content/:id/status", async (c) => {
+  const parsed = viewingStatusInputSchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return c.json({ error: "invalid_input", issues: parsed.error.issues }, 400);
+  }
+
+  const db = createDb(c.env.DB);
+  const userId = c.get("userId");
+  const contentId = c.req.param("id");
+  const found = await db
+    .select({ id: schema.content.id })
+    .from(schema.content)
+    .where(eq(schema.content.id, contentId))
+    .get();
+  if (!found) return c.json({ error: "not_found" }, 404);
+
+  const { viewingStatus } = parsed.data;
+  if (viewingStatus == null) {
+    await db
+      .delete(schema.userContentStatuses)
+      .where(
+        and(
+          eq(schema.userContentStatuses.userId, userId),
+          eq(schema.userContentStatuses.contentId, contentId),
+        ),
+      );
+  } else {
+    await db
+      .insert(schema.userContentStatuses)
+      .values({ userId, contentId, status: viewingStatus })
+      .onConflictDoUpdate({
+        target: [
+          schema.userContentStatuses.userId,
+          schema.userContentStatuses.contentId,
+        ],
+        set: { status: viewingStatus },
+      });
+  }
+
+  return c.json({ viewingStatus });
+});
+
+/** 작품 페이지 하단: 로그인 유저의 이 작품 상태와 기록만. */
 entriesRoute.get("/content/:id/mine", async (c) => {
   const db = createDb(c.env.DB);
   const userId = c.get("userId");
   const id = c.req.param("id");
-  const rows = await db
-    .select({
-      id: schema.entries.id,
-      watchedOn: schema.entries.watchedOn,
-      reaction: schema.entries.reaction,
-      note: schema.entries.note,
-      isNotePublic: schema.entries.isNotePublic,
-      platform: schema.entries.platform,
-    })
-    .from(schema.entries)
-    .where(and(eq(schema.entries.userId, userId), eq(schema.entries.contentId, id)))
-    .orderBy(desc(schema.entries.watchedOn), desc(schema.entries.createdAt))
-    .all();
-  return c.json({ entries: rows });
+  const [rows, status] = await Promise.all([
+    db
+      .select({
+        id: schema.entries.id,
+        watchedOn: schema.entries.watchedOn,
+        reaction: schema.entries.reaction,
+        note: schema.entries.note,
+        isNotePublic: schema.entries.isNotePublic,
+        platform: schema.entries.platform,
+      })
+      .from(schema.entries)
+      .where(
+        and(eq(schema.entries.userId, userId), eq(schema.entries.contentId, id)),
+      )
+      .orderBy(desc(schema.entries.watchedOn), desc(schema.entries.createdAt))
+      .all(),
+    db
+      .select({ viewingStatus: schema.userContentStatuses.status })
+      .from(schema.userContentStatuses)
+      .where(
+        and(
+          eq(schema.userContentStatuses.userId, userId),
+          eq(schema.userContentStatuses.contentId, id),
+        ),
+      )
+      .get(),
+  ]);
+  return c.json({ entries: rows, viewingStatus: status?.viewingStatus ?? null });
 });
 
 /** 잔디 데이터 — 날짜별 count 집계 후 level 버킷. */

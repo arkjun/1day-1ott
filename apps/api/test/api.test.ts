@@ -139,6 +139,10 @@ describe("인증 게이트", () => {
       ["/api/entries", undefined],
       ["/api/heatmap", undefined],
       ["/api/me", { method: "PATCH", headers: JSON_HEADERS, body: "{}" }],
+      [
+        "/api/content/whatever/status",
+        { method: "PUT", headers: JSON_HEADERS, body: "{}" },
+      ],
     ] as const) {
       const res = await app.request(path, init, env);
       expect(res.status, path).toBe(401);
@@ -1515,8 +1519,110 @@ describe("GET /api/content/:id/mine (본인 기록)", () => {
 
     const res = await app.request(`/api/content/${contentId}/mine`, authed(a), env);
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { entries: { watchedOn: string; reaction: string | null }[] };
+    const body = (await res.json()) as {
+      entries: { watchedOn: string; reaction: string | null }[];
+      viewingStatus: string | null;
+    };
     expect(body.entries.map((e) => e.watchedOn)).toEqual(["2026-07-13", "2026-07-10"]);
+    expect(body.viewingStatus).toBeNull();
+  });
+
+  it("작품 상태를 설정·변경·해제하고 사용자별로 격리한다", async () => {
+    const owner = await signUp();
+    const stranger = await signUp();
+    const created = await createEntry(owner, { tmdbId: 604, title: "매트릭스 리로디드" });
+    const { contentId } = (await created.json()) as { contentId: string };
+
+    async function setStatus(cookie: string, viewingStatus: string | null) {
+      const updated = await app.request(
+        `/api/content/${contentId}/status`,
+        authed(cookie, {
+          method: "PUT",
+          body: JSON.stringify({ viewingStatus }),
+        }),
+        env,
+      );
+      expect(updated.status).toBe(200);
+      expect(await updated.json()).toEqual({ viewingStatus });
+    }
+
+    for (const viewingStatus of [
+      "watching",
+      "completed",
+      "dropped",
+      "interested",
+    ]) {
+      await setStatus(owner, viewingStatus);
+
+      const mine = await app.request(
+        `/api/content/${contentId}/mine`,
+        authed(owner),
+        env,
+      );
+      expect((await mine.json()) as { viewingStatus: string | null }).toMatchObject({
+        viewingStatus,
+      });
+    }
+
+    const strangers = await app.request(
+      `/api/content/${contentId}/mine`,
+      authed(stranger),
+      env,
+    );
+    expect(await strangers.json()).toMatchObject({
+      entries: [],
+      viewingStatus: null,
+    });
+
+    // 기록이 없는 사용자도 같은 작품에 독립적으로 상태를 저장할 수 있다.
+    await setStatus(stranger, "watching");
+    const [owners, strangersAfter] = await Promise.all([
+      app.request(`/api/content/${contentId}/mine`, authed(owner), env),
+      app.request(`/api/content/${contentId}/mine`, authed(stranger), env),
+    ]);
+    expect(await owners.json()).toMatchObject({ viewingStatus: "interested" });
+    expect(await strangersAfter.json()).toMatchObject({
+      entries: [],
+      viewingStatus: "watching",
+    });
+
+    await setStatus(owner, null);
+    const [cleared, strangerUnchanged] = await Promise.all([
+      app.request(`/api/content/${contentId}/mine`, authed(owner), env),
+      app.request(`/api/content/${contentId}/mine`, authed(stranger), env),
+    ]);
+    expect(await cleared.json()).toMatchObject({ viewingStatus: null });
+    expect(await strangerUnchanged.json()).toMatchObject({
+      viewingStatus: "watching",
+    });
+  });
+
+  it("잘못된 상태와 없는 작품을 거부한다", async () => {
+    const cookie = await signUp();
+    const created = await createEntry(cookie, { tmdbId: 605, title: "매트릭스 레볼루션" });
+    const { contentId } = (await created.json()) as { contentId: string };
+
+    const invalid = await app.request(
+      `/api/content/${contentId}/status`,
+      authed(cookie, {
+        method: "PUT",
+        body: JSON.stringify({ viewingStatus: "paused" }),
+      }),
+      env,
+    );
+    expect(invalid.status).toBe(400);
+    expect(await invalid.json()).toMatchObject({ error: "invalid_input" });
+
+    const missing = await app.request(
+      "/api/content/missing/status",
+      authed(cookie, {
+        method: "PUT",
+        body: JSON.stringify({ viewingStatus: "interested" }),
+      }),
+      env,
+    );
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toEqual({ error: "not_found" });
   });
 });
 

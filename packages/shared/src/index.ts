@@ -10,6 +10,16 @@ export const reactions = ["down", "up", "love"] as const;
 export const reactionSchema = z.enum(reactions);
 export type Reaction = (typeof reactions)[number];
 
+/** 사용자별 작품 시청 상태. 개별 감상 기록의 reaction과는 독립적이다. */
+export const viewingStatuses = [
+  "watching",
+  "completed",
+  "dropped",
+  "interested",
+] as const;
+export const viewingStatusSchema = z.enum(viewingStatuses);
+export type ViewingStatus = (typeof viewingStatuses)[number];
+
 /** 다른 사용자의 공개 감상평에 남길 수 있는 이모티콘 반응. */
 export const noteReactionEmojis = ["👍", "❤️", "😂", "😮", "😢"] as const;
 export const noteReactionEmojiSchema = z.enum(noteReactionEmojis);

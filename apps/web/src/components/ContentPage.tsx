@@ -1,5 +1,10 @@
-import type { ContentDetail, MyContentEntry } from "@1ott/shared";
-import { useCallback, useEffect, useState } from "react";
+import {
+  viewingStatuses,
+  type ContentDetail,
+  type MyContentEntry,
+  type ViewingStatus,
+} from "@1ott/shared";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, type EntryRow } from "../lib/api";
 import { useSession } from "../lib/authClient";
@@ -14,6 +19,14 @@ export function ContentPage({ contentId }: { contentId: string }) {
   const [detail, setDetail] = useState<ContentDetail | null>(null);
   const [state, setState] = useState<"loading" | "ok" | "notfound">("loading");
   const [mine, setMine] = useState<MyContentEntry[]>([]);
+  const [viewingStatus, setViewingStatus] = useState<ViewingStatus | null>(null);
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [statusError, setStatusError] = useState(false);
+  const [mineState, setMineState] = useState<"loading" | "ok" | "error">(
+    "loading",
+  );
+  const mineRequestId = useRef(0);
+  const statusRevision = useRef(0);
 
   const loadDetail = useCallback(() => {
     api
@@ -26,11 +39,30 @@ export function ContentPage({ contentId }: { contentId: string }) {
   }, [contentId]);
 
   const loadMine = useCallback(() => {
+    const requestId = ++mineRequestId.current;
+    const revision = statusRevision.current;
     if (!session?.user) {
       setMine([]);
+      setViewingStatus(null);
+      setMineState("loading");
       return;
     }
-    api.contentMine(contentId).then((r) => setMine(r.entries)).catch(() => setMine([]));
+    setMineState("loading");
+    setStatusError(false);
+    api
+      .contentMine(contentId)
+      .then((r) => {
+        if (requestId !== mineRequestId.current) return;
+        setMine(r.entries);
+        if (revision === statusRevision.current) {
+          setViewingStatus(r.viewingStatus);
+        }
+        setMineState("ok");
+      })
+      .catch(() => {
+        if (requestId !== mineRequestId.current) return;
+        setMineState("error");
+      });
   }, [contentId, session?.user]);
 
   // 언어 바뀌면 제목 다시. 로그인/작품 바뀌면 내 기록 다시.
@@ -64,6 +96,26 @@ export function ContentPage({ contentId }: { contentId: string }) {
   function refresh() {
     loadDetail();
     loadMine();
+  }
+
+  async function changeViewingStatus(next: ViewingStatus | null) {
+    ++mineRequestId.current;
+    ++statusRevision.current;
+    const previous = viewingStatus;
+    setViewingStatus(next);
+    setStatusBusy(true);
+    setStatusError(false);
+    try {
+      const result = await api.setContentViewingStatus(contentId, next);
+      setViewingStatus(result.viewingStatus);
+    } catch {
+      setViewingStatus(previous);
+      setStatusError(true);
+    } finally {
+      ++statusRevision.current;
+      setStatusBusy(false);
+      setMineState("ok");
+    }
   }
 
   if (state === "loading") return <p style={{ padding: 24 }}>{t("common.loading")}</p>;
@@ -155,14 +207,31 @@ export function ContentPage({ contentId }: { contentId: string }) {
 
       {session?.user && (
         <div style={st.card}>
-          <div style={{ marginBottom: 12 }}>
+          <div style={st.myHeader}>
             <b>{t("content.myRecords")}</b>
+            <ViewingStatusSelect
+              value={viewingStatus}
+              onChange={changeViewingStatus}
+              disabled={statusBusy || mineState !== "ok"}
+            />
           </div>
-          {myRows.length > 0 ? (
-            myRows.map((e) => <RecentItem key={e.id} entry={e} onChanged={refresh} />)
-          ) : (
-            <div style={st.muted}>{t("content.myEmpty")}</div>
+          {mineState === "error" && (
+            <div role="alert" style={st.error}>
+              {t("viewingStatus.loadFailed")}
+            </div>
           )}
+          {statusError && (
+            <div role="alert" style={st.error}>
+              {t("viewingStatus.saveFailed")}
+            </div>
+          )}
+          {mineState === "loading" ? (
+            <div style={st.muted}>{t("common.loading")}</div>
+          ) : myRows.length > 0 ? (
+            myRows.map((e) => <RecentItem key={e.id} entry={e} onChanged={refresh} />)
+          ) : mineState === "ok" ? (
+            <div style={st.muted}>{t("content.myEmpty")}</div>
+          ) : null}
         </div>
       )}
 
@@ -180,6 +249,38 @@ export function ContentPage({ contentId }: { contentId: string }) {
         </span>
       </div>
     </div>
+  );
+}
+
+export function ViewingStatusSelect({
+  value,
+  onChange,
+  disabled = false,
+}: {
+  value: ViewingStatus | null;
+  onChange: (value: ViewingStatus | null) => void;
+  disabled?: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <label style={st.statusField}>
+      <span>{t("viewingStatus.label")}</span>
+      <select
+        value={value ?? ""}
+        disabled={disabled}
+        onChange={(event) =>
+          onChange((event.target.value || null) as ViewingStatus | null)
+        }
+        style={st.select}
+      >
+        <option value="">{t("viewingStatus.unset")}</option>
+        {viewingStatuses.map((status) => (
+          <option key={status} value={status}>
+            {t(`viewingStatus.${status}`)}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -276,6 +377,23 @@ const st: Record<string, React.CSSProperties> = {
   poster: { width: 120, aspectRatio: "2 / 3", objectFit: "cover", borderRadius: 10, border: "1px solid var(--border)" },
   aggRow: { display: "flex", gap: 16, flexWrap: "wrap", fontSize: 15, color: "var(--muted)" },
   card: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 18, marginBottom: 16, boxShadow: "var(--shadow)" },
+  myHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    flexWrap: "wrap",
+    marginBottom: 12,
+  },
+  statusField: { display: "flex", alignItems: "center", gap: 8, fontSize: 13 },
+  select: {
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+    padding: "7px 10px",
+    background: "var(--surface-2)",
+    color: "inherit",
+  },
+  error: { color: "var(--accent-ink)", fontSize: 13, marginBottom: 10 },
   muted: { color: "var(--muted)", fontSize: 13 },
   ghost: { border: "1px solid var(--border)", borderRadius: 10, padding: "9px 14px", background: "var(--surface)", color: "inherit" },
 };

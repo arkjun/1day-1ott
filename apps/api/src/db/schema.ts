@@ -1,3 +1,4 @@
+import { viewingStatuses } from "@1ott/shared";
 import { sql } from "drizzle-orm";
 import {
   check,
@@ -155,6 +156,27 @@ export const entries = sqliteTable(
   (t) => [
     index("entries_user_day_idx").on(t.userId, t.watchedOn),
     index("entries_content_idx").on(t.contentId),
+  ],
+);
+
+/** 사용자마다 작품 하나에 하나만 유지하는 시청 상태. */
+export const userContentStatuses = sqliteTable(
+  "user_content_statuses",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    contentId: text("content_id")
+      .notNull()
+      .references(() => content.id, { onDelete: "cascade" }),
+    status: text("status", { enum: viewingStatuses }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.contentId] }),
+    check(
+      "user_content_statuses_status_ck",
+      sql`${t.status} in ('watching', 'completed', 'dropped', 'interested')`,
+    ),
   ],
 );
 
@@ -328,6 +350,7 @@ export const schema = {
   passkey,
   content,
   entries,
+  userContentStatuses,
   entryReactions,
   userFollows,
   federationActorKeys,

@@ -104,6 +104,16 @@ export default {
     other: "직접입력",
   },
   reaction: { down: "싫어요", up: "좋아요", love: "매우 좋아요" },
+  viewingStatus: {
+    label: "내 상태",
+    unset: "상태 없음",
+    watching: "보는 중",
+    completed: "다 봤음",
+    dropped: "보다 말았음",
+    interested: "관심 있음",
+    loadFailed: "상태를 불러오지 못했습니다.",
+    saveFailed: "상태를 저장하지 못했습니다.",
+  },
   genre: {
     "28": "액션", "12": "모험", "16": "애니메이션", "35": "코미디", "80": "범죄",
     "99": "다큐멘터리", "18": "드라마", "10751": "가족", "14": "판타지", "36": "역사",

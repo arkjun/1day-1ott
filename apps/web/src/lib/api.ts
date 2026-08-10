@@ -11,6 +11,7 @@ import type {
   NoteReactionSummary,
   Reaction,
   SearchResult,
+  ViewingStatus,
 } from "@1ott/shared";
 import i18n from "../i18n";
 
@@ -186,7 +187,17 @@ export const api = {
   content: (id: string) =>
     req<ContentDetail>(`/api/content/${encodeURIComponent(id)}?lang=${i18n.language}`),
   contentMine: (id: string) =>
-    req<{ entries: MyContentEntry[] }>(`/api/content/${encodeURIComponent(id)}/mine`),
+    req<{ entries: MyContentEntry[]; viewingStatus: ViewingStatus | null }>(
+      `/api/content/${encodeURIComponent(id)}/mine`,
+    ),
+  setContentViewingStatus: (id: string, viewingStatus: ViewingStatus | null) =>
+    req<{ viewingStatus: ViewingStatus | null }>(
+      `/api/content/${encodeURIComponent(id)}/status`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ viewingStatus }),
+      },
+    ),
   // 목록/삭제는 WebAuthn 의식이 필요 없어 엔드포인트를 직접 호출한다.
   // (등록·로그인은 브라우저 의식이 필요 → authClient.passkey.* 사용)
   listPasskeys: () =>

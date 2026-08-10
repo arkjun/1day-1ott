@@ -112,6 +112,16 @@ export default {
     other: "Custom",
   },
   reaction: { down: "Dislike", up: "Like", love: "Love" },
+  viewingStatus: {
+    label: "My status",
+    unset: "Not set",
+    watching: "Watching",
+    completed: "Completed",
+    dropped: "Dropped",
+    interested: "Interested",
+    loadFailed: "Failed to load status.",
+    saveFailed: "Failed to save status.",
+  },
   genre: {
     "28": "Action", "12": "Adventure", "16": "Animation", "35": "Comedy", "80": "Crime",
     "99": "Documentary", "18": "Drama", "10751": "Family", "14": "Fantasy", "36": "History",
