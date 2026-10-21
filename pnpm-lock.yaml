@@ -45,8 +45,8 @@ importers:
         specifier: ^0.45.2
         version: 0.45.2(@cloudflare/workers-types@5.20260728.1)(@opentelemetry/api@1.9.1)(gel@2.2.0)(kysely@0.29.3)
       hono:
-        specifier: ^4.12.34
-        version: 4.12.34
+        specifier: ^4.13.11
+        version: 4.13.11
       nanoid:
         specifier: ^5.0.9
         version: 5.1.16
@@ -322,6 +322,7 @@ packages:
 
   '@cloudflare/vitest-pool-workers@0.18.8':
     resolution: {integrity: sha512-O1kOMZqapidlezNFiBZ7Lbd+8mMEpkGmWwPj+nPLvOngxSL11lmWq7xl7vxyjDxbeD/7l22KqgvRGM7XFaYd9w==}
+    deprecated: '@cloudflare/vitest-pool-workers has been renamed to @cloudflare/vitest-plugin. This package will not receive future updates.'
     peerDependencies:
       '@vitest/runner': ^4.1.0
       '@vitest/snapshot': ^4.1.0
@@ -964,6 +965,7 @@ packages:
   '@opentelemetry/sdk-trace-base@2.10.0':
     resolution: {integrity: sha512-GuYQQT7QD2EeO8lcZLRQzcbOyhqAzL+6WWTKTU9mSUBYBazkEDl+VrQcXQhbB08OWM9anD1aHleVadzulpOaUQ==}
     engines: {node: ^18.19.0 || >=20.6.0}
+    deprecated: Use @opentelemetry/sdk-trace package
     peerDependencies:
       '@opentelemetry/api': '>=1.3.0 <1.10.0'
 
@@ -1564,8 +1566,8 @@ packages:
   get-tsconfig@4.14.0:
     resolution: {integrity: sha512-yTb+8DXzDREzgvYmh6s9vHsSVCHeC0G3PI5bEXNBHtmshPnO+S5O7qgLEOn0I5QvMy6kpZN8K1NKGyilLb93wA==}
 
-  hono@4.12.34:
-    resolution: {integrity: sha512-GqXJqY/xJkJmuloTrnV1ZEXG3fqte+VjkUqoRNZXcrUidiUOP4fMSIHHY4tsqZBK++kVyWmt/AAfSUuy57/eSA==}
+  hono@4.13.11:
+    resolution: {integrity: sha512-/SMX/RQNJn7oNmFwH6DtwDqcrzZU2otm1FD6OJe2cWF6cfy/F8hq0XVBv7xW3FTJshRQwuBnXHDq2kNsdZnshg==}
     engines: {node: '>=16.9.0'}
 
   html-parse-stringify@3.0.1:
@@ -1766,8 +1768,8 @@ packages:
     resolution: {integrity: sha512-FVtFjtBCMiJS6yb5CX7Sop45WFMpeGw6oRKuJnXYgf/f1ms/D7LE/ZUSNxnW7rZ/dbslQWYkoqFHGPaDBtaK4w==}
     engines: {node: '>=20.9.0'}
 
-  shell-quote@1.10.0:
-    resolution: {integrity: sha512-w1aiOKwKuRgtwAReIIj89puqg+I7GvX4IbLrvmhXbzQsj1+Zwi4VO3+fa6ZF91TWSjIxoEkKnMeHcLEODK5ZXA==}
+  shell-quote@1.12.0:
+    resolution: {integrity: sha512-PcByqNyT/38F2kDNi006HAMRJaULuBzq/FOsw3qdZvX/GA9W/jamDaRskgHjubHiftXK5sIFxLNkvrXUwcof6Q==}
     engines: {node: '>= 0.4'}
 
   siginfo@2.0.0:
@@ -3166,7 +3168,7 @@ snapshots:
       debug: 4.4.3
       env-paths: 3.0.0
       semver: 7.8.5
-      shell-quote: 1.10.0
+      shell-quote: 1.12.0
       which: 4.0.0
     transitivePeerDependencies:
       - supports-color
@@ -3178,7 +3180,7 @@ snapshots:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
-  hono@4.12.34: {}
+  hono@4.13.11: {}
 
   html-parse-stringify@3.0.1:
     dependencies:
@@ -3393,7 +3395,7 @@ snapshots:
       '@img/sharp-win32-ia32': 0.35.2
       '@img/sharp-win32-x64': 0.35.2
 
-  shell-quote@1.10.0:
+  shell-quote@1.12.0:
     optional: true
 
   siginfo@2.0.0: {}
