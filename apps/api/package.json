@@ -24,7 +24,7 @@
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.34",
     "nanoid": "^5.0.9",
-    "zod": "^4.0.0"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.18.8",
