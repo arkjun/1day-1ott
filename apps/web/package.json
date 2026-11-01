@@ -13,7 +13,7 @@
   "dependencies": {
     "@1ott/shared": "workspace:*",
     "@better-auth/passkey": "^1.6.23",
-    "better-auth": "^1.6.0",
+    "better-auth": "^1.7.7",
     "i18next": "^26.3.6",
     "i18next-browser-languagedetector": "^8.2.1",
     "react": "^19.0.0",
